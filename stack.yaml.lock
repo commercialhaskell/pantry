@@ -3,10 +3,94 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: http-download-0.1.0.0@sha256:b02d76d28364b74fb90d3ec3c46fd81f9d77bcf71fa40c1d341a7251a0fc40e8,2023
+    pantry-tree:
+      size: 393
+      sha256: 5ca9a5f17b87de5feea9eb26939bf0dea1ef20b9570545feb0b9e54f41ea47ff
+  original:
+    hackage: http-download-0.1.0.0
+- completed:
+    hackage: rio-orphans-0.1.1.0@sha256:15600084c56ef4e1f22ac2091d10fa6ed62f01f531d819c6a5a19492212a76c9,1612
+    pantry-tree:
+      size: 428
+      sha256: a1f439b0f16a4a9767cda0e17d24a816794af8f8f1630694a787e8d3e04ab339
+  original:
+    hackage: rio-orphans-0.1.1.0
+- completed:
+    hackage: rio-prettyprint-0.1.0.0@sha256:764e1a357275c3c62d57c494d038feae01cf745788e7d0e97367ba793c9670c3,1359
+    pantry-tree:
+      size: 479
+      sha256: 42fad9af672080b144bb60eb91af251ab35ce41bb931c44cfb584414648935e5
+  original:
+    hackage: rio-prettyprint-0.1.0.0
+- completed:
+    hackage: Cabal-2.4.1.0@sha256:56c858cf85e8756a94aaf930f2be4c2eaee623f067e7c55394194d3741147ab7,21825
+    pantry-tree:
+      size: 31482
+      sha256: 841586a64478b5901e6ae45eed93b1c3e672b1cf42c1b37cadd479e4747f1bb5
+  original:
+    hackage: Cabal-2.4.1.0
+- completed:
+    hackage: ansi-terminal-0.9@sha256:24e357bccd882add0d9caee63136d6b7923aaa9e36ed515097230dca82b0065c,3154
+    pantry-tree:
+      size: 1386
+      sha256: ba8e708bbeb1d2d277f40d09627e91cc597b08334b63936c661263c18108d008
+  original:
+    hackage: ansi-terminal-0.9@rev:0
+- completed:
+    hackage: rio-0.1.11.0@sha256:3ee5162199e5fc036ffe5b9459b6169471ce1b4fa53fa0bf8dcd1c7d9192728d,3633
+    pantry-tree:
+      size: 4745
+      sha256: 88fcb5cef887a9cf664d3edad27421c37dc9534eb4752f224467d544c61c7fce
+  original:
+    hackage: rio-0.1.11.0
+- completed:
+    hackage: cabal-doctest-1.0.6@sha256:c0b4a5b1ff38d2867e7003b4be59f3bd7e8e204ab8c988d96d3a77472ae671cd,1408
+    pantry-tree:
+      size: 334
+      sha256: 11dc93ca51869e043c148c526139ba38b2be9251055fbb9fc417abbaa030d8fa
+  original:
+    hackage: cabal-doctest-1.0.6
+- completed:
+    hackage: http-api-data-0.3.8.1@sha256:fdf8a3397221b819697dfb50b5eab9175f96a3cfcce74012a1b36551af5a83a0,3443
+    pantry-tree:
+      size: 945
+      sha256: b85a15a823403370c23d8b0e88542bb84e629e0987f6e90ce7eb7df52327ea99
+  original:
+    hackage: http-api-data-0.3.8.1
+- completed:
+    hackage: happy-1.19.9@sha256:f8c774230735a390c287b2980cfcd2703d24d8dde85a01ea721b7b4b4c82944f,4667
+    pantry-tree:
+      size: 7980
+      sha256: 1f1d622f6e773e7a674da6364b755714c76c3fbb3c7a4e65deaf07242fc15211
+  original:
+    hackage: happy-1.19.9
+- completed:
+    hackage: typed-process-0.2.6.0@sha256:c901c13d491441830eb23132ad6968243a56b98161629d260a26c0b13c735fcd,2136
+    pantry-tree:
+      size: 529
+      sha256: 2ef79f15f1f391e49dc522076f6d1584c7b305bf2aaa0dfec4dc0d4b61f31111
+  original:
+    hackage: typed-process-0.2.6.0
+- completed:
+    hackage: unliftio-0.2.12@sha256:b089fbc2ff2628a963c2c4b12143f2020874e3e5144ffd6c62b25639a0ca1483,3325
+    pantry-tree:
+      size: 2229
+      sha256: 4971b43f3d473eff868eb1a0c359729b49f1779e78c462ba45ef0d1eda677699
+  original:
+    hackage: unliftio-0.2.12
+- completed:
+    hackage: hedgehog-0.6.1@sha256:341e27c8e042ad78fffb72b5444cb87f0d5c37e38533256d41f30d1f96ec954f,4151
+    pantry-tree:
+      size: 2138
+      sha256: 6487fd6ffce837be0b24b820df62c7165c3edeb2a84ab959077d836ac494b504
+  original:
+    hackage: hedgehog-0.6.1
 snapshots:
 - completed:
-    size: 519764
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2019/7/15.yaml
-    sha256: 3f93a8081b0d3e6ee2b463886b1cc9f60403fae8a2eaeab4701b6e6150dfc98d
-  original: nightly-2019-07-15
+    size: 527801
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/11/22.yaml
+    sha256: 7c8b1853da784bd7beb8728168bf4e879d8a2f6daf408ca0fa7933451864a96a
+  original: lts-11.22
