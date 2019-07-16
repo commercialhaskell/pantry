@@ -1,19 +1,11 @@
 # Changelog for pantry
 
 
-## Unreleased changes
+## v0.1.1.1
 
-**Changes since v0.1.1.0**
+Other changes:
 
-Release notes:
-
-Major changes:
-
-Behavior changes:
-
-Other enhancements:
-
-Bug fixes:
+* Support building with persistent-template-2.7
 
 
 ## v0.1.1.0
