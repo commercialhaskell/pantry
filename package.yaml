@@ -47,7 +47,7 @@ dependencies:
 - cryptonite
 - cryptonite-conduit
 - persistent
-- persistent-sqlite
+- persistent-sqlite >= 2.9.3
 - persistent-template
 - Cabal
 - path-io

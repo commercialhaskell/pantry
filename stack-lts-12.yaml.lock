@@ -53,6 +53,20 @@ packages:
       sha256: 6487fd6ffce837be0b24b820df62c7165c3edeb2a84ab959077d836ac494b504
   original:
     hackage: hedgehog-0.6.1
+- completed:
+    hackage: persistent-2.10.0@sha256:6e4566c2cf8dda6bf3e00f4f813dd711e7796a1598f46c5c729491f4b643c91d,4708
+    pantry-tree:
+      size: 2094
+      sha256: 5ae7466479cf300e9bf07dc9780a432b4338c4e1e56fc732399260303cdf2f84
+  original:
+    hackage: persistent-2.10.0@sha256:6e4566c2cf8dda6bf3e00f4f813dd711e7796a1598f46c5c729491f4b643c91d,4708
+- completed:
+    hackage: persistent-sqlite-2.10.1@sha256:95c4b90b43da5d82557d4d6fe6136b75a1568c45f868d2ce150f223c167dc9b1,4519
+    pantry-tree:
+      size: 681
+      sha256: 1d473ef7b73002b20d400ec67ac85a3fc69cfb600e1f18410eafea16ef2548be
+  original:
+    hackage: persistent-sqlite-2.10.1@sha256:95c4b90b43da5d82557d4d6fe6136b75a1568c45f868d2ce150f223c167dc9b1,4519
 snapshots:
 - completed:
     size: 509471
