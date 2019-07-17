@@ -1,2 +1,4 @@
 /.stack-work/
 pantry.cabal
+*~
+*.swp
