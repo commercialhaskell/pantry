@@ -74,6 +74,27 @@ packages:
       sha256: 6487fd6ffce837be0b24b820df62c7165c3edeb2a84ab959077d836ac494b504
   original:
     hackage: hedgehog-0.6.1
+- completed:
+    hackage: hpack-0.31.2@sha256:c86aba85013358c2bea1e602d3582741e4a4393df388c65539d3602b7e6eef8d,4406
+    pantry-tree:
+      size: 3245
+      sha256: 9a82063e964f87c25288e07cab83d0d95a58530c8f04df96e99c55e6557a6ef2
+  original:
+    hackage: hpack-0.31.2
+- completed:
+    hackage: infer-license-0.2.0@sha256:98dbe0e8d726fd698f9961e69cc69343f37952b4b7428283d0b8dbe3b09f8125,1804
+    pantry-tree:
+      size: 1291
+      sha256: f9005d8279c4180eee1220abd909576043284340944e5e4b7de9baea4cad56cf
+  original:
+    hackage: infer-license-0.2.0
+- completed:
+    hackage: yaml-0.10.4.0@sha256:faaef7251bf05095ab34a3e716cfb4aaa3775aa23e38471ab8e8f44e59040b8f,5775
+    pantry-tree:
+      size: 2790
+      sha256: 7a027cf8cf1c133c6d740b96228f3c30bc545f045b855e5402f386934e41d8bf
+  original:
+    hackage: yaml-0.10.4.0
 snapshots:
 - completed:
     size: 509471
