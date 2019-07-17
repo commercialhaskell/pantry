@@ -10,6 +10,7 @@ extra-deps:
 - hedgehog-0.6.1 # for ansi-terminal-0.9
 - persistent-2.10.0@sha256:6e4566c2cf8dda6bf3e00f4f813dd711e7796a1598f46c5c729491f4b643c91d,4708
 - persistent-sqlite-2.10.1@sha256:95c4b90b43da5d82557d4d6fe6136b75a1568c45f868d2ce150f223c167dc9b1,4519
+- persistent-template-2.6.0@sha256:68ced5f29e8122a8474826a35e0c88b3c3a93778ecf05504cd9f65093e1df2dc,2272
 
 ghc-options:
    "$locals": -fhide-source-paths
