@@ -20,6 +20,7 @@ module Pantry.Storage
   , loadBlob
   , loadBlobById
   , loadBlobBySHA
+  , allBlobsSource
   , getBlobKey
   , loadURLBlob
   , storeURLBlob
@@ -95,7 +96,7 @@ import RIO.Directory (createDirectoryIfMissing, setPermissions, getPermissions, 
 import Database.Persist
 import Database.Persist.Sqlite
 import Database.Persist.TH
-import RIO.Orphans ()
+import RIO.Orphans (HasResourceMap)
 import qualified Pantry.SHA256 as SHA256
 import qualified RIO.Map as Map
 import qualified RIO.Text as T
@@ -354,6 +355,11 @@ loadBlobById bid = do
   case mbt of
     Nothing -> error "loadBlobById: ID doesn't exist in database"
     Just bt -> pure $ blobContents bt
+
+allBlobsSource ::
+     HasResourceMap env
+  => ConduitT () ByteString (ReaderT SqlBackend (RIO env)) ()
+allBlobsSource = selectSource [] [] .| mapC (blobContents . entityVal)
 
 getBlobKey :: BlobId -> ReaderT SqlBackend (RIO env) BlobKey
 getBlobKey bid = do
