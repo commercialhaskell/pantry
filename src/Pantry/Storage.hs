@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE BangPatterns #-}
@@ -21,6 +22,7 @@ module Pantry.Storage
   , loadBlobById
   , loadBlobBySHA
   , allBlobsSource
+  , allBlobsCount
   , getBlobKey
   , loadURLBlob
   , storeURLBlob
@@ -360,6 +362,9 @@ allBlobsSource ::
      HasResourceMap env
   => ConduitT () ByteString (ReaderT SqlBackend (RIO env)) ()
 allBlobsSource = selectSource [] [] .| mapC (blobContents . entityVal)
+
+allBlobsCount :: ReaderT SqlBackend (RIO env) Int
+allBlobsCount = count ([] :: [Filter Blob])
 
 getBlobKey :: BlobId -> ReaderT SqlBackend (RIO env) BlobKey
 getBlobKey bid = do
