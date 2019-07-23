@@ -29,6 +29,8 @@ import Pantry.Storage as X
   , getTreeForKey
   , getVersionId
   , loadBlobById
+  , allBlobsSource
+  , allBlobsCount
   , migrateAll
   , treeCabal
   , Key(unBlobKey)
