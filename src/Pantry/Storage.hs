@@ -367,8 +367,8 @@ allBlobsSource mblobId =
   selectSource [BlobId >. blobId | Just blobId <- [mblobId]] [Asc BlobId] .|
   mapC ((entityKey &&& blobContents . entityVal))
 
-allBlobsCount :: ReaderT SqlBackend (RIO env) Int
-allBlobsCount = count ([] :: [Filter Blob])
+allBlobsCount :: Maybe BlobId -> ReaderT SqlBackend (RIO env) Int
+allBlobsCount mblobId = count [BlobId >. blobId | Just blobId <- [mblobId]]
 
 getBlobKey :: BlobId -> ReaderT SqlBackend (RIO env) BlobKey
 getBlobKey bid = do
