@@ -364,7 +364,7 @@ allBlobsSource ::
   -- ^ For some x, yield blob whose id>x.
   -> ConduitT () (BlobId, ByteString) (ReaderT SqlBackend (RIO env)) ()
 allBlobsSource mblobId =
-  selectSource [BlobId >. blobId | Just blobId <- [mblobId]] [] .|
+  selectSource [BlobId >. blobId | Just blobId <- [mblobId]] [Asc BlobId] .|
   mapC ((entityKey &&& blobContents . entityVal))
 
 allBlobsCount :: ReaderT SqlBackend (RIO env) Int
