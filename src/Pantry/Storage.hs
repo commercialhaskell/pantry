@@ -360,11 +360,15 @@ loadBlobById bid = do
 
 allBlobsSource ::
      HasResourceMap env
-  => ConduitT () ByteString (ReaderT SqlBackend (RIO env)) ()
-allBlobsSource = selectSource [] [] .| mapC (blobContents . entityVal)
+  => Maybe BlobId
+  -- ^ For some x, yield blob whose id>x.
+  -> ConduitT () (BlobId, ByteString) (ReaderT SqlBackend (RIO env)) ()
+allBlobsSource mblobId =
+  selectSource [BlobId >. blobId | Just blobId <- [mblobId]] [Asc BlobId] .|
+  mapC ((entityKey &&& blobContents . entityVal))
 
-allBlobsCount :: ReaderT SqlBackend (RIO env) Int
-allBlobsCount = count ([] :: [Filter Blob])
+allBlobsCount :: Maybe BlobId -> ReaderT SqlBackend (RIO env) Int
+allBlobsCount mblobId = count [BlobId >. blobId | Just blobId <- [mblobId]]
 
 getBlobKey :: BlobId -> ReaderT SqlBackend (RIO env) BlobKey
 getBlobKey bid = do
