@@ -6,9 +6,7 @@ extra-deps:
 - ansi-terminal-0.9
 - rio-0.1.11.0
 - unliftio-0.2.12
-  # https://github.com/hspec/silently/issues/7
-- github: snoyberg/silently
-  commit: 2ce0d591fbd020b0df5cfeb5975c5b5159878516
+- silently-1.2.5.1
 
 ghc-options:
    "$locals": -fhide-source-paths

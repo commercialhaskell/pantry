@@ -40,19 +40,12 @@ packages:
   original:
     hackage: unliftio-0.2.12
 - completed:
-    size: 4197
-    url: https://github.com/snoyberg/silently/archive/2ce0d591fbd020b0df5cfeb5975c5b5159878516.tar.gz
-    cabal-file:
-      size: 1870
-      sha256: e43a105987480cc665274e0140919d3efee9db09382e9356ae1efb72c4420f30
-    name: silently
-    version: 1.2.5
-    sha256: 1a32cbc34765a832bce19da5944027cc0adcc9f1b593232486fc48a54dc639c1
+    hackage: silently-1.2.5.1@sha256:c0128e3a8cd4dbc25b369ab89a20c3b9101101add870dd12299d6379d28e5b99,1872
     pantry-tree:
-      size: 515
-      sha256: 40561f7ea2e0ef632d9d0039ea33cc857c51d51e834d69b0c22bb17c69ae67e2
+      size: 273
+      sha256: e833ef2acde0bc719281aaa1a2dd3f9e8d67e19a94ed2b5bf41e7f6a9450d829
   original:
-    url: https://github.com/snoyberg/silently/archive/2ce0d591fbd020b0df5cfeb5975c5b5159878516.tar.gz
+    hackage: silently-1.2.5.1
 snapshots:
 - completed:
     size: 500539
