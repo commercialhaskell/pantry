@@ -1,0 +1,224 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: c627f549a48cf6ca692c0e2b22461466dd2715733f25ae60ff6eb225280bd3c8
+
+name:           pantry
+version:        0.1.1.1
+synopsis:       Content addressable Haskell package management
+description:    Please see the README on Github at <https://github.com/commercialhaskell/stack/blob/master/subs/pantry/README.md>
+category:       Development
+homepage:       https://github.com/commercialhaskell/stack#readme
+bug-reports:    https://github.com/commercialhaskell/stack/issues
+author:         Michael Snoyman
+maintainer:     michael@snoyman.com
+copyright:      2018-2019 FP Complete
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+    attic/hpack-0.1.2.3.tar.gz
+    attic/package-0.1.2.3.tar.gz
+    attic/symlink-to-dir.tar.gz
+
+source-repository head
+  type: git
+  location: https://github.com/commercialhaskell/stack
+
+library
+  exposed-modules:
+      Pantry
+      Pantry.SHA256
+      Pantry.Internal
+      Pantry.Internal.StaticBytes
+      Pantry.Internal.Stackage
+      Pantry.Internal.Companion
+      Pantry.Internal.AesonExtended
+  other-modules:
+      Hackage.Security.Client.Repository.HttpLib.HttpClient
+      Pantry.Archive
+      Pantry.HTTP
+      Pantry.HPack
+      Pantry.Hackage
+      Pantry.Repo
+      Pantry.SQLite
+      Pantry.Storage
+      Pantry.Tree
+      Pantry.Types
+  hs-source-dirs:
+      src/
+  default-extensions: MonadFailDesugaring
+  ghc-options: -Wall
+  build-depends:
+      Cabal
+    , aeson
+    , ansi-terminal
+    , array
+    , base >=4.10 && <5
+    , base-orphans
+    , base64-bytestring
+    , bytestring
+    , conduit
+    , conduit-extra
+    , containers
+    , contravariant
+    , cryptonite
+    , cryptonite-conduit
+    , deepseq
+    , digest
+    , directory
+    , filelock
+    , filepath
+    , generic-deriving
+    , ghc-prim
+    , hackage-security
+    , hashable
+    , hpack >=0.31.2
+    , http-client
+    , http-client-tls
+    , http-conduit
+    , http-download
+    , http-types
+    , integer-gmp
+    , memory
+    , mono-traversable
+    , mtl
+    , network
+    , network-uri
+    , path
+    , path-io
+    , persistent
+    , persistent-sqlite >=2.9.3
+    , persistent-template
+    , primitive
+    , resourcet
+    , rio
+    , rio-orphans
+    , rio-prettyprint
+    , safe
+    , syb
+    , tar-conduit
+    , template-haskell
+    , text
+    , text-metrics
+    , th-lift
+    , th-lift-instances
+    , th-orphans
+    , th-reify-many
+    , th-utilities
+    , time
+    , transformers
+    , unix-compat
+    , unliftio
+    , unordered-containers
+    , vector
+    , yaml
+    , zip-archive
+  if os(windows)
+    other-modules:
+        System.IsWindows
+    hs-source-dirs:
+        src/windows/
+  else
+    other-modules:
+        System.IsWindows
+    hs-source-dirs:
+        src/unix/
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Pantry.ArchiveSpec
+      Pantry.BuildPlanSpec
+      Pantry.CabalSpec
+      Pantry.FileSpec
+      Pantry.GlobalHintsSpec
+      Pantry.HackageSpec
+      Pantry.Internal.StaticBytesSpec
+      Pantry.InternalSpec
+      Pantry.TreeSpec
+      Pantry.TypesSpec
+      Paths_pantry
+  hs-source-dirs:
+      test
+  default-extensions: MonadFailDesugaring
+  ghc-options: -Wall
+  build-depends:
+      Cabal
+    , QuickCheck
+    , aeson
+    , ansi-terminal
+    , array
+    , base >=4.10 && <5
+    , base-orphans
+    , base64-bytestring
+    , bytestring
+    , conduit
+    , conduit-extra
+    , containers
+    , contravariant
+    , cryptonite
+    , cryptonite-conduit
+    , deepseq
+    , digest
+    , directory
+    , exceptions
+    , filelock
+    , filepath
+    , generic-deriving
+    , ghc-prim
+    , hackage-security
+    , hashable
+    , hedgehog
+    , hpack >=0.31.2
+    , hspec
+    , http-client
+    , http-client-tls
+    , http-conduit
+    , http-download
+    , http-types
+    , integer-gmp
+    , memory
+    , mono-traversable
+    , mtl
+    , network
+    , network-uri
+    , pantry
+    , path
+    , path-io
+    , persistent
+    , persistent-sqlite >=2.9.3
+    , persistent-template
+    , primitive
+    , raw-strings-qq
+    , resourcet
+    , rio
+    , rio-orphans
+    , rio-prettyprint
+    , safe
+    , syb
+    , tar-conduit
+    , template-haskell
+    , text
+    , text-metrics
+    , th-lift
+    , th-lift-instances
+    , th-orphans
+    , th-reify-many
+    , th-utilities
+    , time
+    , transformers
+    , unix-compat
+    , unliftio
+    , unordered-containers
+    , vector
+    , yaml
+    , zip-archive
+  default-language: Haskell2010
