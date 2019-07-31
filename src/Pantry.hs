@@ -11,6 +11,7 @@ module Pantry
     PantryConfig
   , HackageSecurityConfig (..)
   , defaultHackageSecurityConfig
+  , defaultCasaPullURL
   , HasPantryConfig (..)
   , withPantryConfig
   , HpackExecutable (..)
@@ -87,6 +88,8 @@ module Pantry
     -- * Loading values
   , resolvePaths
   , loadPackageRaw
+  , loadHackagePackageRaw
+  , loadHackagePackageRawViaCasa
   , loadPackage
   , loadRawSnapshotLayer
   , loadSnapshotLayer
@@ -171,6 +174,7 @@ module Pantry
   , withSnapshotCache
   ) where
 
+import Database.Persist (entityKey)
 import RIO
 import Conduit
 import Control.Arrow (right)
@@ -182,11 +186,12 @@ import qualified RIO.Text as T
 import qualified RIO.List as List
 import qualified RIO.FilePath as FilePath
 import Pantry.Archive
+import Pantry.Casa
 import Pantry.Repo
 import qualified Pantry.SHA256 as SHA256
 import Pantry.Storage hiding (TreeEntry, PackageName, Version)
 import Pantry.Tree
-import Pantry.Types
+import Pantry.Types as P
 import Pantry.Hackage
 import Path (Path, Abs, File, toFilePath, Dir, (</>), filename, parseAbsDir, parent, parseRelFile)
 import Path.IO (doesFileExist, resolveDir', listDir)
@@ -206,6 +211,7 @@ import Data.Aeson.Types (parseEither)
 import Data.Monoid (Endo (..))
 import Pantry.HTTP
 import Data.Char (isHexDigit)
+import Data.Time (getCurrentTime, diffUTCTime)
 
 -- | Create a new 'PantryConfig' with the given settings.
 --
@@ -225,10 +231,12 @@ withPantryConfig
   -- what version of hpack should we use?
   -> Int
   -- ^ Maximum connection count
+  -> String
+  -- ^ The casa pull URL e.g. https://casa.fpcomplete.com/v1/pull.
   -> (PantryConfig -> RIO env a)
   -- ^ What to do with the config
   -> RIO env a
-withPantryConfig root hsc he count inner = do
+withPantryConfig root hsc he count pullURL inner = do
   env <- ask
   pantryRelFile <- parseRelFile "pantry.sqlite3"
   -- Silence persistent's logging output, which is really noisy
@@ -245,7 +253,14 @@ withPantryConfig root hsc he count inner = do
       , pcConnectionCount = count
       , pcParsedCabalFilesRawImmutable = ref1
       , pcParsedCabalFilesMutable = ref2
+      , pcCasaPullURL = pullURL
       }
+
+-- | Default pull URL for Casa.
+--
+-- @since 0.1.1.1
+defaultCasaPullURL :: String
+defaultCasaPullURL = "http://casa.fpcomplete.com/v1/pull" -- FIXME: Switch to https when ready.
 
 -- | Default 'HackageSecurityConfig' value using the official Hackage server.
 --
@@ -327,12 +342,98 @@ getLatestHackageRevision req name version = do
       treeKey' <- getHackageTarballKey (PackageIdentifierRevision name version cfi)
       return $ Just (revision, cfKey, treeKey')
 
-fetchTreeKeys
-  :: (HasPantryConfig env, HasLogFunc env, Foldable f)
-  => f TreeKey
+-- | Fetch keys and blobs and insert into the database where possible.
+fetchTreeKeys ::
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+  => [RawPackageLocationImmutable]
   -> RIO env ()
-fetchTreeKeys _ =
-  logWarn "Network caching not yet implemented!" -- TODO pantry wire
+fetchTreeKeys treeKeys = do
+  pure ()
+  -- Find all tree keys that are missing from the database.
+  packageLocationsMissing :: [RawPackageLocationImmutable] <-
+    withStorage
+      (filterM
+         (fmap isNothing . maybe (pure Nothing) getTreeForKey . getRawTreeKey)
+         treeKeys)
+  pullTreeStart <- liftIO getCurrentTime
+  -- Pull down those tree keys from Casa, automatically inserting into
+  -- our local database.
+  treeKeyBlobs :: Map TreeKey P.Tree <-
+    fmap
+      Map.fromList
+      (withStorage
+         (runConduitRes
+            (casaBlobSource
+               (fmap unTreeKey (mapMaybe getRawTreeKey packageLocationsMissing)) .|
+             mapMC parseTreeM .|
+             sinkList)))
+  pullTreeEnd <- liftIO getCurrentTime
+  let pulledPackages =
+        mapMaybe
+          (\treeKey' ->
+             List.find
+               ((== Just treeKey') . getRawTreeKey)
+               packageLocationsMissing)
+          (Map.keys treeKeyBlobs)
+  -- Pull down all unique file blobs.
+  let uniqueFileBlobKeys :: Set BlobKey
+      uniqueFileBlobKeys =
+        foldMap
+          (\(P.TreeMap files) -> Set.fromList (map teBlob (toList files)))
+          treeKeyBlobs
+  pullBlobStart <- liftIO getCurrentTime
+  pulledBlobKeys :: Int <-
+    withStorage
+      (runConduitRes
+         (casaBlobSource uniqueFileBlobKeys .| mapC (const 1) .| sumC))
+  pullBlobEnd <- liftIO getCurrentTime
+  logDebug
+    ("Pulled from Casa: " <>
+     mconcat (List.intersperse ", " (map display pulledPackages)) <>
+     " (" <>
+     display (T.pack (show (diffUTCTime pullTreeEnd pullTreeStart))) <>
+     "), " <>
+     plural pulledBlobKeys "file" <>
+     " (" <>
+     display (T.pack (show (diffUTCTime pullBlobEnd pullBlobStart))) <>
+     ")")
+  -- Store the tree for each missing package.
+  for_
+    packageLocationsMissing
+    (\rawPackageLocationImmutable ->
+       let mkey = getRawTreeKey rawPackageLocationImmutable
+        in case mkey of
+             Nothing ->
+               logDebug
+                 ("Ignoring package with no tree key " <>
+                  display rawPackageLocationImmutable <>
+                  ", can't look in Casa for it.")
+             Just key ->
+               case Map.lookup key treeKeyBlobs of
+                 Nothing ->
+                   logWarn
+                     ("Package key " <> display key <> " (" <>
+                      display rawPackageLocationImmutable <>
+                      ") not returned from Casa.")
+                 Just tree -> do
+                   identifier <-
+                     getRawPackageLocationIdent rawPackageLocationImmutable
+                   case findCabalOrHpackFile rawPackageLocationImmutable tree of
+                     Just buildFile ->
+                       void
+                         (withStorage
+                            (storeTree
+                               rawPackageLocationImmutable
+                               identifier
+                               tree
+                               buildFile))
+                     Nothing ->
+                       logWarn
+                         ("Unable to find build file for package: " <>
+                          display rawPackageLocationImmutable))
+  where
+    unTreeKey :: TreeKey -> BlobKey
+    unTreeKey (P.TreeKey blobKey) = blobKey
 
 -- | Download all of the packages provided into the local cache
 -- without performing any unpacking. Can be useful for build tools
@@ -344,7 +445,7 @@ fetchPackages
   => f PackageLocationImmutable
   -> RIO env ()
 fetchPackages pls = do
-    fetchTreeKeys $ map getTreeKey $ toList pls
+    fetchTreeKeys (fmap toRawPLI (toList pls))
     traverseConcurrently_ (void . uncurry getHackageTarball) hackages
     -- TODO in the future, be concurrent in these as well
     fetchArchives archives
@@ -675,7 +776,6 @@ loadCabalFileBytes pl = do
   mbs <- withStorage $ loadBlob cabalBlobKey
   case mbs of
     Nothing -> do
-      -- TODO when we have pantry wire, try downloading
       throwIO $ TreeReferencesMissingBlob (toRawPLI pl) sfp cabalBlobKey
     Just bs -> pure bs
 
@@ -699,7 +799,6 @@ loadRawCabalFileBytes pl = do
   mbs <- withStorage $ loadBlob cabalBlobKey
   case mbs of
     Nothing -> do
-      -- TODO when we have pantry wire, try downloading
       throwIO $ TreeReferencesMissingBlob pl sfp cabalBlobKey
     Just bs -> pure bs
 
@@ -710,8 +809,8 @@ loadPackage
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => PackageLocationImmutable
   -> RIO env Package
-loadPackage (PLIHackage ident cfHash tree) =
-  htrPackage <$> getHackageTarball (pirForHash ident cfHash) (Just tree)
+loadPackage pli@(PLIHackage ident cfHash tree) =
+  loadHackagePackageRaw (toRawPLI pli) (pirForHash ident cfHash) (Just tree)
 loadPackage pli@(PLIArchive archive pm) = getArchivePackage (toRawPLI pli) (toRawArchive archive) (toRawPM pm)
 loadPackage (PLIRepo repo pm) = getRepo repo (toRawPM pm)
 
@@ -722,9 +821,76 @@ loadPackageRaw
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => RawPackageLocationImmutable
   -> RIO env Package
-loadPackageRaw (RPLIHackage pir mtree) = htrPackage <$> getHackageTarball pir mtree
+loadPackageRaw rlpi@(RPLIHackage pir mtree) = loadHackagePackageRaw rlpi pir mtree
 loadPackageRaw rpli@(RPLIArchive archive pm) = getArchivePackage rpli archive pm
 loadPackageRaw (RPLIRepo repo rpm) = getRepo repo rpm
+
+-- | Load the package either from the local DB, Casa, or as a last
+-- resort, Hackage.
+loadHackagePackageRaw ::
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+  => RawPackageLocationImmutable
+  -> PackageIdentifierRevision
+  -> Maybe TreeKey
+  -> RIO env Package
+loadHackagePackageRaw rlpi pir mtree =
+  case mtree of
+    Just treeKey' -> loadHackagePackageRawViaDbOrCasa treeKey'
+    Nothing -> loadHackagePackageRawViaHackage
+  where
+    loadHackagePackageRawViaDbOrCasa treeKey' = do
+      mviaDb <- loadHackagePackageRawViaLocalDb rlpi treeKey'
+      case mviaDb of
+        Just package -> do
+          logDebug ("Loaded package from Pantry: " <> display pir)
+          pure package
+        Nothing -> do
+          mviaCasa <- loadHackagePackageRawViaCasa rlpi treeKey'
+          case mviaCasa of
+            Just package -> do
+              logDebug ("Loaded package from Casa: " <> display pir)
+              pure package
+            Nothing -> loadHackagePackageRawViaHackage
+    loadHackagePackageRawViaHackage = do
+      logDebug ("Loading package from Hackage: " <> display pir)
+      htrPackage <$> getHackageTarball pir mtree
+
+-- | Maybe load the package from Casa.
+loadHackagePackageRawViaCasa ::
+     (HasLogFunc env, HasPantryConfig env, HasProcessContext env)
+  => RawPackageLocationImmutable
+  -> TreeKey
+  -> RIO env (Maybe Package)
+loadHackagePackageRawViaCasa rlpi treeKey' = do
+  mtreePair <- casaLookupTree treeKey'
+  case mtreePair of
+    Nothing -> pure Nothing
+    Just (treeKey'', _tree) -> do
+      fetchTreeKeys [rlpi]
+      mdb <- loadHackagePackageRawViaLocalDb rlpi treeKey''
+      case mdb of
+        Nothing -> do
+          logWarn
+            ("Did not find tree key in DB after pulling it from Casa: " <>
+             display treeKey'' <>
+             " (for " <>
+             display rlpi <>
+             ")")
+          pure Nothing
+        Just package -> pure (Just package)
+
+-- | Maybe load the package from the local database.
+loadHackagePackageRawViaLocalDb ::
+     (HasLogFunc env, HasPantryConfig env, HasProcessContext env)
+  => RawPackageLocationImmutable
+  -> TreeKey
+  -> RIO env (Maybe Package)
+loadHackagePackageRawViaLocalDb rlpi treeKey' = do
+  mtreeEntity <- withStorage (getTreeForKey treeKey')
+  case mtreeEntity of
+    Nothing -> pure Nothing
+    Just treeId ->
+      fmap Just (withStorage (loadPackageById rlpi (entityKey treeId)))
 
 -- | Fill in optional fields in a 'PackageLocationImmutable' for more reproducible builds.
 --
@@ -1460,6 +1626,7 @@ runPantryApp f = runSimpleApp $ do
     defaultHackageSecurityConfig
     HpackBundled
     8
+    defaultCasaPullURL
     $ \pc ->
       runRIO
         PantryApp
@@ -1484,6 +1651,7 @@ runPantryAppClean f = liftIO $ withSystemTempDirectory "pantry-clean" $ \dir -> 
     defaultHackageSecurityConfig
     HpackBundled
     8
+    defaultCasaPullURL
     $ \pc ->
       runRIO
         PantryApp
@@ -1600,3 +1768,11 @@ withSnapshotCache hash getModuleMapping f = do
       return scId
     Just scId -> pure scId
   f $ withStorage . loadExposedModulePackages cacheId
+
+-- | Add an s to the builder if n!=1.
+plural :: Int -> Utf8Builder -> Utf8Builder
+plural n text =
+  display n <> " " <> text <>
+  (if n == 1
+     then ""
+     else "s")

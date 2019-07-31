@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c627f549a48cf6ca692c0e2b22461466dd2715733f25ae60ff6eb225280bd3c8
+-- hash: bfe3d1da8e1bb09ed6dc209a6f46700cf26a1005e6f773b9537244dcf5b907e7
 
 name:           pantry
 version:        0.1.1.1
@@ -48,6 +48,7 @@ library
       Pantry.Repo
       Pantry.SQLite
       Pantry.Storage
+      Pantry.Casa
       Pantry.Tree
       Pantry.Types
   hs-source-dirs:
@@ -63,6 +64,8 @@ library
     , base-orphans
     , base64-bytestring
     , bytestring
+    , casa-client
+    , casa-types
     , conduit
     , conduit-extra
     , containers
@@ -138,6 +141,7 @@ test-suite spec
       Pantry.ArchiveSpec
       Pantry.BuildPlanSpec
       Pantry.CabalSpec
+      Pantry.CasaSpec
       Pantry.FileSpec
       Pantry.GlobalHintsSpec
       Pantry.HackageSpec
@@ -160,6 +164,8 @@ test-suite spec
     , base-orphans
     , base64-bytestring
     , bytestring
+    , casa-client
+    , casa-types
     , conduit
     , conduit-extra
     , containers

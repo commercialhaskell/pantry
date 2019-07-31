@@ -7,5 +7,13 @@ extra-deps:
 - rio-0.1.11.0
 - unliftio-0.2.12
 
+- github: fpco/casa
+  commit: 090b17e991819b552c1aff1125a447d45e0da954
+  sha256: 812e05de8f9abdbd1101fc94895dcfd5c35962c4d67a43cc20cbc06eb59ea1f0
+  size: 9508
+  subdirs:
+     - casa-client
+     - casa-types
+
 ghc-options:
    "$locals": -fhide-source-paths

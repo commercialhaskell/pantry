@@ -64,6 +64,8 @@ dependencies:
 - rio-prettyprint
 - mtl
 - filelock
+- casa-client
+- casa-types
 
 # FIXME remove when we drop store
 - integer-gmp
@@ -124,6 +126,7 @@ library:
   - Pantry.Repo
   - Pantry.SQLite
   - Pantry.Storage
+  - Pantry.Casa
   - Pantry.Tree
   - Pantry.Types
 

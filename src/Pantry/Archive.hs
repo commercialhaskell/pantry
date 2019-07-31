@@ -9,6 +9,7 @@ module Pantry.Archive
   , getArchiveKey
   , fetchArchivesRaw
   , fetchArchives
+  , findCabalOrHpackFile
   ) where
 
 import RIO
