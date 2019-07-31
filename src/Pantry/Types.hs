@@ -42,6 +42,7 @@ module Pantry.Types
   , Tree (..)
   , renderTree
   , parseTree
+  , parseTreeM
   , SHA256
   , Unresolved
   , resolvePaths
@@ -243,6 +244,8 @@ data PantryConfig = PantryConfig
   -- print out any warnings that still need to be printed.
   , pcConnectionCount :: !Int
   -- ^ concurrently open downloads
+  , pcCasaPullURL :: !String
+  -- ^ The pull URL e.g. @https://casa.fpcomplete.com/v1/pull@
   }
 
 -- | Should we print warnings when loading a cabal file?
@@ -836,6 +839,7 @@ data PantryException
   | InvalidCabalFilePath !(Path Abs File)
   | DuplicatePackageNames !Utf8Builder ![(PackageName, [RawPackageLocationImmutable])]
   | MigrationFailure !Text !(Path Abs File) !SomeException
+  | InvalidTreeFromCasa !BlobKey !ByteString
 
   deriving Typeable
 instance Exception PantryException where
@@ -1166,6 +1170,12 @@ netstring t =
 
 netword :: Word -> Builder
 netword w = wordDec w <> ":"
+
+parseTreeM :: MonadThrow m => (BlobKey, ByteString) -> m (TreeKey, Tree)
+parseTreeM (blobKey, blob) =
+  case parseTree blob of
+    Nothing -> throwM (InvalidTreeFromCasa blobKey blob)
+    Just tree -> pure (TreeKey blobKey, tree)
 
 parseTree :: ByteString -> Maybe Tree
 parseTree bs1 = do
