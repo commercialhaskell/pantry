@@ -88,8 +88,7 @@ module Pantry
     -- * Loading values
   , resolvePaths
   , loadPackageRaw
-  , loadHackagePackageRaw
-  , loadHackagePackageRawViaCasa
+  , loadPackageRawViaCasa
   , loadPackage
   , loadRawSnapshotLayer
   , loadSnapshotLayer
@@ -796,65 +795,56 @@ loadPackage
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => PackageLocationImmutable
   -> RIO env Package
-loadPackage pli@(PLIHackage ident cfHash tree) =
-  loadHackagePackageRaw (toRawPLI pli) (pirForHash ident cfHash) (Just tree)
-loadPackage pli@(PLIArchive archive pm) = getArchivePackage (toRawPLI pli) (toRawArchive archive) (toRawPM pm)
-loadPackage (PLIRepo repo pm) = getRepo repo (toRawPM pm)
+loadPackage = loadPackageRaw . toRawPLI
 
 -- | Load a 'Package' from a 'RawPackageLocationImmutable'.
+--
+-- Load the package either from the local DB, Casa, or as a last
+-- resort, the third party (hackage, archive or repo).
 --
 -- @since 0.1.0.0
 loadPackageRaw
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => RawPackageLocationImmutable
   -> RIO env Package
-loadPackageRaw rlpi@(RPLIHackage pir mtree) = loadHackagePackageRaw rlpi pir mtree
-loadPackageRaw rpli@(RPLIArchive archive pm) = getArchivePackage rpli archive pm
-loadPackageRaw (RPLIRepo repo rpm) = getRepo repo rpm
-
--- | Load the package either from the local DB, Casa, or as a last
--- resort, Hackage.
-loadHackagePackageRaw ::
-     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-  => RawPackageLocationImmutable
-  -> PackageIdentifierRevision
-  -> Maybe TreeKey
-  -> RIO env Package
-loadHackagePackageRaw rlpi pir mtree =
-  case mtree of
+loadPackageRaw rpli =
+  case getRawTreeKey rpli of
     Just treeKey' -> loadHackagePackageRawViaDbOrCasa treeKey'
-    Nothing -> loadHackagePackageRawViaHackage
+    Nothing -> loadPackageRawViaThirdParty
   where
     loadHackagePackageRawViaDbOrCasa treeKey' = do
-      mviaDb <- loadHackagePackageRawViaLocalDb rlpi treeKey'
+      mviaDb <- loadPackageRawViaLocalDb rpli treeKey'
       case mviaDb of
         Just package -> do
-          logDebug ("Loaded package from Pantry: " <> display pir)
+          logDebug ("Loaded package from Pantry: " <> display rpli)
           pure package
         Nothing -> do
-          mviaCasa <- loadHackagePackageRawViaCasa rlpi treeKey'
+          mviaCasa <- loadPackageRawViaCasa rpli treeKey'
           case mviaCasa of
             Just package -> do
-              logDebug ("Loaded package from Casa: " <> display pir)
+              logDebug ("Loaded package from Casa: " <> display rpli)
               pure package
-            Nothing -> loadHackagePackageRawViaHackage
-    loadHackagePackageRawViaHackage = do
-      logDebug ("Loading package from Hackage: " <> display pir)
-      htrPackage <$> getHackageTarball pir mtree
+            Nothing -> loadPackageRawViaThirdParty
+    loadPackageRawViaThirdParty = do
+      logDebug ("Loading package from third-party: " <> display rpli)
+      case rpli of
+        RPLIHackage pir mtree -> htrPackage <$> getHackageTarball pir mtree
+        RPLIArchive archive pm -> getArchivePackage rpli archive pm
+        RPLIRepo repo rpm -> getRepo repo rpm
 
 -- | Maybe load the package from Casa.
-loadHackagePackageRawViaCasa ::
+loadPackageRawViaCasa ::
      (HasLogFunc env, HasPantryConfig env, HasProcessContext env)
   => RawPackageLocationImmutable
   -> TreeKey
   -> RIO env (Maybe Package)
-loadHackagePackageRawViaCasa rlpi treeKey' = do
+loadPackageRawViaCasa rlpi treeKey' = do
   mtreePair <- casaLookupTree treeKey'
   case mtreePair of
     Nothing -> pure Nothing
     Just (treeKey'', _tree) -> do
       fetchTreeKeys [rlpi]
-      mdb <- loadHackagePackageRawViaLocalDb rlpi treeKey''
+      mdb <- loadPackageRawViaLocalDb rlpi treeKey''
       case mdb of
         Nothing -> do
           logWarn
@@ -867,12 +857,12 @@ loadHackagePackageRawViaCasa rlpi treeKey' = do
         Just package -> pure (Just package)
 
 -- | Maybe load the package from the local database.
-loadHackagePackageRawViaLocalDb ::
+loadPackageRawViaLocalDb ::
      (HasLogFunc env, HasPantryConfig env, HasProcessContext env)
   => RawPackageLocationImmutable
   -> TreeKey
   -> RIO env (Maybe Package)
-loadHackagePackageRawViaLocalDb rlpi treeKey' = do
+loadPackageRawViaLocalDb rlpi treeKey' = do
   mtreeEntity <- withStorage (getTreeForKey treeKey')
   case mtreeEntity of
     Nothing -> pure Nothing

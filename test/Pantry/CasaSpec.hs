@@ -40,11 +40,7 @@ loadHackagePackageSpec = do
     (shouldReturn
        (fmap
           packageTreeKey
-          (runPantryAppClean
-             (loadHackagePackageRaw
-                (argsRlpi unliftio_0_2_12)
-                (argsRevision unliftio_0_2_12)
-                (Just (argsTreeKey unliftio_0_2_12)))))
+          (runPantryAppClean (loadPackageRaw (argsRlpi unliftio_0_2_12))))
        (argsTreeKey unliftio_0_2_12))
   it
     "loadHackagePackageRawViaCasa Exact hackage lookup"
@@ -52,7 +48,7 @@ loadHackagePackageSpec = do
        (fmap
           (fmap packageTreeKey)
           (runPantryAppClean
-             (loadHackagePackageRawViaCasa
+             (loadPackageRawViaCasa
                 (argsRlpi unliftio_0_2_12)
                 (argsTreeKey unliftio_0_2_12))))
        (Just (argsTreeKey unliftio_0_2_12)))
