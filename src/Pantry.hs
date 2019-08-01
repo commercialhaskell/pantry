@@ -411,7 +411,7 @@ fetchTreeKeys treeKeys = do
              Just key ->
                case Map.lookup key treeKeyBlobs of
                  Nothing ->
-                   logWarn
+                   logDebug
                      ("Package key " <> display key <> " (" <>
                       display rawPackageLocationImmutable <>
                       ") not returned from Casa.")
