@@ -905,10 +905,33 @@ completePackageLocation (RPLIHackage pir0@(PackageIdentifierRevision name versio
   treeKey' <- getHackageTarballKey pir
   pure $ PLIHackage (PackageIdentifier name version) cfKey treeKey'
 completePackageLocation pl@(RPLIArchive archive rpm) = do
-  -- getArchive checks archive and package metadata
-  (sha, size, package) <- getArchive pl archive rpm
-  let RawArchive loc _ _ subdir = archive
-  pure $ PLIArchive (Archive loc sha size subdir) (packagePM package)
+  mpackage <-
+    case rpmTreeKey rpm of
+      Just treeKey' -> tryLoadPackageRawViaDbOrCasa pl treeKey'
+      Nothing -> pure Nothing
+  case (,,) <$> raHash archive <*> raSize archive <*> mpackage of
+    Just (sha256, fileSize, package) -> do
+      let RawArchive loc _ _ subdir = archive
+      pure $ PLIArchive (Archive loc sha256 fileSize subdir) (packagePM package)
+    Nothing -> byThirdParty (isJust mpackage)
+  where
+    byThirdParty warnAboutMissingSizeSha = do
+      (sha, size, package) <- getArchive pl archive rpm
+      when warnAboutMissingSizeSha (warnWith sha size)
+      -- (getArchive checks archive and package metadata)
+      let RawArchive loc _ _ subdir = archive
+      pure $ PLIArchive (Archive loc sha size subdir) (packagePM package)
+    warnWith sha size =
+      logWarn
+        (mconcat
+           [ "The package "
+           , display pl
+           , " is available from the local content-addressable storage database, \n"
+           , "but we can't use it unless you specify the size and hash for this package.\n"
+           , "Add the following to your package description:\n"
+           , "\nsize: " <> display size
+           , "\nsha256: " <> display sha
+           ])
 completePackageLocation pl@(RPLIRepo repo rpm) = do
   unless (isSHA1 (repoCommit repo)) $ throwIO $ CannotCompleteRepoNonSHA1 repo
   PLIRepo repo <$> completePM pl rpm
