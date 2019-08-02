@@ -823,7 +823,7 @@ loadPackageRaw rpli =
         RPLIArchive archive pm -> getArchivePackage rpli archive pm
         RPLIRepo repo rpm -> getRepo repo rpm
 
--- | Try to load a package via the database or casa.
+-- | Try to load a package via the database or Casa.
 tryLoadPackageRawViaDbOrCasa ::
      (HasLogFunc env, HasPantryConfig env, HasProcessContext env)
   => RawPackageLocationImmutable
