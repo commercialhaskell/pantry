@@ -88,7 +88,7 @@ module Pantry
     -- * Loading values
   , resolvePaths
   , loadPackageRaw
-  , loadPackageRawViaCasa
+  , tryLoadPackageRawViaCasa
   , loadPackage
   , loadRawSnapshotLayer
   , loadSnapshotLayer
@@ -810,7 +810,7 @@ loadPackageRaw
 loadPackageRaw rpli =
   case getRawTreeKey rpli of
     Just treeKey' -> do
-      mpackage <- loadPackageRawViaDbOrCasa rpli treeKey'
+      mpackage <- tryLoadPackageRawViaDbOrCasa rpli treeKey'
       case mpackage of
         Nothing -> loadPackageRawViaThirdParty
         Just package -> pure package
@@ -824,19 +824,19 @@ loadPackageRaw rpli =
         RPLIRepo repo rpm -> getRepo repo rpm
 
 -- | Try to load a package via the database or casa.
-loadPackageRawViaDbOrCasa ::
+tryLoadPackageRawViaDbOrCasa ::
      (HasLogFunc env, HasPantryConfig env, HasProcessContext env)
   => RawPackageLocationImmutable
   -> TreeKey
   -> RIO env (Maybe Package)
-loadPackageRawViaDbOrCasa rpli treeKey' = do
-  mviaDb <- loadPackageRawViaLocalDb rpli treeKey'
+tryLoadPackageRawViaDbOrCasa rpli treeKey' = do
+  mviaDb <- tryLoadPackageRawViaLocalDb rpli treeKey'
   case mviaDb of
     Just package -> do
       logDebug ("Loaded package from Pantry: " <> display rpli)
       pure (Just package)
     Nothing -> do
-      mviaCasa <- loadPackageRawViaCasa rpli treeKey'
+      mviaCasa <- tryLoadPackageRawViaCasa rpli treeKey'
       case mviaCasa of
         Just package -> do
           logDebug ("Loaded package from Casa: " <> display rpli)
@@ -844,18 +844,18 @@ loadPackageRawViaDbOrCasa rpli treeKey' = do
         Nothing -> pure Nothing
 
 -- | Maybe load the package from Casa.
-loadPackageRawViaCasa ::
+tryLoadPackageRawViaCasa ::
      (HasLogFunc env, HasPantryConfig env, HasProcessContext env)
   => RawPackageLocationImmutable
   -> TreeKey
   -> RIO env (Maybe Package)
-loadPackageRawViaCasa rlpi treeKey' = do
+tryLoadPackageRawViaCasa rlpi treeKey' = do
   mtreePair <- casaLookupTree treeKey'
   case mtreePair of
     Nothing -> pure Nothing
     Just (treeKey'', _tree) -> do
       fetchTreeKeys [rlpi]
-      mdb <- loadPackageRawViaLocalDb rlpi treeKey''
+      mdb <- tryLoadPackageRawViaLocalDb rlpi treeKey''
       case mdb of
         Nothing -> do
           logWarn
@@ -868,12 +868,12 @@ loadPackageRawViaCasa rlpi treeKey' = do
         Just package -> pure (Just package)
 
 -- | Maybe load the package from the local database.
-loadPackageRawViaLocalDb ::
+tryLoadPackageRawViaLocalDb ::
      (HasLogFunc env, HasPantryConfig env, HasProcessContext env)
   => RawPackageLocationImmutable
   -> TreeKey
   -> RIO env (Maybe Package)
-loadPackageRawViaLocalDb rlpi treeKey' = do
+tryLoadPackageRawViaLocalDb rlpi treeKey' = do
   mtreeEntity <- withStorage (getTreeForKey treeKey')
   case mtreeEntity of
     Nothing -> pure Nothing

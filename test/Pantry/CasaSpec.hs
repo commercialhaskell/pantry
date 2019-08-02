@@ -48,7 +48,7 @@ loadHackagePackageSpec = do
        (fmap
           (fmap packageTreeKey)
           (runPantryAppClean
-             (loadPackageRawViaCasa
+             (tryLoadPackageRawViaCasa
                 (argsRlpi unliftio_0_2_12)
                 (argsTreeKey unliftio_0_2_12))))
        (Just (argsTreeKey unliftio_0_2_12)))
