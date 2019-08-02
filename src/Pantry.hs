@@ -809,28 +809,39 @@ loadPackageRaw
   -> RIO env Package
 loadPackageRaw rpli =
   case getRawTreeKey rpli of
-    Just treeKey' -> loadHackagePackageRawViaDbOrCasa treeKey'
+    Just treeKey' -> do
+      mpackage <- loadPackageRawViaDbOrCasa rpli treeKey'
+      case mpackage of
+        Nothing -> loadPackageRawViaThirdParty
+        Just package -> pure package
     Nothing -> loadPackageRawViaThirdParty
   where
-    loadHackagePackageRawViaDbOrCasa treeKey' = do
-      mviaDb <- loadPackageRawViaLocalDb rpli treeKey'
-      case mviaDb of
-        Just package -> do
-          logDebug ("Loaded package from Pantry: " <> display rpli)
-          pure package
-        Nothing -> do
-          mviaCasa <- loadPackageRawViaCasa rpli treeKey'
-          case mviaCasa of
-            Just package -> do
-              logDebug ("Loaded package from Casa: " <> display rpli)
-              pure package
-            Nothing -> loadPackageRawViaThirdParty
     loadPackageRawViaThirdParty = do
       logDebug ("Loading package from third-party: " <> display rpli)
       case rpli of
         RPLIHackage pir mtree -> htrPackage <$> getHackageTarball pir mtree
         RPLIArchive archive pm -> getArchivePackage rpli archive pm
         RPLIRepo repo rpm -> getRepo repo rpm
+
+-- | Try to load a package via the database or casa.
+loadPackageRawViaDbOrCasa ::
+     (HasLogFunc env, HasPantryConfig env, HasProcessContext env)
+  => RawPackageLocationImmutable
+  -> TreeKey
+  -> RIO env (Maybe Package)
+loadPackageRawViaDbOrCasa rpli treeKey' = do
+  mviaDb <- loadPackageRawViaLocalDb rpli treeKey'
+  case mviaDb of
+    Just package -> do
+      logDebug ("Loaded package from Pantry: " <> display rpli)
+      pure (Just package)
+    Nothing -> do
+      mviaCasa <- loadPackageRawViaCasa rpli treeKey'
+      case mviaCasa of
+        Just package -> do
+          logDebug ("Loaded package from Casa: " <> display rpli)
+          pure (Just package)
+        Nothing -> pure Nothing
 
 -- | Maybe load the package from Casa.
 loadPackageRawViaCasa ::
