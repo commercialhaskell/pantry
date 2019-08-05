@@ -1475,7 +1475,9 @@ loadFromURL url Nothing = do
 loadFromURL url (Just bkey) = do
   mcached <- withStorage $ loadBlob bkey
   case mcached of
-    Just bs -> return bs
+    Just bs -> do
+      logDebug "Loaded snapshot from Pantry database."
+      return bs
     Nothing -> loadUrlViaCasaOrWithCheck url bkey
 
 loadUrlViaCasaOrWithCheck
@@ -1483,11 +1485,15 @@ loadUrlViaCasaOrWithCheck
   => Text -- ^ url
   -> BlobKey
   -> RIO env ByteString
-loadUrlViaCasaOrWithCheck url blobKey =
-  do mblobFromCasa <- casaLookupKey blobKey
-     case mblobFromCasa of
-       Just blob -> pure blob
-       Nothing -> loadWithCheck url (Just blobKey)
+loadUrlViaCasaOrWithCheck url blobKey = do
+  mblobFromCasa <- casaLookupKey blobKey
+  case mblobFromCasa of
+    Just blob -> do
+      logDebug
+        ("Loaded snapshot from Casa (" <> display blobKey <> ") for URL: " <>
+         display url)
+      pure blob
+    Nothing -> loadWithCheck url (Just blobKey)
 
 loadWithCheck
   :: (HasPantryConfig env, HasLogFunc env)
@@ -1502,6 +1508,7 @@ loadWithCheck url mblobkey = do
   (_, _, bss) <- httpSinkChecked url msha msize sinkList
   let bs = B.concat bss
   withStorage $ storeURLBlob url bs
+  logDebug ("Loaded snapshot from third party: " <> display url)
   return bs
 
 warningsParserHelperRaw
