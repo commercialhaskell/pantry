@@ -1459,7 +1459,18 @@ loadFromURL url (Just bkey) = do
   mcached <- withStorage $ loadBlob bkey
   case mcached of
     Just bs -> return bs
-    Nothing -> loadWithCheck url (Just bkey)
+    Nothing -> loadUrlViaCasaOrWithCheck url bkey
+
+loadUrlViaCasaOrWithCheck
+  :: (HasPantryConfig env, HasLogFunc env)
+  => Text -- ^ url
+  -> BlobKey
+  -> RIO env ByteString
+loadUrlViaCasaOrWithCheck url blobKey =
+  do mblobFromCasa <- casaLookupKey blobKey
+     case mblobFromCasa of
+       Just blob -> pure blob
+       Nothing -> loadWithCheck url (Just blobKey)
 
 loadWithCheck
   :: (HasPantryConfig env, HasLogFunc env)
