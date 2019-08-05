@@ -397,11 +397,9 @@ allHackageCabalRawPackageLocations mhackageId = do
                  Just version ->
                    let P.VersionP version' = versionVersion version
                     in do mtree <-
-                            selectFirst
-                              [ TreeId ==. key
-                              | Just key <- [hackageCabalTree hackageCabal]
-                              ]
-                              []
+                            case hackageCabalTree hackageCabal of
+                              Just key -> selectFirst [TreeId ==. key] []
+                              Nothing -> pure Nothing
                           mblobKey <-
                             maybe
                               (pure Nothing)
@@ -412,7 +410,8 @@ allHackageCabalRawPackageLocations mhackageId = do
                                (P.PackageIdentifierRevision
                                   packageName'
                                   version'
-                                  (P.CFIRevision (hackageCabalRevision hackageCabal)))
+                                  (P.CFIRevision
+                                     (hackageCabalRevision hackageCabal)))
                                (fmap P.TreeKey mblobKey)))
   where
     selectTuples pred sort =
