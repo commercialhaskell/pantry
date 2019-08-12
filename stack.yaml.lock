@@ -40,41 +40,41 @@ packages:
   original:
     hackage: unliftio-0.2.12
 - completed:
-    size: 9508
+    size: 10520
     subdir: casa-client
-    url: https://github.com/fpco/casa/archive/090b17e991819b552c1aff1125a447d45e0da954.tar.gz
+    url: https://github.com/fpco/casa/archive/a0cd05c1a9ce33acbb1bdfb9324370f884916e88.tar.gz
     cabal-file:
       size: 542
       sha256: 5def9cffe09cc0f117a335611cdf930af6a117c34527944bac48581e72a46369
     name: casa-client
     version: 0.0.0
-    sha256: 812e05de8f9abdbd1101fc94895dcfd5c35962c4d67a43cc20cbc06eb59ea1f0
+    sha256: e21e5fa2b9fa03f37761d5b95559a09af578a9b10e9cad0baca4ccdb5cde1b78
     pantry-tree:
       size: 120
-      sha256: fd1bd1543f9d8133cb7628cf2cf4715e17970a9b6c21fa22450009eec5eda7d2
+      sha256: ad4fbad9be5c6a7c291c671d4b1425b07e642406dffe62c042f0755e5f24dd72
   original:
-    size: 9508
+    size: 10520
     subdir: casa-client
-    url: https://github.com/fpco/casa/archive/090b17e991819b552c1aff1125a447d45e0da954.tar.gz
-    sha256: 812e05de8f9abdbd1101fc94895dcfd5c35962c4d67a43cc20cbc06eb59ea1f0
+    url: https://github.com/fpco/casa/archive/a0cd05c1a9ce33acbb1bdfb9324370f884916e88.tar.gz
+    sha256: e21e5fa2b9fa03f37761d5b95559a09af578a9b10e9cad0baca4ccdb5cde1b78
 - completed:
-    size: 9508
+    size: 10520
     subdir: casa-types
-    url: https://github.com/fpco/casa/archive/090b17e991819b552c1aff1125a447d45e0da954.tar.gz
+    url: https://github.com/fpco/casa/archive/a0cd05c1a9ce33acbb1bdfb9324370f884916e88.tar.gz
     cabal-file:
       size: 404
       sha256: 9a9bc4febca2c369a93c8180f966483359cc9a8a6590021d542a73f9c6e7bcb4
     name: casa-types
     version: 0.0.0
-    sha256: 812e05de8f9abdbd1101fc94895dcfd5c35962c4d67a43cc20cbc06eb59ea1f0
+    sha256: e21e5fa2b9fa03f37761d5b95559a09af578a9b10e9cad0baca4ccdb5cde1b78
     pantry-tree:
       size: 177
       sha256: ec8e13b7099781ba2629036baa5cf1bab6423eeb7aff17796a5d22a92db83b6c
   original:
-    size: 9508
+    size: 10520
     subdir: casa-types
-    url: https://github.com/fpco/casa/archive/090b17e991819b552c1aff1125a447d45e0da954.tar.gz
-    sha256: 812e05de8f9abdbd1101fc94895dcfd5c35962c4d67a43cc20cbc06eb59ea1f0
+    url: https://github.com/fpco/casa/archive/a0cd05c1a9ce33acbb1bdfb9324370f884916e88.tar.gz
+    sha256: e21e5fa2b9fa03f37761d5b95559a09af578a9b10e9cad0baca4ccdb5cde1b78
 snapshots:
 - completed:
     size: 500539

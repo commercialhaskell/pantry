@@ -232,10 +232,12 @@ withPantryConfig
   -- ^ Maximum connection count
   -> String
   -- ^ The casa pull URL e.g. https://casa.fpcomplete.com/v1/pull.
+  -> Int
+  -- ^ Max casa keys to pull per request.
   -> (PantryConfig -> RIO env a)
   -- ^ What to do with the config
   -> RIO env a
-withPantryConfig root hsc he count pullURL inner = do
+withPantryConfig root hsc he count pullURL maxPerRequest inner = do
   env <- ask
   pantryRelFile <- parseRelFile "pantry.sqlite3"
   -- Silence persistent's logging output, which is really noisy
@@ -253,6 +255,7 @@ withPantryConfig root hsc he count pullURL inner = do
       , pcParsedCabalFilesRawImmutable = ref1
       , pcParsedCabalFilesMutable = ref2
       , pcCasaPullURL = pullURL
+      , pcCasaMaxPerRequest = maxPerRequest
       }
 
 -- | Default pull URL for Casa.
@@ -260,6 +263,12 @@ withPantryConfig root hsc he count pullURL inner = do
 -- @since 0.1.1.1
 defaultCasaPullURL :: String
 defaultCasaPullURL = "http://casa.fpcomplete.com/v1/pull" -- FIXME: Switch to https when ready.
+
+-- | Default max keys to pull per request.
+--
+-- @since 0.1.1.1
+defaultCasaMaxPerRequest :: Int
+defaultCasaMaxPerRequest = 1280
 
 -- | Default 'HackageSecurityConfig' value using the official Hackage server.
 --
@@ -1669,6 +1678,7 @@ runPantryApp f = runSimpleApp $ do
     HpackBundled
     8
     defaultCasaPullURL
+    defaultCasaMaxPerRequest
     $ \pc ->
       runRIO
         PantryApp
@@ -1694,6 +1704,7 @@ runPantryAppClean f = liftIO $ withSystemTempDirectory "pantry-clean" $ \dir -> 
     HpackBundled
     8
     defaultCasaPullURL
+    defaultCasaMaxPerRequest
     $ \pc ->
       runRIO
         PantryApp

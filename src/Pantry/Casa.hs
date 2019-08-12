@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 
 -- | Integration with the Casa server.
 
@@ -45,7 +46,13 @@ casaBlobSource keys = source .| convert .| store
   where
     source = do
       pullUrl <- lift $ lift $ lift $ view $ pantryConfigL . to pcCasaPullURL
-      Casa.blobsSource pullUrl (toBlobKeyMap keys)
+      maxPerRequest <- lift $ lift $ lift $ view $ pantryConfigL . to pcCasaMaxPerRequest
+      Casa.blobsSource
+        (Casa.SourceConfig
+           { sourceConfigUrl = pullUrl
+           , sourceConfigBlobs = toBlobKeyMap keys
+           , sourceConfigMaxBlobsPerRequest = maxPerRequest
+           })
       where
         toBlobKeyMap :: Foldable f => f BlobKey -> HashMap Casa.BlobKey Int
         toBlobKeyMap = HM.fromList . map unpackBlobKey . toList

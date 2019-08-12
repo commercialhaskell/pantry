@@ -8,9 +8,9 @@ extra-deps:
 - unliftio-0.2.12
 
 - github: fpco/casa
-  commit: 090b17e991819b552c1aff1125a447d45e0da954
-  sha256: 812e05de8f9abdbd1101fc94895dcfd5c35962c4d67a43cc20cbc06eb59ea1f0
-  size: 9508
+  commit: a0cd05c1a9ce33acbb1bdfb9324370f884916e88
+  sha256: e21e5fa2b9fa03f37761d5b95559a09af578a9b10e9cad0baca4ccdb5cde1b78
+  size: 10520
   subdirs:
      - casa-client
      - casa-types
