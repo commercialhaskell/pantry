@@ -21,6 +21,7 @@ module Pantry
   , PantryApp
   , runPantryApp
   , runPantryAppClean
+  , runPantryAppWith
   , hpackExecutableL
 
     -- * Types
@@ -1652,7 +1653,15 @@ instance HasTerm PantryApp where
 --
 -- @since 0.1.0.0
 runPantryApp :: MonadIO m => RIO PantryApp a -> m a
-runPantryApp f = runSimpleApp $ do
+runPantryApp = runPantryAppWith 8 defaultCasaPullURL defaultCasaMaxPerRequest
+
+-- | Run some code against pantry using basic sane settings.
+--
+-- For testing, see 'runPantryAppClean'.
+--
+-- @since 0.1.1.1
+runPantryAppWith :: MonadIO m => Int -> String -> Int -> RIO PantryApp a -> m a
+runPantryAppWith maxConnCount casaPullURL casaMaxPerRequest f = runSimpleApp $ do
   sa <- ask
   stack <- getAppUserDataDirectory "stack"
   root <- parseAbsDir $ stack FilePath.</> "pantry"
@@ -1686,9 +1695,9 @@ runPantryAppClean f = liftIO $ withSystemTempDirectory "pantry-clean" $ \dir -> 
     root
     defaultHackageSecurityConfig
     HpackBundled
-    8
-    defaultCasaPullURL
-    defaultCasaMaxPerRequest
+    maxConnCount
+    casaPullURL
+    casaMaxPerRequest
     $ \pc ->
       runRIO
         PantryApp
