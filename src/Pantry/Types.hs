@@ -246,6 +246,8 @@ data PantryConfig = PantryConfig
   -- ^ concurrently open downloads
   , pcCasaPullURL :: !String
   -- ^ The pull URL e.g. @https://casa.fpcomplete.com/v1/pull@
+  , pcCasaMaxPerRequest :: !Int
+  -- ^ Maximum blobs sent per pull request.
   }
 
 -- | Should we print warnings when loading a cabal file?
