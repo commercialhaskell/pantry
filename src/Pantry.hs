@@ -12,6 +12,7 @@ module Pantry
   , HackageSecurityConfig (..)
   , defaultHackageSecurityConfig
   , defaultCasaPullURL
+  , defaultCasaMaxPerRequest
   , HasPantryConfig (..)
   , withPantryConfig
   , HpackExecutable (..)
