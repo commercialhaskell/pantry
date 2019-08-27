@@ -192,7 +192,7 @@ import Path (Path, Abs, File, toFilePath, Dir, (</>), filename, parseAbsDir, par
 import Path.IO (doesFileExist, resolveDir', listDir)
 import Distribution.PackageDescription (GenericPackageDescription, FlagName)
 import qualified Distribution.PackageDescription as D
-import Distribution.Parsec.Common (PWarning (..), showPos)
+import Distribution.Parsec (PWarning (..), showPos)
 import qualified Hpack
 import qualified Hpack.Config as Hpack
 import Network.HTTP.Download

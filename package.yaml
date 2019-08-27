@@ -1,5 +1,5 @@
 name:        pantry
-version:     0.1.1.2
+version:     0.2.0.0
 synopsis:    Content addressable Haskell package management
 description: Please see the README on Github at <https://github.com/commercialhaskell/pantry#readme>
 category:    Development
@@ -49,7 +49,7 @@ dependencies:
 - persistent
 - persistent-sqlite >= 2.9.3
 - persistent-template
-- Cabal
+- Cabal >= 3 && < 3.1
 - path-io
 - rio-orphans
 - conduit-extra

@@ -114,7 +114,6 @@ import qualified Data.Conduit.Tar as Tar
 import qualified RIO.Text as T
 import qualified RIO.ByteString as B
 import qualified RIO.ByteString.Lazy as BL
-import RIO.Char (isSpace)
 import RIO.List (intersperse)
 import RIO.Time (toGregorian, Day, fromGregorianValid, UTCTime)
 import qualified RIO.Map as Map
@@ -130,17 +129,18 @@ import Database.Persist
 import Database.Persist.Sql
 import Pantry.SHA256 (SHA256)
 import qualified Pantry.SHA256 as SHA256
-import qualified Distribution.Compat.ReadP as Parse
+import qualified Distribution.Compat.CharParsing as Parse
 import Distribution.CabalSpecVersion (CabalSpecVersion (..), cabalSpecLatest)
-import Distribution.Parsec.Common (PError (..), PWarning (..), showPos)
+import Distribution.Parsec (PError (..), PWarning (..), showPos, parsec, explicitEitherParsec, ParsecParser)
 import Distribution.Types.PackageName (PackageName, unPackageName, mkPackageName)
 import Distribution.Types.VersionRange (VersionRange)
 import Distribution.PackageDescription (FlagName, unFlagName, GenericPackageDescription)
 import Distribution.Types.PackageId (PackageIdentifier (..))
+import qualified Distribution.Pretty
 import qualified Distribution.Text
 import qualified Hpack.Config as Hpack
 import Distribution.ModuleName (ModuleName)
-import Distribution.Types.Version (Version, mkVersion)
+import Distribution.Types.Version (Version, mkVersion, nullVersion)
 import Network.HTTP.Client (parseRequest)
 import Network.HTTP.Types (Status, statusCode)
 import Data.Text.Read (decimal)
@@ -717,24 +717,22 @@ instance FromJSON PackageIdentifierRevision where
 --
 -- @since 0.1.0.0
 parseHackageText :: Text -> Either PantryException (PackageIdentifier, BlobKey)
-parseHackageText t = maybe (Left $ PackageIdentifierRevisionParseFail t) Right $ do
-  let (identT, cfiT) = T.break (== '@') t
-  PackageIdentifier name version <- parsePackageIdentifier $ T.unpack identT
-  (csha, csize) <-
-    case splitColon cfiT of
-      Just ("@sha256", shaSizeT) -> do
-        let (shaT, sizeT) = T.break (== ',') shaSizeT
-        sha <- either (const Nothing) Just $ SHA256.fromHexText shaT
-        msize <-
-          case T.stripPrefix "," sizeT of
-            Nothing -> Nothing
-            Just sizeT' ->
-              case decimal sizeT' of
-                Right (size', "") -> Just $ (sha, FileSize size')
-                _ -> Nothing
-        pure msize
-      _ -> Nothing
-  pure $ (PackageIdentifier name version, BlobKey csha csize)
+parseHackageText t =
+  either (\x -> error (show x) $ const $ Left $ PackageIdentifierRevisionParseFail t) Right $
+  explicitEitherParsec (hackageTextParsec <* Parse.eof) $
+  T.unpack t
+
+hackageTextParsec :: ParsecParser (PackageIdentifier, BlobKey)
+hackageTextParsec = do
+  ident <- packageIdentifierParsec
+  _ <- Parse.string "@sha256:"
+
+  shaT <- Parse.munch (/= ',')
+  sha <- either (const mzero) pure $ SHA256.fromHexText $ fromString shaT
+
+  _ <- Parse.char ','
+  size' <- Parse.integral -- FIXME probably need to handle overflow, since unfortunately Cabal doesn't
+  pure (ident, BlobKey sha (FileSize size'))
 
 splitColon :: Text -> Maybe (Text, Text)
 splitColon t' =
@@ -1057,12 +1055,21 @@ commaSeparated = fold . NE.intersperse ", "
 cabalSpecLatestVersion :: Version
 cabalSpecLatestVersion =
   case cabalSpecLatest of
-    CabalSpecOld -> error "this cannot happen"
+    CabalSpecV1_0 -> error "this cannot happen"
+    CabalSpecV1_2 -> error "this cannot happen"
+    CabalSpecV1_4 -> error "this cannot happen"
+    CabalSpecV1_6 -> error "this cannot happen"
+    CabalSpecV1_8 -> error "this cannot happen"
+    CabalSpecV1_10 -> error "this cannot happen"
+    CabalSpecV1_12 -> error "this cannot happen"
+    CabalSpecV1_18 -> error "this cannot happen"
+    CabalSpecV1_20 -> error "this cannot happen"
     CabalSpecV1_22 -> error "this cannot happen"
     CabalSpecV1_24 -> error "this cannot happen"
     CabalSpecV2_0 -> error "this cannot happen"
     CabalSpecV2_2 -> error "this cannot happen"
-    CabalSpecV2_4 -> mkVersion [2, 4]
+    CabalSpecV2_4 -> error "this cannot happen"
+    CabalSpecV3_0 -> mkVersion [3, 0]
 
 data BuildFile = BFCabal !SafeFilePath !TreeEntry
                | BFHpack !TreeEntry -- We don't need SafeFilePath for Hpack since it has to be package.yaml file
@@ -1241,20 +1248,20 @@ data PackageTarball = PackageTarball
 
 -- | This is almost a copy of Cabal's parser for package identifiers,
 -- the main difference is in the fact that Stack requires version to be
--- present while Cabal uses "null version" as a defaul value
+-- present while Cabal uses "null version" as a default value
 --
 -- @since 0.1.0.0
 parsePackageIdentifier :: String -> Maybe PackageIdentifier
-parsePackageIdentifier str =
-    case [p | (p, s) <- Parse.readP_to_S parser str, all isSpace s] of
-        [] -> Nothing
-        (p:_) -> Just p
-  where
-    parser = do
-        n <- Distribution.Text.parse
-        -- version is a required component of a package identifier for Stack
-        v <- Parse.char '-' >> Distribution.Text.parse
-        return (PackageIdentifier n v)
+parsePackageIdentifier = either (error . show) Just . explicitEitherParsec (packageIdentifierParsec <* Parse.eof)
+
+packageIdentifierParsec :: ParsecParser PackageIdentifier
+packageIdentifierParsec = do
+  ident@(PackageIdentifier _ v) <- parsec
+
+  -- version is a required component of a package identifier for Stack
+  guard (v /= nullVersion)
+
+  pure ident
 
 -- | Parse a package name from a 'String'.
 --
@@ -1690,9 +1697,9 @@ toCabalStringMap = Map.mapKeysMonotonic CabalString
 unCabalStringMap :: Map (CabalString a) v -> Map a v
 unCabalStringMap = Map.mapKeysMonotonic unCabalString
 
-instance Distribution.Text.Text a => ToJSON (CabalString a) where
+instance Distribution.Pretty.Pretty a => ToJSON (CabalString a) where
   toJSON = toJSON . Distribution.Text.display . unCabalString
-instance Distribution.Text.Text a => ToJSONKey (CabalString a) where
+instance Distribution.Pretty.Pretty a => ToJSONKey (CabalString a) where
   toJSONKey = toJSONKeyText $ T.pack . Distribution.Text.display . unCabalString
 
 instance forall a. IsCabalString a => FromJSON (CabalString a) where
