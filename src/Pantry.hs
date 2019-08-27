@@ -1593,10 +1593,11 @@ withSnapshotCache hash getModuleMapping f = do
   mres <- withStorage $ getSnapshotCacheByHash hash
   cacheId <- case mres of
     Nothing -> do
-      scId <- withStorage $ getSnapshotCacheId hash
-      packageModules <- getModuleMapping
       logWarn "Populating snapshot module name cache"
-      withStorage $ storeSnapshotModuleCache scId packageModules
-      return scId
+      packageModules <- getModuleMapping
+      withStorage $ do
+        scId <- getSnapshotCacheId hash
+        storeSnapshotModuleCache scId packageModules
+        return scId
     Just scId -> pure scId
   f $ withStorage . loadExposedModulePackages cacheId

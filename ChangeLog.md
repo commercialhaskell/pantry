@@ -1,5 +1,12 @@
 # Changelog for pantry
 
+## v0.1.1.2
+
+Bug fixes:
+
+* Module mapping insertions into the database are now atomic. Previously, if
+  you SIGTERMed at the wrong time while running a script, you could end up with
+  an inconsistent database state.
 
 ## v0.1.1.1
 
