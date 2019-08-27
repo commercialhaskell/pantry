@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a4a4e018a1d94dbf7b1d7b650a6929653a10a3af8b4909f80803d29470c407d1
+-- hash: e338943a1a53aa6c588e00a1b9eb2d38801ab6382e7ea4c33b31bd9eea0fb994
 
 name:           pantry
-version:        0.1.1.1
+version:        0.1.1.2
 synopsis:       Content addressable Haskell package management
 description:    Please see the README on Github at <https://github.com/commercialhaskell/pantry#readme>
 category:       Development
