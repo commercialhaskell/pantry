@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 74980cb1477449771da1155e452c1782f7561479d5c21e87ff622e74375e35f8
+-- hash: f1aad98c0972087b034e0ad25ce4742669b313d934d76f4c488a69896380a920
 
 name:           pantry
 version:        0.2.0.0
@@ -56,7 +56,7 @@ library
   default-extensions: MonadFailDesugaring
   ghc-options: -Wall
   build-depends:
-      Cabal
+      Cabal >=3 && <3.1
     , aeson
     , ansi-terminal
     , base >=4.10 && <5
@@ -135,7 +135,7 @@ test-suite spec
   default-extensions: MonadFailDesugaring
   ghc-options: -Wall
   build-depends:
-      Cabal
+      Cabal >=3 && <3.1
     , QuickCheck
     , aeson
     , ansi-terminal

@@ -6,12 +6,12 @@ extra-deps:
 - persistent-sqlite-2.9.3
 - rio-orphans-0.1.1.0
 - rio-prettyprint-0.1.0.0
-- Cabal-2.4.1.0
+- Cabal-3.0.0.0
 - ansi-terminal-0.9
 - rio-0.1.11.0
 - typed-process-0.2.6.0
 - unliftio-0.2.12
-- cabal-doctest-1.0.6
+- cabal-doctest-1.0.7
 - http-api-data-0.3.8.1
 - happy-1.19.9
 - hedgehog-0.6.1
