@@ -1,13 +1,13 @@
 name:        pantry
 version:     0.1.1.1
 synopsis:    Content addressable Haskell package management
-description: Please see the README on Github at <https://github.com/commercialhaskell/stack/blob/master/subs/pantry/README.md>
+description: Please see the README on Github at <https://github.com/commercialhaskell/pantry#readme>
 category:    Development
 author:      Michael Snoyman
 maintainer:  michael@snoyman.com
 copyright:   2018-2019 FP Complete
 license:     BSD3
-github:      commercialhaskell/stack # TODO move to commercialhaskell/pantry!
+github:      commercialhaskell/pantry
 
 default-extensions:
 - MonadFailDesugaring
