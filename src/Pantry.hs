@@ -47,6 +47,7 @@ module Pantry
   , RawPackageMetadata (..)
   , PackageMetadata (..)
   , Package (..)
+  , CabalSource (..)
 
     -- ** Hackage
   , CabalFileInfo (..)
@@ -390,10 +391,6 @@ unpackPackageLocation fp loc = loadPackage loc >>= unpackTree (toRawPLI loc) fp 
 --
 -- This function ignores all warnings.
 --
--- Note that, for now, this will not allow support for hpack files in
--- these package locations. Instead, all @PackageLocationImmutable@s
--- will require a .cabal file. This may be relaxed in the future.
---
 -- @since 0.1.0.0
 loadCabalFileImmutable
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
@@ -402,24 +399,22 @@ loadCabalFileImmutable
 loadCabalFileImmutable loc = withCache $ do
   logDebug $ "Parsing cabal file for " <> display loc
   bs <- loadCabalFileBytes loc
-  let foundCabalKey = bsToBlobKey bs
   (_warnings, gpd) <- rawParseGPD (Left $ toRawPLI loc) bs
   let pm =
         case loc of
           PLIHackage (PackageIdentifier name version) cfHash mtree -> PackageMetadata
             { pmIdent = PackageIdentifier name version
             , pmTreeKey = mtree
-            , pmCabal = cfHash
+            , pmCabalSource = CSCabal cfHash
             }
           PLIArchive _ pm' -> pm'
           PLIRepo _ pm' -> pm'
   let exc = MismatchedPackageMetadata (toRawPLI loc) (toRawPM pm) Nothing
-        foundCabalKey (gpdPackageIdentifier gpd)
+        (pmCabalSource pm) (gpdPackageIdentifier gpd)
       PackageIdentifier name ver = pmIdent pm
   maybe (throwIO exc) pure $ do
     guard $ name == gpdPackageName gpd
     guard $ ver == gpdVersion gpd
-    guard $ pmCabal pm == foundCabalKey
     pure gpd
   where
     withCache inner = do
@@ -447,8 +442,7 @@ loadCabalFileRawImmutable
   -> RIO env GenericPackageDescription
 loadCabalFileRawImmutable loc = withCache $ do
   logDebug $ "Parsing cabal file for " <> display loc
-  bs <- loadRawCabalFileBytes loc
-  let foundCabalKey = bsToBlobKey bs
+  (bs, foundCabalSource) <- loadRawCabalFileBytes loc
   (_warnings, gpd) <- rawParseGPD (Left loc) bs
   let rpm =
         case loc of
@@ -456,18 +450,18 @@ loadCabalFileRawImmutable loc = withCache $ do
             { rpmName = Just name
             , rpmVersion = Just version
             , rpmTreeKey = mtree
-            , rpmCabal =
+            , rpmCabalSource =
                 case cfi of
-                  CFIHash sha (Just size) -> Just $ BlobKey sha size
+                  CFIHash sha (Just size) -> Just $ CSCabal $ BlobKey sha size
                   _ -> Nothing
             }
           RPLIArchive _ rpm' -> rpm'
           RPLIRepo _ rpm' -> rpm'
-  let exc = MismatchedPackageMetadata loc rpm Nothing foundCabalKey (gpdPackageIdentifier gpd)
+  let exc = MismatchedPackageMetadata loc rpm Nothing foundCabalSource (gpdPackageIdentifier gpd)
   maybe (throwIO exc) pure $ do
     guard $ maybe True (== gpdPackageName gpd) (rpmName rpm)
     guard $ maybe True (== gpdVersion gpd) (rpmVersion rpm)
-    guard $ maybe True (== foundCabalKey) (rpmCabal rpm)
+    guard $ maybe True (== foundCabalSource) (rpmCabalSource rpm)
     pure gpd
   where
     withCache inner = do
@@ -683,12 +677,14 @@ loadCabalFileBytes pl = do
 loadRawCabalFileBytes
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => RawPackageLocationImmutable
-  -> RIO env ByteString
+  -> RIO env (ByteString, CabalSource)
 
 -- Just ignore the mtree for this. Safe assumption: someone who filled
 -- in the TreeKey also filled in the cabal file hash, and that's a
 -- more efficient lookup mechanism.
-loadRawCabalFileBytes (RPLIHackage pir _mtree) = getHackageCabalFile pir
+loadRawCabalFileBytes (RPLIHackage pir _mtree) = do
+  bs <- getHackageCabalFile pir
+  pure (bs, CSCabal $ bsToBlobKey bs)
 
 loadRawCabalFileBytes pl = do
   package <- loadPackageRaw pl
@@ -701,7 +697,7 @@ loadRawCabalFileBytes pl = do
     Nothing -> do
       -- TODO when we have pantry wire, try downloading
       throwIO $ TreeReferencesMissingBlob pl sfp cabalBlobKey
-    Just bs -> pure bs
+    Just bs -> pure (bs, toCabalSource $ packageCabalEntry package)
 
 -- | Load a 'Package' from a 'PackageLocationImmutable'.
 --
@@ -778,7 +774,7 @@ completePM plOrig rpm@(RawPackageMetadata mn mv mtk mc)
             isSame (pkgName $ pmIdent pm) (rpmName rpm) &&
             isSame (pkgVersion $ pmIdent pm) (rpmVersion rpm) &&
             isSame (pmTreeKey pm) (rpmTreeKey rpm) &&
-            isSame (pmCabal pm) (rpmCabal rpm)
+            isSame (pmCabalSource pm) (rpmCabalSource rpm)
       if allSame
         then pure pm
         else throwIO $ CompletePackageMetadataMismatch plOrig pm
@@ -787,9 +783,7 @@ packagePM :: Package -> PackageMetadata
 packagePM package = PackageMetadata
   { pmIdent = packageIdent package
   , pmTreeKey = packageTreeKey package
-  , pmCabal = teBlob $ case packageCabalEntry package of
-                         PCCabalFile cfile -> cfile
-                         PCHpack hfile -> phGenerated hfile
+  , pmCabalSource = toCabalSource $ packageCabalEntry package
   }
 
 -- | Add in hashes to make a 'SnapshotLocation' reproducible.

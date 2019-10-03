@@ -183,7 +183,7 @@ spec = do
                             (mkPackageName "wai")
                             (mkVersion [3, 2, 1, 2])
                   , pmTreeKey = TreeKey (BlobKey psha (FileSize 714))
-                  , pmCabal = BlobKey csha (FileSize 1765)
+                  , pmCabalSource = CSCabal $ BlobKey csha (FileSize 1765)
                   }
       pli `shouldBe` PLIRepo repoValue pkgValue
 

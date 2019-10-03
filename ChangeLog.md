@@ -1,5 +1,14 @@
 # Changelog for pantry
 
+## v0.2.0.0
+
+Bug fixes:
+
+* Don't compare the hashes of generated cabal files. Instead, if a cabal file
+  is generated from an hpack `package.yaml` file, compare its contents.
+  Addresses bugs such as [Stack
+  #5045](https://github.com/commercialhaskell/stack/issues/5045).
+
 ## v0.1.1.2
 
 Bug fixes:

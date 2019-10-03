@@ -41,7 +41,7 @@ getRawPackageLocationIdent' TestArchive{..} = do
       { rpmName = Nothing
       , rpmVersion = Nothing
       , rpmTreeKey = Nothing
-      , rpmCabal = Nothing
+      , rpmCabalSource = Nothing
       }
 
 parsePackageIdentifier' :: String -> PackageIdentifier

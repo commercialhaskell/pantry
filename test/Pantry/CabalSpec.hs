@@ -36,9 +36,9 @@ spec = describe "wrong cabal file" $ do
             { rpmName = Just name
             , rpmVersion = Just version3
             , rpmTreeKey = Nothing
-            , rpmCabal = Just $ BlobKey sha size
+            , rpmCabalSource = Just $ CSCabal $ BlobKey sha size
             } &&
-          cabal == BlobKey sha size &&
+          cabal == CSCabal (BlobKey sha size) &&
           ident == PackageIdentifier name version2
         _ -> False
 
@@ -59,7 +59,7 @@ spec = describe "wrong cabal file" $ do
             RawPackageMetadata
               { rpmName = Just acmeMissiles
               , rpmVersion = Just version2
-              , rpmCabal = Just $ BlobKey sha (FileSize 597)
+              , rpmCabalSource = Just $ CSCabal $ BlobKey sha (FileSize 597)
               , rpmTreeKey = Nothing
               }
         go = loadCabalFileRawImmutable rpli
@@ -70,9 +70,9 @@ spec = describe "wrong cabal file" $ do
         MismatchedPackageMetadata rpli' rpm' _treeKey cabal ident ->
           rpli == rpli' &&
           rpm == rpm' &&
-          cabal == BlobKey
+          cabal == CSCabal (BlobKey
             (either impureThrow id $ SHA256.fromHexBytes "940d82426ad1db0fcc978c0f386ac5d06df019546071993cb7c6633f1ad17d50")
-            (FileSize 3038) &&
+            (FileSize 3038)) &&
           ident == PackageIdentifier
             (mkPackageName "yesod-auth")
             (mkVersion [1, 6, 4, 1])
@@ -94,7 +94,7 @@ spec = describe "wrong cabal file" $ do
             RawPackageMetadata
               { rpmName = Just yesodAuth
               , rpmVersion = Just version
-              , rpmCabal = Just $ BlobKey sha (FileSize 597)
+              , rpmCabalSource = Just $ CSCabal $ BlobKey sha (FileSize 597)
               , rpmTreeKey = Nothing
               }
         go = loadCabalFileRawImmutable rpli
@@ -105,8 +105,8 @@ spec = describe "wrong cabal file" $ do
         MismatchedPackageMetadata rpli' rpm' _treeKey cabal ident ->
           rpli == rpli' &&
           rpm == rpm' &&
-          cabal == BlobKey
+          cabal == CSCabal (BlobKey
             (either impureThrow id $ SHA256.fromHexBytes "940d82426ad1db0fcc978c0f386ac5d06df019546071993cb7c6633f1ad17d50")
-            (FileSize 3038) &&
+            (FileSize 3038)) &&
           ident == PackageIdentifier yesodAuth version
         _ -> False

@@ -101,6 +101,8 @@ module Pantry.Types
   , SnapshotPackage (..)
   , parseWantedCompiler
   , RawPackageMetadata (..)
+  , CabalSource (..)
+  , toCabalSource
   , PackageMetadata (..)
   , toRawPM
   , cabalFileName
@@ -807,7 +809,7 @@ data PantryException
       !RawPackageLocationImmutable
       !RawPackageMetadata
       !(Maybe TreeKey)
-      !BlobKey -- cabal file found
+      !CabalSource
       !PackageIdentifier
   | Non200ResponseStatus !Status
   | InvalidBlobKey !(Mismatch BlobKey)
@@ -922,7 +924,7 @@ instance Display PantryException where
     displayShow e
   display (MismatchedPackageMetadata loc pm mtreeKey foundCabal foundIdent) =
     "Mismatched package metadata for " <> display loc <>
-    "\nFound: " <> fromString (packageIdentifierString foundIdent) <> " with cabal file " <>
+    "\nFound: " <> fromString (packageIdentifierString foundIdent) <> " with " <>
     display foundCabal <>
     (case mtreeKey of
        Nothing -> mempty
@@ -1360,20 +1362,35 @@ data RawPackageMetadata = RawPackageMetadata
     -- ^ Tree key of the loaded up package
     --
     -- @since 0.1.0.0
-  , rpmCabal :: !(Maybe BlobKey)
-    -- ^ Blob key containing the cabal file
+  , rpmCabalSource :: !(Maybe CabalSource)
+    -- ^ Where the Cabal metadata comes from, either a cabal file or hpack package.yaml file.
     --
-    -- @since 0.1.0.0
+    -- @since 0.2.0.0
   }
   deriving (Show, Eq, Ord, Generic, Typeable)
 instance NFData RawPackageMetadata
+
+-- | Where do we source the cabal file metadata from?
+--
+-- For checking source contents, we need to know whether to compare
+-- the bytes in the hpack file (to avoid getting confused by generated
+-- cabal files) or the actual cabal file itself.
+--
+-- @since 0.2.0.0
+data CabalSource = CSCabal !BlobKey | CSHpack !BlobKey
+  deriving (Show, Eq, Ord, Generic, Typeable)
+instance NFData CabalSource
+
+toCabalSource :: PackageCabal -> CabalSource
+toCabalSource (PCCabalFile tentry) = CSCabal $ teBlob tentry
+toCabalSource (PCHpack phpack) = CSHpack $ teBlob $ phOriginal phpack
 
 instance Display RawPackageMetadata where
   display rpm = fold $ intersperse ", " $ catMaybes
     [ (\name -> "name == " <> fromString (packageNameString name)) <$> rpmName rpm
     , (\version -> "version == " <> fromString (versionString version)) <$> rpmVersion rpm
     , (\tree -> "tree == " <> display tree) <$> rpmTreeKey rpm
-    , (\cabal -> "cabal file == " <> display cabal) <$> rpmCabal rpm
+    , display <$> rpmCabalSource rpm
     ]
 
 -- | Exact metadata specifying concrete package
@@ -1388,10 +1405,10 @@ data PackageMetadata = PackageMetadata
     -- ^ Tree key of the loaded up package
     --
     -- @since 0.1.0.0
-  , pmCabal :: !BlobKey
-    -- ^ Blob key containing the cabal file
+  , pmCabalSource :: !CabalSource
+    -- ^ See 'rpmCabalSource'
     --
-    -- @since 0.1.0.0
+    -- @since 0.2.0.0
   }
   deriving (Show, Eq, Ord, Generic, Typeable)
 -- i PackageMetadata
@@ -1401,12 +1418,34 @@ instance Display PackageMetadata where
   display pm = fold $ intersperse ", " $
     [ "ident == " <> fromString (packageIdentifierString $ pmIdent pm)
     , "tree == " <> display (pmTreeKey pm)
-    , "cabal file == " <> display (pmCabal pm)
+    , display (pmCabalSource pm)
     ]
+
+instance Display CabalSource where
+  display (CSCabal key) = "cabal file == " <> display key
+  display (CSHpack key) = "hpack file == " <> display key
+
+cabalSourceToPair :: CabalSource -> (Text, Value)
+cabalSourceToPair (CSCabal key) = "cabal-file" .= key
+cabalSourceToPair (CSHpack key) = "hpack-file" .= key
+
+parseCabalSource :: Object -> WarningParser (Maybe CabalSource)
+parseCabalSource o = do
+  mpmCabal :: Maybe BlobKey <- o ..:? "cabal-file"
+  mpmHpack :: Maybe BlobKey <- o ..:? "hpack-file"
+  case (mpmCabal, mpmHpack) of
+    (Nothing, Nothing) -> pure Nothing
+    (Just cabal, Nothing) -> pure $ Just $ CSCabal cabal
+    (Nothing, Just hpack) -> pure $ Just $ CSHpack hpack
+    (Just _, Just _) -> fail "Cannot specify both cabal-file and hpack-file"
 
 parsePackageMetadata :: Object -> WarningParser PackageMetadata
 parsePackageMetadata o = do
-  pmCabal :: BlobKey <- o ..: "cabal-file"
+  mpmCabalSource <- parseCabalSource o
+  pmCabalSource <-
+    case mpmCabalSource of
+      Nothing -> fail "Need either cabal-file or hpack-file"
+      Just x -> pure x
   pantryTree :: BlobKey <- o ..: "pantry-tree"
   CabalString pkgName <- o ..: "name"
   CabalString pkgVersion <- o ..: "version"
@@ -1419,7 +1458,7 @@ parsePackageMetadata o = do
 --
 -- @since 0.1.0.0
 toRawPM :: PackageMetadata -> RawPackageMetadata
-toRawPM pm = RawPackageMetadata (Just name) (Just version) (Just $ pmTreeKey pm) (Just $ pmCabal pm)
+toRawPM pm = RawPackageMetadata (Just name) (Just version) (Just $ pmTreeKey pm) (Just $ pmCabalSource pm)
   where
     PackageIdentifier name version = pmIdent pm
 
@@ -1524,7 +1563,7 @@ rpmToPairs (RawPackageMetadata mname mversion mtree mcabal) = concat
   [ maybe [] (\name -> ["name" .= CabalString name]) mname
   , maybe [] (\version -> ["version" .= CabalString version]) mversion
   , maybe [] (\tree -> ["pantry-tree" .= tree]) mtree
-  , maybe [] (\cabal -> ["cabal-file" .= cabal]) mcabal
+  , maybe [] (pure . cabalSourceToPair) mcabal
   ]
 
 instance FromJSON (WithJSONWarnings (Unresolved PackageLocationImmutable)) where
@@ -1625,7 +1664,7 @@ instance FromJSON (WithJSONWarnings (Unresolved (NonEmpty RawPackageLocationImmu
                   <$> (fmap unCabalString <$> (o ..:? "name"))
                   <*> (fmap unCabalString <$> (o ..:? "version"))
                   <*> o ..:? "pantry-tree"
-                  <*> o ..:? "cabal-file")
+                  <*> parseCabalSource o)
 
       repo = withObjectWarnings "UnresolvedPackageLocationImmutable.UPLIRepo" $ \o -> do
         (repoType, repoUrl) <-

@@ -47,7 +47,7 @@ spec =
                     { rpmName = Nothing
                     , rpmVersion = Nothing
                     , rpmTreeKey = Nothing
-                    , rpmCabal = Nothing
+                    , rpmCabalSource = Nothing
                     }
           actual <- decode'' contents
           actual `shouldBe` pure expected
@@ -75,7 +75,7 @@ spec =
                     { rpmName = Nothing
                     , rpmVersion = Nothing
                     , rpmTreeKey = Nothing
-                    , rpmCabal = Nothing
+                    , rpmCabalSource = Nothing
                     }
           actual <- decode'' contents
           actual `shouldBe` pure expected
