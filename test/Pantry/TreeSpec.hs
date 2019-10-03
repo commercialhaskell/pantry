@@ -17,7 +17,6 @@ spec = do
         { rpmName = Nothing
         , rpmVersion = Nothing
         , rpmTreeKey = Nothing
-        , rpmCabalSource = Nothing
         }
       mkArchive url =
         RPLIArchive
@@ -63,8 +62,6 @@ spec = do
     liftIO $ pair2 `shouldBe` pair1
 
   it "5045 no cabal file" $ asIO $ runPantryAppClean $ do
-    sha <- either throwIO pure
-         $ SHA256.fromHexBytes "b0eb3ede7371e3aefeb9cce6c4ee09d0dd4eb3546caed487c5bac82a46f07183"
     let rpli = RPLIArchive archive rpm
         packageName = mkPackageName "yaml"
         version = mkVersion [0, 11, 1, 2]
@@ -80,7 +77,6 @@ spec = do
             RawPackageMetadata
               { rpmName = Just packageName
               , rpmVersion = Just version
-              , rpmCabalSource = Just $ CSHpack $ BlobKey sha (FileSize 2321)
               , rpmTreeKey = Nothing
               }
     void $ loadCabalFileRawImmutable rpli

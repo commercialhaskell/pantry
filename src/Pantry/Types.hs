@@ -101,8 +101,6 @@ module Pantry.Types
   , SnapshotPackage (..)
   , parseWantedCompiler
   , RawPackageMetadata (..)
-  , CabalSource (..)
-  , toCabalSource
   , PackageMetadata (..)
   , toRawPM
   , cabalFileName
@@ -809,7 +807,6 @@ data PantryException
       !RawPackageLocationImmutable
       !RawPackageMetadata
       !(Maybe TreeKey)
-      !CabalSource
       !PackageIdentifier
   | Non200ResponseStatus !Status
   | InvalidBlobKey !(Mismatch BlobKey)
@@ -922,13 +919,12 @@ instance Display PantryException where
     display loc <>
     ":\n" <>
     displayShow e
-  display (MismatchedPackageMetadata loc pm mtreeKey foundCabal foundIdent) =
+  display (MismatchedPackageMetadata loc pm mtreeKey foundIdent) =
     "Mismatched package metadata for " <> display loc <>
-    "\nFound: " <> fromString (packageIdentifierString foundIdent) <> " with " <>
-    display foundCabal <>
+    "\nFound: " <> fromString (packageIdentifierString foundIdent) <>
     (case mtreeKey of
        Nothing -> mempty
-       Just treeKey -> " and tree " <> display treeKey) <>
+       Just treeKey -> " with tree " <> display treeKey) <>
     "\nExpected: " <> display pm
   display (Non200ResponseStatus status) =
     "Unexpected non-200 HTTP status code: " <>
@@ -1362,35 +1358,15 @@ data RawPackageMetadata = RawPackageMetadata
     -- ^ Tree key of the loaded up package
     --
     -- @since 0.1.0.0
-  , rpmCabalSource :: !(Maybe CabalSource)
-    -- ^ Where the Cabal metadata comes from, either a cabal file or hpack package.yaml file.
-    --
-    -- @since 0.2.0.0
   }
   deriving (Show, Eq, Ord, Generic, Typeable)
 instance NFData RawPackageMetadata
-
--- | Where do we source the cabal file metadata from?
---
--- For checking source contents, we need to know whether to compare
--- the bytes in the hpack file (to avoid getting confused by generated
--- cabal files) or the actual cabal file itself.
---
--- @since 0.2.0.0
-data CabalSource = CSCabal !BlobKey | CSHpack !BlobKey
-  deriving (Show, Eq, Ord, Generic, Typeable)
-instance NFData CabalSource
-
-toCabalSource :: PackageCabal -> CabalSource
-toCabalSource (PCCabalFile tentry) = CSCabal $ teBlob tentry
-toCabalSource (PCHpack phpack) = CSHpack $ teBlob $ phOriginal phpack
 
 instance Display RawPackageMetadata where
   display rpm = fold $ intersperse ", " $ catMaybes
     [ (\name -> "name == " <> fromString (packageNameString name)) <$> rpmName rpm
     , (\version -> "version == " <> fromString (versionString version)) <$> rpmVersion rpm
     , (\tree -> "tree == " <> display tree) <$> rpmTreeKey rpm
-    , display <$> rpmCabalSource rpm
     ]
 
 -- | Exact metadata specifying concrete package
@@ -1405,10 +1381,6 @@ data PackageMetadata = PackageMetadata
     -- ^ Tree key of the loaded up package
     --
     -- @since 0.1.0.0
-  , pmCabalSource :: !CabalSource
-    -- ^ See 'rpmCabalSource'
-    --
-    -- @since 0.2.0.0
   }
   deriving (Show, Eq, Ord, Generic, Typeable)
 -- i PackageMetadata
@@ -1418,34 +1390,10 @@ instance Display PackageMetadata where
   display pm = fold $ intersperse ", " $
     [ "ident == " <> fromString (packageIdentifierString $ pmIdent pm)
     , "tree == " <> display (pmTreeKey pm)
-    , display (pmCabalSource pm)
     ]
-
-instance Display CabalSource where
-  display (CSCabal key) = "cabal file == " <> display key
-  display (CSHpack key) = "hpack file == " <> display key
-
-cabalSourceToPair :: CabalSource -> (Text, Value)
-cabalSourceToPair (CSCabal key) = "cabal-file" .= key
-cabalSourceToPair (CSHpack key) = "hpack-file" .= key
-
-parseCabalSource :: Object -> WarningParser (Maybe CabalSource)
-parseCabalSource o = do
-  mpmCabal :: Maybe BlobKey <- o ..:? "cabal-file"
-  mpmHpack :: Maybe BlobKey <- o ..:? "hpack-file"
-  case (mpmCabal, mpmHpack) of
-    (Nothing, Nothing) -> pure Nothing
-    (Just cabal, Nothing) -> pure $ Just $ CSCabal cabal
-    (Nothing, Just hpack) -> pure $ Just $ CSHpack hpack
-    (Just _, Just _) -> fail "Cannot specify both cabal-file and hpack-file"
 
 parsePackageMetadata :: Object -> WarningParser PackageMetadata
 parsePackageMetadata o = do
-  mpmCabalSource <- parseCabalSource o
-  pmCabalSource <-
-    case mpmCabalSource of
-      Nothing -> fail "Need either cabal-file or hpack-file"
-      Just x -> pure x
   pantryTree :: BlobKey <- o ..: "pantry-tree"
   CabalString pkgName <- o ..: "name"
   CabalString pkgVersion <- o ..: "version"
@@ -1458,7 +1406,7 @@ parsePackageMetadata o = do
 --
 -- @since 0.1.0.0
 toRawPM :: PackageMetadata -> RawPackageMetadata
-toRawPM pm = RawPackageMetadata (Just name) (Just version) (Just $ pmTreeKey pm) (Just $ pmCabalSource pm)
+toRawPM pm = RawPackageMetadata (Just name) (Just version) (Just $ pmTreeKey pm)
   where
     PackageIdentifier name version = pmIdent pm
 
@@ -1559,11 +1507,10 @@ instance ToJSON RawPackageLocationImmutable where
           RepoHg  -> "hg"
 
 rpmToPairs :: RawPackageMetadata -> [(Text, Value)]
-rpmToPairs (RawPackageMetadata mname mversion mtree mcabal) = concat
+rpmToPairs (RawPackageMetadata mname mversion mtree) = concat
   [ maybe [] (\name -> ["name" .= CabalString name]) mname
   , maybe [] (\version -> ["version" .= CabalString version]) mversion
   , maybe [] (\tree -> ["pantry-tree" .= tree]) mtree
-  , maybe [] (pure . cabalSourceToPair) mcabal
   ]
 
 instance FromJSON (WithJSONWarnings (Unresolved PackageLocationImmutable)) where
@@ -1663,8 +1610,7 @@ instance FromJSON (WithJSONWarnings (Unresolved (NonEmpty RawPackageLocationImmu
             <*> (RawPackageMetadata
                   <$> (fmap unCabalString <$> (o ..:? "name"))
                   <*> (fmap unCabalString <$> (o ..:? "version"))
-                  <*> o ..:? "pantry-tree"
-                  <*> parseCabalSource o)
+                  <*> o ..:? "pantry-tree")
 
       repo = withObjectWarnings "UnresolvedPackageLocationImmutable.UPLIRepo" $ \o -> do
         (repoType, repoUrl) <-
@@ -1704,7 +1650,7 @@ osToRpms (OSSubdirs subdirs) = NE.map (, rpmEmpty) subdirs
 osToRpms (OSPackageMetadata subdir rpm) = pure (subdir, rpm)
 
 rpmEmpty :: RawPackageMetadata
-rpmEmpty = RawPackageMetadata Nothing Nothing Nothing Nothing
+rpmEmpty = RawPackageMetadata Nothing Nothing Nothing
 
 -- | Newtype wrapper for easier JSON integration with Cabal types.
 --

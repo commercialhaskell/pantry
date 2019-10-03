@@ -11,7 +11,8 @@ import Distribution.Types.Version (mkVersion)
 
 spec :: Spec
 spec = describe "wrong cabal file" $ do
-  let test name action = it name (runPantryApp action :: IO ())
+  let test :: HasCallStack => String -> RIO PantryApp () -> Spec
+      test name action = it name (runPantryApp action :: IO ())
       shouldThrow' x y = withRunInIO $ \run -> run x `shouldThrow` y
   test "Hackage" $ do
     sha <- either throwIO pure
@@ -30,23 +31,19 @@ spec = describe "wrong cabal file" $ do
         size = FileSize 597
     go `shouldThrow'` \e ->
       case e of
-        MismatchedPackageMetadata rpli' rpm _tree cabal ident ->
+        MismatchedPackageMetadata rpli' rpm _tree ident ->
           rpli == rpli' &&
           rpm == RawPackageMetadata
             { rpmName = Just name
             , rpmVersion = Just version3
             , rpmTreeKey = Nothing
-            , rpmCabalSource = Just $ CSCabal $ BlobKey sha size
             } &&
-          cabal == CSCabal (BlobKey sha size) &&
           ident == PackageIdentifier name version2
         _ -> False
 
   test "tarball with wrong ident" $ do
     archiveHash' <- either throwIO pure
                   $ SHA256.fromHexBytes "b5a582209c50e4a61e4b6c0fb91a6a7d65177a881225438b0144719bc3682c3a"
-    sha <- either throwIO pure
-         $ SHA256.fromHexBytes "71c2c685a932cd3a70ec52d7bd0ec96ecbfa5e31e22130099cd50fa073ad1a69"
     let rpli = RPLIArchive archive rpm
         archive =
             RawArchive
@@ -59,7 +56,6 @@ spec = describe "wrong cabal file" $ do
             RawPackageMetadata
               { rpmName = Just acmeMissiles
               , rpmVersion = Just version2
-              , rpmCabalSource = Just $ CSCabal $ BlobKey sha (FileSize 597)
               , rpmTreeKey = Nothing
               }
         go = loadCabalFileRawImmutable rpli
@@ -67,20 +63,15 @@ spec = describe "wrong cabal file" $ do
         version2 = mkVersion [0, 2]
     go `shouldThrow'` \e ->
       case e of
-        MismatchedPackageMetadata rpli' rpm' _treeKey cabal ident ->
+        MismatchedPackageMetadata rpli' rpm' _treeKey ident ->
           rpli == rpli' &&
           rpm == rpm' &&
-          cabal == CSCabal (BlobKey
-            (either impureThrow id $ SHA256.fromHexBytes "940d82426ad1db0fcc978c0f386ac5d06df019546071993cb7c6633f1ad17d50")
-            (FileSize 3038)) &&
           ident == PackageIdentifier
             (mkPackageName "yesod-auth")
             (mkVersion [1, 6, 4, 1])
         _ -> False
 
   test "tarball with wrong cabal file" $ do
-    sha <- either throwIO pure
-         $ SHA256.fromHexBytes "71c2c685a932cd3a70ec52d7bd0ec96ecbfa5e31e22130099cd50fa073ad1a69"
     let rpli = RPLIArchive archive rpm
         archive =
             RawArchive
@@ -93,20 +84,17 @@ spec = describe "wrong cabal file" $ do
         rpm =
             RawPackageMetadata
               { rpmName = Just yesodAuth
-              , rpmVersion = Just version
-              , rpmCabalSource = Just $ CSCabal $ BlobKey sha (FileSize 597)
+              , rpmVersion = Just badVersion
               , rpmTreeKey = Nothing
               }
         go = loadCabalFileRawImmutable rpli
         yesodAuth = mkPackageName "yesod-auth"
         version = mkVersion [1, 6, 4, 1]
+        badVersion = mkVersion [1, 6, 4, 0]
     go `shouldThrow'` \e ->
       case e of
-        MismatchedPackageMetadata rpli' rpm' _treeKey cabal ident ->
+        MismatchedPackageMetadata rpli' rpm' _treeKey ident ->
           rpli == rpli' &&
           rpm == rpm' &&
-          cabal == CSCabal (BlobKey
-            (either impureThrow id $ SHA256.fromHexBytes "940d82426ad1db0fcc978c0f386ac5d06df019546071993cb7c6633f1ad17d50")
-            (FileSize 3038)) &&
           ident == PackageIdentifier yesodAuth version
         _ -> False

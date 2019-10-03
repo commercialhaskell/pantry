@@ -167,12 +167,10 @@ checkPackageMetadata
   -> Either PantryException Package
 checkPackageMetadata pl pm pa = do
   let
-      pkgCabal = toCabalSource $ packageCabalEntry pa
       err = MismatchedPackageMetadata
               pl
               pm
               (Just (packageTreeKey pa))
-              pkgCabal
               (packageIdent pa)
 
       test :: Eq a => Maybe a -> a -> Bool
@@ -183,7 +181,6 @@ checkPackageMetadata pl pm pa = do
         [ test (rpmTreeKey pm) (packageTreeKey pa)
         , test (rpmName pm) (pkgName $ packageIdent pa)
         , test (rpmVersion pm) (pkgVersion $ packageIdent pa)
-        , test (rpmCabalSource pm) pkgCabal
         ]
 
    in if and tests then Right pa else Left err

@@ -8,6 +8,7 @@ Bug fixes:
   is generated from an hpack `package.yaml` file, compare its contents.
   Addresses bugs such as [Stack
   #5045](https://github.com/commercialhaskell/stack/issues/5045).
+  Data type changes: removed the `pmCabal` and `rpmCabal` fields.
 
 ## v0.1.1.2
 

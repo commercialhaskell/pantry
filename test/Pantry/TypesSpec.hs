@@ -48,9 +48,6 @@ samplePLIRepo :: ByteString
 samplePLIRepo =
     [r|
 subdir: wai
-cabal-file:
-  size: 1765
-  sha256: eea52c4967d8609c2f79213d6dffe6d6601034f1471776208404781de7051410
 name: wai
 version: 3.2.1.2
 git: https://github.com/yesodweb/wai.git
@@ -63,9 +60,6 @@ commit: d11d63f1a6a92db8c637a8d33e7953ce6194a3e0
 samplePLIRepo2 :: ByteString
 samplePLIRepo2 =
     [r|
-cabal-file:
-  size: 1863
-  sha256: 5ebffc39e75ea1016adcc8426dc31d2040d2cc8a5f4bbce228592ef35e233da2
 name: merkle-log
 version: 0.1.0.0
 git: https://github.com/kadena-io/merkle-log.git
@@ -167,14 +161,11 @@ spec = do
                         "d11d63f1a6a92db8c637a8d33e7953ce6194a3e0"
                   , repoUrl = "https://github.com/yesodweb/wai.git"
                   }
-          cabalSha =
-              SHA256.fromHexBytes
-                  "eea52c4967d8609c2f79213d6dffe6d6601034f1471776208404781de7051410"
           pantrySha =
               SHA256.fromHexBytes
                   "ecfd0b4b75f435a3f362394807b35e5ef0647b1a25005d44a3632c49db4833d2"
-      (csha, psha) <- case (cabalSha, pantrySha) of
-        (Right csha, Right psha) -> pure (csha, psha)
+      psha <- case pantrySha of
+        Right psha -> pure psha
         _ -> fail "Failed decoding sha256"
       let pkgValue =
               PackageMetadata
@@ -183,7 +174,6 @@ spec = do
                             (mkPackageName "wai")
                             (mkVersion [3, 2, 1, 2])
                   , pmTreeKey = TreeKey (BlobKey psha (FileSize 714))
-                  , pmCabalSource = CSCabal $ BlobKey csha (FileSize 1765)
                   }
       pli `shouldBe` PLIRepo repoValue pkgValue
 

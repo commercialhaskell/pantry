@@ -47,7 +47,6 @@ module Pantry
   , RawPackageMetadata (..)
   , PackageMetadata (..)
   , Package (..)
-  , CabalSource (..)
 
     -- ** Hackage
   , CabalFileInfo (..)
@@ -402,15 +401,14 @@ loadCabalFileImmutable loc = withCache $ do
   (_warnings, gpd) <- rawParseGPD (Left $ toRawPLI loc) bs
   let pm =
         case loc of
-          PLIHackage (PackageIdentifier name version) cfHash mtree -> PackageMetadata
+          PLIHackage (PackageIdentifier name version) _cfHash mtree -> PackageMetadata
             { pmIdent = PackageIdentifier name version
             , pmTreeKey = mtree
-            , pmCabalSource = CSCabal cfHash
             }
           PLIArchive _ pm' -> pm'
           PLIRepo _ pm' -> pm'
   let exc = MismatchedPackageMetadata (toRawPLI loc) (toRawPM pm) Nothing
-        (pmCabalSource pm) (gpdPackageIdentifier gpd)
+        (gpdPackageIdentifier gpd)
       PackageIdentifier name ver = pmIdent pm
   maybe (throwIO exc) pure $ do
     guard $ name == gpdPackageName gpd
@@ -442,26 +440,21 @@ loadCabalFileRawImmutable
   -> RIO env GenericPackageDescription
 loadCabalFileRawImmutable loc = withCache $ do
   logDebug $ "Parsing cabal file for " <> display loc
-  (bs, foundCabalSource) <- loadRawCabalFileBytes loc
+  bs <- loadRawCabalFileBytes loc
   (_warnings, gpd) <- rawParseGPD (Left loc) bs
   let rpm =
         case loc of
-          RPLIHackage (PackageIdentifierRevision name version cfi) mtree -> RawPackageMetadata
+          RPLIHackage (PackageIdentifierRevision name version _cfi) mtree -> RawPackageMetadata
             { rpmName = Just name
             , rpmVersion = Just version
             , rpmTreeKey = mtree
-            , rpmCabalSource =
-                case cfi of
-                  CFIHash sha (Just size) -> Just $ CSCabal $ BlobKey sha size
-                  _ -> Nothing
             }
           RPLIArchive _ rpm' -> rpm'
           RPLIRepo _ rpm' -> rpm'
-  let exc = MismatchedPackageMetadata loc rpm Nothing foundCabalSource (gpdPackageIdentifier gpd)
+  let exc = MismatchedPackageMetadata loc rpm Nothing (gpdPackageIdentifier gpd)
   maybe (throwIO exc) pure $ do
     guard $ maybe True (== gpdPackageName gpd) (rpmName rpm)
     guard $ maybe True (== gpdVersion gpd) (rpmVersion rpm)
-    guard $ maybe True (== foundCabalSource) (rpmCabalSource rpm)
     pure gpd
   where
     withCache inner = do
@@ -677,14 +670,12 @@ loadCabalFileBytes pl = do
 loadRawCabalFileBytes
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => RawPackageLocationImmutable
-  -> RIO env (ByteString, CabalSource)
+  -> RIO env ByteString
 
 -- Just ignore the mtree for this. Safe assumption: someone who filled
 -- in the TreeKey also filled in the cabal file hash, and that's a
 -- more efficient lookup mechanism.
-loadRawCabalFileBytes (RPLIHackage pir _mtree) = do
-  bs <- getHackageCabalFile pir
-  pure (bs, CSCabal $ bsToBlobKey bs)
+loadRawCabalFileBytes (RPLIHackage pir _mtree) = getHackageCabalFile pir
 
 loadRawCabalFileBytes pl = do
   package <- loadPackageRaw pl
@@ -697,7 +688,7 @@ loadRawCabalFileBytes pl = do
     Nothing -> do
       -- TODO when we have pantry wire, try downloading
       throwIO $ TreeReferencesMissingBlob pl sfp cabalBlobKey
-    Just bs -> pure (bs, toCabalSource $ packageCabalEntry package)
+    Just bs -> pure bs
 
 -- | Load a 'Package' from a 'PackageLocationImmutable'.
 --
@@ -762,9 +753,9 @@ completePM
   => RawPackageLocationImmutable
   -> RawPackageMetadata
   -> RIO env PackageMetadata
-completePM plOrig rpm@(RawPackageMetadata mn mv mtk mc)
-  | Just n <- mn, Just v <- mv, Just tk <- mtk, Just c <- mc =
-      pure $ PackageMetadata (PackageIdentifier n v) tk c
+completePM plOrig rpm@(RawPackageMetadata mn mv mtk)
+  | Just n <- mn, Just v <- mv, Just tk <- mtk =
+      pure $ PackageMetadata (PackageIdentifier n v) tk
   | otherwise = do
       pm <- packagePM <$> loadPackageRaw plOrig
       let isSame x (Just y) = x == y
@@ -773,8 +764,7 @@ completePM plOrig rpm@(RawPackageMetadata mn mv mtk mc)
           allSame =
             isSame (pkgName $ pmIdent pm) (rpmName rpm) &&
             isSame (pkgVersion $ pmIdent pm) (rpmVersion rpm) &&
-            isSame (pmTreeKey pm) (rpmTreeKey rpm) &&
-            isSame (pmCabalSource pm) (rpmCabalSource rpm)
+            isSame (pmTreeKey pm) (rpmTreeKey rpm)
       if allSame
         then pure pm
         else throwIO $ CompletePackageMetadataMismatch plOrig pm
@@ -783,7 +773,6 @@ packagePM :: Package -> PackageMetadata
 packagePM package = PackageMetadata
   { pmIdent = packageIdent package
   , pmTreeKey = packageTreeKey package
-  , pmCabalSource = toCabalSource $ packageCabalEntry package
   }
 
 -- | Add in hashes to make a 'SnapshotLocation' reproducible.
