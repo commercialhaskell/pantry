@@ -48,6 +48,10 @@ samplePLIRepo :: ByteString
 samplePLIRepo =
     [r|
 subdir: wai
+cabal-file:
+  # This is ignored, only included to make sure we get no warnings
+  size: 1765
+  sha256: eea52c4967d8609c2f79213d6dffe6d6601034f1471776208404781de7051410
 name: wai
 version: 3.2.1.2
 git: https://github.com/yesodweb/wai.git

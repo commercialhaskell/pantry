@@ -1394,6 +1394,7 @@ instance Display PackageMetadata where
 
 parsePackageMetadata :: Object -> WarningParser PackageMetadata
 parsePackageMetadata o = do
+  _oldCabalFile :: Maybe BlobKey <- o ..:? "cabal-file"
   pantryTree :: BlobKey <- o ..: "pantry-tree"
   CabalString pkgName <- o ..: "name"
   CabalString pkgVersion <- o ..: "version"
@@ -1607,10 +1608,20 @@ instance FromJSON (WithJSONWarnings (Unresolved (NonEmpty RawPackageLocationImmu
               Just x -> pure $ OSSubdirs x
           Nothing -> OSPackageMetadata
             <$> o ..:? "subdir" ..!= T.empty
-            <*> (RawPackageMetadata
+            <*> (rawPackageMetadataHelper
                   <$> (fmap unCabalString <$> (o ..:? "name"))
                   <*> (fmap unCabalString <$> (o ..:? "version"))
-                  <*> o ..:? "pantry-tree")
+                  <*> o ..:? "pantry-tree"
+                  <*> o ..:? "cabal-file")
+
+      rawPackageMetadataHelper
+        :: Maybe PackageName
+        -> Maybe Version
+        -> Maybe TreeKey
+        -> Maybe BlobKey
+        -> RawPackageMetadata
+      rawPackageMetadataHelper name version pantryTree _ignoredCabalFile =
+        RawPackageMetadata name version pantryTree
 
       repo = withObjectWarnings "UnresolvedPackageLocationImmutable.UPLIRepo" $ \o -> do
         (repoType, repoUrl) <-
