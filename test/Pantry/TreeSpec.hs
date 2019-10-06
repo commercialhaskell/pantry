@@ -5,6 +5,9 @@ module Pantry.TreeSpec (spec) where
 import Test.Hspec
 import RIO
 import Pantry
+import qualified Pantry.SHA256 as SHA256
+import Distribution.Types.PackageName (mkPackageName)
+import Distribution.Types.Version (mkVersion)
 
 spec :: Spec
 spec = do
@@ -14,7 +17,6 @@ spec = do
         { rpmName = Nothing
         , rpmVersion = Nothing
         , rpmTreeKey = Nothing
-        , rpmCabal = Nothing
         }
       mkArchive url =
         RPLIArchive
@@ -58,3 +60,23 @@ spec = do
     pair1 <- loadPackageRaw tarPL
     pair2 <- loadPackageRaw hgPL
     liftIO $ pair2 `shouldBe` pair1
+
+  it "5045 no cabal file" $ asIO $ runPantryAppClean $ do
+    let rpli = RPLIArchive archive rpm
+        packageName = mkPackageName "yaml"
+        version = mkVersion [0, 11, 1, 2]
+        archive =
+            RawArchive
+              { raLocation = ALUrl "https://github.com/snoyberg/yaml/archive/yaml-0.11.1.2.tar.gz"
+              , raHash = either impureThrow Just
+                         $ SHA256.fromHexBytes "b8564e99c555e670ee487bbf92d03800d955f0e6e16333610ef46534548e0a3d"
+              , raSize = Just $ FileSize 94198
+              , raSubdir = "yaml"
+              }
+        rpm =
+            RawPackageMetadata
+              { rpmName = Just packageName
+              , rpmVersion = Just version
+              , rpmTreeKey = Nothing
+              }
+    void $ loadCabalFileRawImmutable rpli

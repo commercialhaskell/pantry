@@ -390,10 +390,6 @@ unpackPackageLocation fp loc = loadPackage loc >>= unpackTree (toRawPLI loc) fp 
 --
 -- This function ignores all warnings.
 --
--- Note that, for now, this will not allow support for hpack files in
--- these package locations. Instead, all @PackageLocationImmutable@s
--- will require a .cabal file. This may be relaxed in the future.
---
 -- @since 0.1.0.0
 loadCabalFileImmutable
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
@@ -402,24 +398,21 @@ loadCabalFileImmutable
 loadCabalFileImmutable loc = withCache $ do
   logDebug $ "Parsing cabal file for " <> display loc
   bs <- loadCabalFileBytes loc
-  let foundCabalKey = bsToBlobKey bs
   (_warnings, gpd) <- rawParseGPD (Left $ toRawPLI loc) bs
   let pm =
         case loc of
-          PLIHackage (PackageIdentifier name version) cfHash mtree -> PackageMetadata
+          PLIHackage (PackageIdentifier name version) _cfHash mtree -> PackageMetadata
             { pmIdent = PackageIdentifier name version
             , pmTreeKey = mtree
-            , pmCabal = cfHash
             }
           PLIArchive _ pm' -> pm'
           PLIRepo _ pm' -> pm'
   let exc = MismatchedPackageMetadata (toRawPLI loc) (toRawPM pm) Nothing
-        foundCabalKey (gpdPackageIdentifier gpd)
+        (gpdPackageIdentifier gpd)
       PackageIdentifier name ver = pmIdent pm
   maybe (throwIO exc) pure $ do
     guard $ name == gpdPackageName gpd
     guard $ ver == gpdVersion gpd
-    guard $ pmCabal pm == foundCabalKey
     pure gpd
   where
     withCache inner = do
@@ -448,26 +441,20 @@ loadCabalFileRawImmutable
 loadCabalFileRawImmutable loc = withCache $ do
   logDebug $ "Parsing cabal file for " <> display loc
   bs <- loadRawCabalFileBytes loc
-  let foundCabalKey = bsToBlobKey bs
   (_warnings, gpd) <- rawParseGPD (Left loc) bs
   let rpm =
         case loc of
-          RPLIHackage (PackageIdentifierRevision name version cfi) mtree -> RawPackageMetadata
+          RPLIHackage (PackageIdentifierRevision name version _cfi) mtree -> RawPackageMetadata
             { rpmName = Just name
             , rpmVersion = Just version
             , rpmTreeKey = mtree
-            , rpmCabal =
-                case cfi of
-                  CFIHash sha (Just size) -> Just $ BlobKey sha size
-                  _ -> Nothing
             }
           RPLIArchive _ rpm' -> rpm'
           RPLIRepo _ rpm' -> rpm'
-  let exc = MismatchedPackageMetadata loc rpm Nothing foundCabalKey (gpdPackageIdentifier gpd)
+  let exc = MismatchedPackageMetadata loc rpm Nothing (gpdPackageIdentifier gpd)
   maybe (throwIO exc) pure $ do
     guard $ maybe True (== gpdPackageName gpd) (rpmName rpm)
     guard $ maybe True (== gpdVersion gpd) (rpmVersion rpm)
-    guard $ maybe True (== foundCabalKey) (rpmCabal rpm)
     pure gpd
   where
     withCache inner = do
@@ -766,9 +753,9 @@ completePM
   => RawPackageLocationImmutable
   -> RawPackageMetadata
   -> RIO env PackageMetadata
-completePM plOrig rpm@(RawPackageMetadata mn mv mtk mc)
-  | Just n <- mn, Just v <- mv, Just tk <- mtk, Just c <- mc =
-      pure $ PackageMetadata (PackageIdentifier n v) tk c
+completePM plOrig rpm@(RawPackageMetadata mn mv mtk)
+  | Just n <- mn, Just v <- mv, Just tk <- mtk =
+      pure $ PackageMetadata (PackageIdentifier n v) tk
   | otherwise = do
       pm <- packagePM <$> loadPackageRaw plOrig
       let isSame x (Just y) = x == y
@@ -777,8 +764,7 @@ completePM plOrig rpm@(RawPackageMetadata mn mv mtk mc)
           allSame =
             isSame (pkgName $ pmIdent pm) (rpmName rpm) &&
             isSame (pkgVersion $ pmIdent pm) (rpmVersion rpm) &&
-            isSame (pmTreeKey pm) (rpmTreeKey rpm) &&
-            isSame (pmCabal pm) (rpmCabal rpm)
+            isSame (pmTreeKey pm) (rpmTreeKey rpm)
       if allSame
         then pure pm
         else throwIO $ CompletePackageMetadataMismatch plOrig pm
@@ -787,9 +773,6 @@ packagePM :: Package -> PackageMetadata
 packagePM package = PackageMetadata
   { pmIdent = packageIdent package
   , pmTreeKey = packageTreeKey package
-  , pmCabal = teBlob $ case packageCabalEntry package of
-                         PCCabalFile cfile -> cfile
-                         PCHpack hfile -> phGenerated hfile
   }
 
 -- | Add in hashes to make a 'SnapshotLocation' reproducible.

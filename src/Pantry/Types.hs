@@ -807,7 +807,6 @@ data PantryException
       !RawPackageLocationImmutable
       !RawPackageMetadata
       !(Maybe TreeKey)
-      !BlobKey -- cabal file found
       !PackageIdentifier
   | Non200ResponseStatus !Status
   | InvalidBlobKey !(Mismatch BlobKey)
@@ -920,13 +919,12 @@ instance Display PantryException where
     display loc <>
     ":\n" <>
     displayShow e
-  display (MismatchedPackageMetadata loc pm mtreeKey foundCabal foundIdent) =
+  display (MismatchedPackageMetadata loc pm mtreeKey foundIdent) =
     "Mismatched package metadata for " <> display loc <>
-    "\nFound: " <> fromString (packageIdentifierString foundIdent) <> " with cabal file " <>
-    display foundCabal <>
+    "\nFound: " <> fromString (packageIdentifierString foundIdent) <>
     (case mtreeKey of
        Nothing -> mempty
-       Just treeKey -> " and tree " <> display treeKey) <>
+       Just treeKey -> " with tree " <> display treeKey) <>
     "\nExpected: " <> display pm
   display (Non200ResponseStatus status) =
     "Unexpected non-200 HTTP status code: " <>
@@ -1360,10 +1358,6 @@ data RawPackageMetadata = RawPackageMetadata
     -- ^ Tree key of the loaded up package
     --
     -- @since 0.1.0.0
-  , rpmCabal :: !(Maybe BlobKey)
-    -- ^ Blob key containing the cabal file
-    --
-    -- @since 0.1.0.0
   }
   deriving (Show, Eq, Ord, Generic, Typeable)
 instance NFData RawPackageMetadata
@@ -1373,7 +1367,6 @@ instance Display RawPackageMetadata where
     [ (\name -> "name == " <> fromString (packageNameString name)) <$> rpmName rpm
     , (\version -> "version == " <> fromString (versionString version)) <$> rpmVersion rpm
     , (\tree -> "tree == " <> display tree) <$> rpmTreeKey rpm
-    , (\cabal -> "cabal file == " <> display cabal) <$> rpmCabal rpm
     ]
 
 -- | Exact metadata specifying concrete package
@@ -1388,10 +1381,6 @@ data PackageMetadata = PackageMetadata
     -- ^ Tree key of the loaded up package
     --
     -- @since 0.1.0.0
-  , pmCabal :: !BlobKey
-    -- ^ Blob key containing the cabal file
-    --
-    -- @since 0.1.0.0
   }
   deriving (Show, Eq, Ord, Generic, Typeable)
 -- i PackageMetadata
@@ -1401,12 +1390,11 @@ instance Display PackageMetadata where
   display pm = fold $ intersperse ", " $
     [ "ident == " <> fromString (packageIdentifierString $ pmIdent pm)
     , "tree == " <> display (pmTreeKey pm)
-    , "cabal file == " <> display (pmCabal pm)
     ]
 
 parsePackageMetadata :: Object -> WarningParser PackageMetadata
 parsePackageMetadata o = do
-  pmCabal :: BlobKey <- o ..: "cabal-file"
+  _oldCabalFile :: Maybe BlobKey <- o ..:? "cabal-file"
   pantryTree :: BlobKey <- o ..: "pantry-tree"
   CabalString pkgName <- o ..: "name"
   CabalString pkgVersion <- o ..: "version"
@@ -1419,7 +1407,7 @@ parsePackageMetadata o = do
 --
 -- @since 0.1.0.0
 toRawPM :: PackageMetadata -> RawPackageMetadata
-toRawPM pm = RawPackageMetadata (Just name) (Just version) (Just $ pmTreeKey pm) (Just $ pmCabal pm)
+toRawPM pm = RawPackageMetadata (Just name) (Just version) (Just $ pmTreeKey pm)
   where
     PackageIdentifier name version = pmIdent pm
 
@@ -1520,11 +1508,10 @@ instance ToJSON RawPackageLocationImmutable where
           RepoHg  -> "hg"
 
 rpmToPairs :: RawPackageMetadata -> [(Text, Value)]
-rpmToPairs (RawPackageMetadata mname mversion mtree mcabal) = concat
+rpmToPairs (RawPackageMetadata mname mversion mtree) = concat
   [ maybe [] (\name -> ["name" .= CabalString name]) mname
   , maybe [] (\version -> ["version" .= CabalString version]) mversion
   , maybe [] (\tree -> ["pantry-tree" .= tree]) mtree
-  , maybe [] (\cabal -> ["cabal-file" .= cabal]) mcabal
   ]
 
 instance FromJSON (WithJSONWarnings (Unresolved PackageLocationImmutable)) where
@@ -1621,11 +1608,20 @@ instance FromJSON (WithJSONWarnings (Unresolved (NonEmpty RawPackageLocationImmu
               Just x -> pure $ OSSubdirs x
           Nothing -> OSPackageMetadata
             <$> o ..:? "subdir" ..!= T.empty
-            <*> (RawPackageMetadata
+            <*> (rawPackageMetadataHelper
                   <$> (fmap unCabalString <$> (o ..:? "name"))
                   <*> (fmap unCabalString <$> (o ..:? "version"))
                   <*> o ..:? "pantry-tree"
                   <*> o ..:? "cabal-file")
+
+      rawPackageMetadataHelper
+        :: Maybe PackageName
+        -> Maybe Version
+        -> Maybe TreeKey
+        -> Maybe BlobKey
+        -> RawPackageMetadata
+      rawPackageMetadataHelper name version pantryTree _ignoredCabalFile =
+        RawPackageMetadata name version pantryTree
 
       repo = withObjectWarnings "UnresolvedPackageLocationImmutable.UPLIRepo" $ \o -> do
         (repoType, repoUrl) <-
@@ -1665,7 +1661,7 @@ osToRpms (OSSubdirs subdirs) = NE.map (, rpmEmpty) subdirs
 osToRpms (OSPackageMetadata subdir rpm) = pure (subdir, rpm)
 
 rpmEmpty :: RawPackageMetadata
-rpmEmpty = RawPackageMetadata Nothing Nothing Nothing Nothing
+rpmEmpty = RawPackageMetadata Nothing Nothing Nothing
 
 -- | Newtype wrapper for easier JSON integration with Cabal types.
 --

@@ -51,12 +51,7 @@ fetchArchives
   -> RIO env ()
 fetchArchives pairs =
   -- TODO be more efficient, group together shared archives
-  fetchArchivesRaw [
-    let PackageIdentifier nm ver = pmIdent pm
-        rpm = RawPackageMetadata (Just nm) (Just ver) (Just $ pmTreeKey pm) (Just $ pmCabal pm)
-        ra = RawArchive (archiveLocation a) (Just $ archiveHash a) (Just $ archiveSize a) (archiveSubdir a)
-    in (ra, rpm)
-   | (a, pm) <- pairs]
+  fetchArchivesRaw [(toRawArchive a, toRawPM pm) | (a, pm) <- pairs]
 
 getArchiveKey
   :: forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
@@ -172,15 +167,13 @@ checkPackageMetadata
   -> Either PantryException Package
 checkPackageMetadata pl pm pa = do
   let
-      pkgCabal = case packageCabalEntry pa of
-                       PCCabalFile tentry -> tentry
-                       PCHpack phpack -> phGenerated phpack
       err = MismatchedPackageMetadata
               pl
               pm
               (Just (packageTreeKey pa))
-              (teBlob pkgCabal)
               (packageIdent pa)
+
+      test :: Eq a => Maybe a -> a -> Bool
       test (Just x) y = x == y
       test Nothing _ = True
 
@@ -188,7 +181,6 @@ checkPackageMetadata pl pm pa = do
         [ test (rpmTreeKey pm) (packageTreeKey pa)
         , test (rpmName pm) (pkgName $ packageIdent pa)
         , test (rpmVersion pm) (pkgVersion $ packageIdent pa)
-        , test (rpmCabal pm) (teBlob pkgCabal)
         ]
 
    in if and tests then Right pa else Left err

@@ -586,7 +586,6 @@ getHackageTarball pir mtreeKey = do
           { rpmName = Just name
           , rpmVersion = Just ver
           , rpmTreeKey = Nothing -- with a revision cabal file will differ giving a different tree
-          , rpmCabal = Nothing -- cabal file in the tarball may be different!
           }
     case packageTree package of
       TreeMap m -> do

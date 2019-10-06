@@ -1,5 +1,14 @@
 # Changelog for pantry
 
+## v0.2.0.0
+
+Bug fixes:
+
+* Don't compare the hashes of cabal files.
+  Addresses bugs such as [Stack
+  #5045](https://github.com/commercialhaskell/stack/issues/5045).
+  Data type changes: removed the `pmCabal` and `rpmCabal` fields.
+
 ## v0.1.1.2
 
 Bug fixes:
