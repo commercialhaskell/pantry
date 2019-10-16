@@ -65,29 +65,6 @@ dependencies:
 - mtl
 - filelock
 
-# FIXME remove when we drop store
-- integer-gmp
-- ghc-prim
-- template-haskell
-- network
-- th-utilities
-- th-reify-many
-- th-lift
-- th-lift-instances
-- mono-traversable
-- safe
-- contravariant
-- syb
-- deepseq
-- array
-- hashable
-- base-orphans
-- th-orphans
-- cryptonite
-- base64-bytestring
-- directory
-- filepath
-
 ghc-options:
   - -Wall
 

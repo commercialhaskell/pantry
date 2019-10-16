@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: abfcc422864de256ba0ef8b533df725b381cffd7791dca94f17303a16e69a2a3
+-- hash: 74980cb1477449771da1155e452c1782f7561479d5c21e87ff622e74375e35f8
 
 name:           pantry
 version:        0.2.0.0
@@ -58,37 +58,25 @@ library
       Cabal
     , aeson
     , ansi-terminal
-    , array
     , base >=4.10 && <5
-    , base-orphans
-    , base64-bytestring
     , bytestring
     , conduit
     , conduit-extra
     , containers
-    , contravariant
     , cryptonite
     , cryptonite-conduit
-    , deepseq
     , digest
-    , directory
     , filelock
-    , filepath
     , generic-deriving
-    , ghc-prim
     , hackage-security
-    , hashable
     , hpack >=0.31.2
     , http-client
     , http-client-tls
     , http-conduit
     , http-download
     , http-types
-    , integer-gmp
     , memory
-    , mono-traversable
     , mtl
-    , network
     , network-uri
     , path
     , path-io
@@ -100,17 +88,9 @@ library
     , rio
     , rio-orphans
     , rio-prettyprint
-    , safe
-    , syb
     , tar-conduit
-    , template-haskell
     , text
     , text-metrics
-    , th-lift
-    , th-lift-instances
-    , th-orphans
-    , th-reify-many
-    , th-utilities
     , time
     , transformers
     , unix-compat
@@ -155,27 +135,18 @@ test-suite spec
     , QuickCheck
     , aeson
     , ansi-terminal
-    , array
     , base >=4.10 && <5
-    , base-orphans
-    , base64-bytestring
     , bytestring
     , conduit
     , conduit-extra
     , containers
-    , contravariant
     , cryptonite
     , cryptonite-conduit
-    , deepseq
     , digest
-    , directory
     , exceptions
     , filelock
-    , filepath
     , generic-deriving
-    , ghc-prim
     , hackage-security
-    , hashable
     , hedgehog
     , hpack >=0.31.2
     , hspec
@@ -184,11 +155,8 @@ test-suite spec
     , http-conduit
     , http-download
     , http-types
-    , integer-gmp
     , memory
-    , mono-traversable
     , mtl
-    , network
     , network-uri
     , pantry
     , path
@@ -202,17 +170,9 @@ test-suite spec
     , rio
     , rio-orphans
     , rio-prettyprint
-    , safe
-    , syb
     , tar-conduit
-    , template-haskell
     , text
     , text-metrics
-    , th-lift
-    , th-lift-instances
-    , th-orphans
-    , th-reify-many
-    , th-utilities
     , time
     , transformers
     , unix-compat
