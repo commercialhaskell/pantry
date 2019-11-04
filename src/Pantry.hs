@@ -1669,9 +1669,9 @@ runPantryAppWith maxConnCount casaPullURL casaMaxPerRequest f = runSimpleApp $ d
     root
     defaultHackageSecurityConfig
     HpackBundled
-    8
-    defaultCasaPullURL
-    defaultCasaMaxPerRequest
+    maxConnCount
+    casaPullURL
+    casaMaxPerRequest
     $ \pc ->
       runRIO
         PantryApp
@@ -1695,9 +1695,9 @@ runPantryAppClean f = liftIO $ withSystemTempDirectory "pantry-clean" $ \dir -> 
     root
     defaultHackageSecurityConfig
     HpackBundled
-    maxConnCount
-    casaPullURL
-    casaMaxPerRequest
+    8
+    defaultCasaPullURL
+    defaultCasaMaxPerRequest
     $ \pc ->
       runRIO
         PantryApp

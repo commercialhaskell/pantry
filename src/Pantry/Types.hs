@@ -848,7 +848,7 @@ instance Exception PantryException where
 instance Show PantryException where
   show = T.unpack . utf8BuilderToText . display
 instance Display PantryException where
-  display (InvalidTreeFromCasa blobKey bs) = "Invalid tree from casa: " <> display blobKey
+  display (InvalidTreeFromCasa blobKey _bs) = "Invalid tree from casa: " <> display blobKey
   display (PackageIdentifierRevisionParseFail text) =
     "Invalid package identifier (with optional revision): " <>
     display text
