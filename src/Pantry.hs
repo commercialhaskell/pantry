@@ -264,7 +264,7 @@ withPantryConfig root hsc he count pullURL maxPerRequest inner = do
 --
 -- @since 0.1.1.1
 defaultCasaPullURL :: String
-defaultCasaPullURL = "http://casa.fpcomplete.com/v1/pull" -- FIXME: Switch to https when ready.
+defaultCasaPullURL = "https://casa.fpcomplete.com/v1/pull"
 
 -- | Default max keys to pull per request.
 --
