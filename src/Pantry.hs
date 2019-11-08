@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | Content addressable Haskell package management, providing for
@@ -11,7 +12,7 @@ module Pantry
     PantryConfig
   , HackageSecurityConfig (..)
   , defaultHackageSecurityConfig
-  , defaultCasaPullURL
+  , defaultCasaRepoPrefix
   , defaultCasaMaxPerRequest
   , HasPantryConfig (..)
   , withPantryConfig
@@ -188,6 +189,7 @@ import qualified RIO.List as List
 import qualified RIO.FilePath as FilePath
 import Pantry.Archive
 import Pantry.Casa
+import Casa.Client (thParserCasaRepo, CasaRepoPrefix)
 import Pantry.Repo
 import qualified Pantry.SHA256 as SHA256
 import Pantry.Storage hiding (TreeEntry, PackageName, Version)
@@ -232,7 +234,7 @@ withPantryConfig
   -- what version of hpack should we use?
   -> Int
   -- ^ Maximum connection count
-  -> String
+  -> CasaRepoPrefix
   -- ^ The casa pull URL e.g. https://casa.fpcomplete.com/v1/pull.
   -> Int
   -- ^ Max casa keys to pull per request.
@@ -256,15 +258,15 @@ withPantryConfig root hsc he count pullURL maxPerRequest inner = do
       , pcConnectionCount = count
       , pcParsedCabalFilesRawImmutable = ref1
       , pcParsedCabalFilesMutable = ref2
-      , pcCasaPullURL = pullURL
+      , pcCasaRepoPrefix = pullURL
       , pcCasaMaxPerRequest = maxPerRequest
       }
 
 -- | Default pull URL for Casa.
 --
 -- @since 0.1.1.1
-defaultCasaPullURL :: String
-defaultCasaPullURL = "https://casa.fpcomplete.com/v1/pull"
+defaultCasaRepoPrefix :: CasaRepoPrefix
+defaultCasaRepoPrefix = $(thParserCasaRepo "https://casa.fpcomplete.com")
 
 -- | Default max keys to pull per request.
 --
@@ -1653,15 +1655,15 @@ instance HasTerm PantryApp where
 --
 -- @since 0.1.0.0
 runPantryApp :: MonadIO m => RIO PantryApp a -> m a
-runPantryApp = runPantryAppWith 8 defaultCasaPullURL defaultCasaMaxPerRequest
+runPantryApp = runPantryAppWith 8 defaultCasaRepoPrefix defaultCasaMaxPerRequest
 
 -- | Run some code against pantry using basic sane settings.
 --
 -- For testing, see 'runPantryAppClean'.
 --
 -- @since 0.1.1.1
-runPantryAppWith :: MonadIO m => Int -> String -> Int -> RIO PantryApp a -> m a
-runPantryAppWith maxConnCount casaPullURL casaMaxPerRequest f = runSimpleApp $ do
+runPantryAppWith :: MonadIO m => Int -> CasaRepoPrefix -> Int -> RIO PantryApp a -> m a
+runPantryAppWith maxConnCount casaRepoPrefix casaMaxPerRequest f = runSimpleApp $ do
   sa <- ask
   stack <- getAppUserDataDirectory "stack"
   root <- parseAbsDir $ stack FilePath.</> "pantry"
@@ -1670,7 +1672,7 @@ runPantryAppWith maxConnCount casaPullURL casaMaxPerRequest f = runSimpleApp $ d
     defaultHackageSecurityConfig
     HpackBundled
     maxConnCount
-    casaPullURL
+    casaRepoPrefix
     casaMaxPerRequest
     $ \pc ->
       runRIO
@@ -1696,7 +1698,7 @@ runPantryAppClean f = liftIO $ withSystemTempDirectory "pantry-clean" $ \dir -> 
     defaultHackageSecurityConfig
     HpackBundled
     8
-    defaultCasaPullURL
+    defaultCasaRepoPrefix
     defaultCasaMaxPerRequest
     $ \pc ->
       runRIO

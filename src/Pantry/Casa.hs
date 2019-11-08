@@ -45,7 +45,7 @@ casaBlobSource ::
 casaBlobSource keys = source .| convert .| store
   where
     source = do
-      pullUrl <- lift $ lift $ lift $ view $ pantryConfigL . to pcCasaPullURL
+      pullUrl <- lift $ lift $ lift $ view $ pantryConfigL . to pcCasaRepoPrefix
       maxPerRequest <- lift $ lift $ lift $ view $ pantryConfigL . to pcCasaMaxPerRequest
       Casa.blobsSource
         (Casa.SourceConfig

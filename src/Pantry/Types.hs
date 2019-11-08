@@ -149,6 +149,7 @@ import Path (Path, Abs, Dir, File, toFilePath, filename, (</>), parseRelFile)
 import Path.IO (resolveFile, resolveDir)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NE
+import Casa.Client (CasaRepoPrefix)
 
 -- | Parsed tree with more information on the Haskell package it contains.
 --
@@ -244,7 +245,7 @@ data PantryConfig = PantryConfig
   -- print out any warnings that still need to be printed.
   , pcConnectionCount :: !Int
   -- ^ concurrently open downloads
-  , pcCasaPullURL :: !String
+  , pcCasaRepoPrefix :: !CasaRepoPrefix
   -- ^ The pull URL e.g. @https://casa.fpcomplete.com/v1/pull@
   , pcCasaMaxPerRequest :: !Int
   -- ^ Maximum blobs sent per pull request.
