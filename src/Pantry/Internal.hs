@@ -5,6 +5,7 @@ module Pantry.Internal
   , renderTree
   , Tree (..)
   , TreeEntry (..)
+  , FileType(..)
   , mkSafeFilePath
   , pcHpackExecutable
   , normalizeParents
