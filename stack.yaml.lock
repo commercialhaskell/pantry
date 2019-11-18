@@ -40,31 +40,31 @@ packages:
   original:
     hackage: unliftio-0.2.12
 - completed:
-    size: 13378
+    size: 18079
     subdir: casa-client
-    url: https://github.com/fpco/casa/archive/fe80c92fde5458d0b1521b2bc6853a5a08b0fa52.tar.gz
+    url: https://github.com/fpco/casa/archive/fc0ed26858bfc4f2966ed2dfb2871bae9266dda6.tar.gz
     name: casa-client
     version: 0.0.0
-    sha256: f158770a60e912d2c871129484f23869336eda43f4b8e294d9bf6a31a3e89253
+    sha256: 2545af15b33e4e7978f667d5071e6764700aa8bf87cde4b5e58446b67db1ee24
     pantry-tree:
       size: 120
-      sha256: a94257af4a08f393a58a6299541ba213ceb917bfc058b0f2d5fbff2f70d74817
+      sha256: b1b2a552e3a2ef5c2944721941b433937c839a1f6530178e0b4f8c213dccd882
   original:
     subdir: casa-client
-    url: https://github.com/fpco/casa/archive/fe80c92fde5458d0b1521b2bc6853a5a08b0fa52.tar.gz
+    url: https://github.com/fpco/casa/archive/fc0ed26858bfc4f2966ed2dfb2871bae9266dda6.tar.gz
 - completed:
-    size: 13378
+    size: 18079
     subdir: casa-types
-    url: https://github.com/fpco/casa/archive/fe80c92fde5458d0b1521b2bc6853a5a08b0fa52.tar.gz
+    url: https://github.com/fpco/casa/archive/fc0ed26858bfc4f2966ed2dfb2871bae9266dda6.tar.gz
     name: casa-types
     version: 0.0.0
-    sha256: f158770a60e912d2c871129484f23869336eda43f4b8e294d9bf6a31a3e89253
+    sha256: 2545af15b33e4e7978f667d5071e6764700aa8bf87cde4b5e58446b67db1ee24
     pantry-tree:
       size: 118
-      sha256: 1f1d164fc2c464f513d3cbfcf0adb09c703b0ae79b9819f1c384ad3c47ab59e7
+      sha256: b61c04e24e3be39d4ed8f096b3bc286091edc7587a279cb7b8ec26019181382a
   original:
     subdir: casa-types
-    url: https://github.com/fpco/casa/archive/fe80c92fde5458d0b1521b2bc6853a5a08b0fa52.tar.gz
+    url: https://github.com/fpco/casa/archive/fc0ed26858bfc4f2966ed2dfb2871bae9266dda6.tar.gz
 snapshots:
 - completed:
     size: 500539
