@@ -1,5 +1,6 @@
 resolver: nightly-2019-07-15
 
+extra-deps:
 - github: fpco/casa
   commit: fc0ed26858bfc4f2966ed2dfb2871bae9266dda6
   subdirs:
