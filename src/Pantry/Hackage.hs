@@ -20,6 +20,7 @@ module Pantry.Hackage
 
 import RIO
 import RIO.Process
+import Pantry.Casa
 import Data.Aeson
 import Conduit
 import Data.Conduit.Tar
@@ -382,9 +383,45 @@ resolveCabalFileInfo pir@(PackageIdentifierRevision name ver cfi) = do
   where
     inner =
       case cfi of
-        CFIHash sha _msize -> withStorage $ loadBlobBySHA sha
+        CFIHash sha msize -> loadOrDownloadBlobBySHA pir sha msize
         CFIRevision rev -> (fmap fst . Map.lookup rev) <$> withStorage (loadHackagePackageVersion name ver)
         CFILatest -> (fmap (fst . fst) . Map.maxView) <$> withStorage (loadHackagePackageVersion name ver)
+
+-- | Load or download a blob by its SHA.
+loadOrDownloadBlobBySHA ::
+     (Display a, HasPantryConfig env, HasLogFunc env)
+  => a
+  -> SHA256
+  -> Maybe FileSize
+  -> RIO env (Maybe BlobId)
+loadOrDownloadBlobBySHA label sha256 msize = do
+  mresult <- byDB
+  case mresult of
+    Nothing -> do
+      case msize of
+        Nothing -> do
+          pure Nothing
+        Just size -> do
+          mblob <- casaLookupKey (BlobKey sha256 size)
+          case mblob of
+            Nothing -> do
+              pure Nothing
+            Just {} -> do
+              result <- byDB
+              case result of
+                Just blobId -> do
+                  logDebug ("Pulled blob from Casa for " <> display label)
+                  pure (Just blobId)
+                Nothing -> do
+                  logWarn
+                    ("Bug? Blob pulled from Casa not in database for " <>
+                     display label)
+                  pure Nothing
+    Just blobId -> do
+      logDebug ("Got blob from Pantry database for " <> display label)
+      pure (Just blobId)
+  where
+    byDB = withStorage $ loadBlobBySHA sha256
 
 -- | Given package identifier and package caches, return list of packages
 -- with the same name and the same two first version number components found

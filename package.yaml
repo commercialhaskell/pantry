@@ -64,6 +64,8 @@ dependencies:
 - rio-prettyprint
 - mtl
 - filelock
+- casa-client
+- casa-types
 
 ghc-options:
   - -Wall
@@ -101,6 +103,7 @@ library:
   - Pantry.Repo
   - Pantry.SQLite
   - Pantry.Storage
+  - Pantry.Casa
   - Pantry.Tree
   - Pantry.Types
 

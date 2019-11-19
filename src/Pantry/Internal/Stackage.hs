@@ -31,6 +31,8 @@ import Pantry.Storage as X
   , loadBlobById
   , allBlobsSource
   , allBlobsCount
+  , allHackageCabalCount
+  , allHackageCabalRawPackageLocations
   , migrateAll
   , treeCabal
   , Key(unBlobKey)

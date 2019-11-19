@@ -23,7 +23,9 @@ module Pantry.Storage
   , loadBlobById
   , loadBlobBySHA
   , allBlobsSource
+  , allHackageCabalRawPackageLocations
   , allBlobsCount
+  , allHackageCabalCount
   , getBlobKey
   , loadURLBlob
   , storeURLBlob
@@ -368,8 +370,63 @@ allBlobsSource mblobId =
   selectSource [BlobId >. blobId | Just blobId <- [mblobId]] [Asc BlobId] .|
   mapC ((entityKey &&& blobContents . entityVal))
 
+-- | Pull all hackage cabal entries from the database as
+-- 'RawPackageLocationImmutable'. We do a manual join rather than
+-- dropping to raw SQL, and Esqueleto would add more deps.
+allHackageCabalRawPackageLocations ::
+     HasResourceMap env
+  => Maybe HackageCabalId
+  -- ^ For some x, yield cabals whose id>x.
+  -> ReaderT SqlBackend (RIO env) (Map.Map HackageCabalId P.RawPackageLocationImmutable)
+allHackageCabalRawPackageLocations mhackageId = do
+  hackageCabals :: Map HackageCabalId HackageCabal <-
+    selectTuples
+      [HackageCabalId >. hackageId | Just hackageId <- [mhackageId]]
+      []
+  packageNames :: Map PackageNameId PackageName <- selectTuples [] []
+  versions :: Map VersionId Version <- selectTuples [] []
+  for
+    hackageCabals
+    (\hackageCabal ->
+       case Map.lookup (hackageCabalName hackageCabal) packageNames of
+         Nothing -> error "no such package name"
+         Just packageName ->
+           let P.PackageNameP packageName' = packageNameName packageName
+            in case Map.lookup (hackageCabalVersion hackageCabal) versions of
+                 Nothing -> error "no such version"
+                 Just version ->
+                   let P.VersionP version' = versionVersion version
+                    in do mtree <-
+                            case hackageCabalTree hackageCabal of
+                              Just key -> selectFirst [TreeId ==. key] []
+                              Nothing -> pure Nothing
+                          mblobKey <-
+                            maybe
+                              (pure Nothing)
+                              (fmap Just . getBlobKey)
+                              (fmap (treeKey . entityVal) mtree)
+                          pure
+                            (P.RPLIHackage
+                               (P.PackageIdentifierRevision
+                                  packageName'
+                                  version'
+                                  (P.CFIRevision
+                                     (hackageCabalRevision hackageCabal)))
+                               (fmap P.TreeKey mblobKey)))
+  where
+    selectTuples pred sort =
+      fmap (Map.fromList . map tuple) (selectList pred sort)
+    tuple (Entity k v) = (k, v)
+
 allBlobsCount :: Maybe BlobId -> ReaderT SqlBackend (RIO env) Int
 allBlobsCount mblobId = count [BlobId >. blobId | Just blobId <- [mblobId]]
+
+allHackageCabalCount :: Maybe HackageCabalId -> ReaderT SqlBackend (RIO env) Int
+allHackageCabalCount mhackageCabalId =
+  count
+    [ HackageCabalId >. hackageCabalId
+    | Just hackageCabalId <- [mhackageCabalId]
+    ]
 
 getBlobKey :: BlobId -> ReaderT SqlBackend (RIO env) BlobKey
 getBlobKey bid = do

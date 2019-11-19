@@ -42,6 +42,7 @@ module Pantry.Types
   , Tree (..)
   , renderTree
   , parseTree
+  , parseTreeM
   , SHA256
   , Unresolved
   , resolvePaths
@@ -148,6 +149,7 @@ import Path (Path, Abs, Dir, File, toFilePath, filename, (</>), parseRelFile)
 import Path.IO (resolveFile, resolveDir)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NE
+import Casa.Client (CasaRepoPrefix)
 
 -- | Parsed tree with more information on the Haskell package it contains.
 --
@@ -243,6 +245,10 @@ data PantryConfig = PantryConfig
   -- print out any warnings that still need to be printed.
   , pcConnectionCount :: !Int
   -- ^ concurrently open downloads
+  , pcCasaRepoPrefix :: !CasaRepoPrefix
+  -- ^ The pull URL e.g. @https://casa.fpcomplete.com/v1/pull@
+  , pcCasaMaxPerRequest :: !Int
+  -- ^ Maximum blobs sent per pull request.
   }
 
 -- | Should we print warnings when loading a cabal file?
@@ -836,12 +842,14 @@ data PantryException
   | InvalidCabalFilePath !(Path Abs File)
   | DuplicatePackageNames !Utf8Builder ![(PackageName, [RawPackageLocationImmutable])]
   | MigrationFailure !Text !(Path Abs File) !SomeException
+  | InvalidTreeFromCasa !BlobKey !ByteString
 
   deriving Typeable
 instance Exception PantryException where
 instance Show PantryException where
   show = T.unpack . utf8BuilderToText . display
 instance Display PantryException where
+  display (InvalidTreeFromCasa blobKey _bs) = "Invalid tree from casa: " <> display blobKey
   display (PackageIdentifierRevisionParseFail text) =
     "Invalid package identifier (with optional revision): " <>
     display text
@@ -1166,6 +1174,12 @@ netstring t =
 
 netword :: Word -> Builder
 netword w = wordDec w <> ":"
+
+parseTreeM :: MonadThrow m => (BlobKey, ByteString) -> m (TreeKey, Tree)
+parseTreeM (blobKey, blob) =
+  case parseTree blob of
+    Nothing -> throwM (InvalidTreeFromCasa blobKey blob)
+    Just tree -> pure (TreeKey blobKey, tree)
 
 parseTree :: ByteString -> Maybe Tree
 parseTree bs1 = do
