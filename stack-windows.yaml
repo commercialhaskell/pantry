@@ -8,5 +8,11 @@ extra-deps:
 - unliftio-0.2.12
 - silently-1.2.5.1
 
+- github: fpco/casa
+  commit: fc0ed26858bfc4f2966ed2dfb2871bae9266dda6
+  subdirs:
+     - casa-client
+     - casa-types
+
 ghc-options:
    "$locals": -fhide-source-paths
