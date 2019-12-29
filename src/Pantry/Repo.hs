@@ -162,9 +162,9 @@ archiveSubmodules tarball = do
           , "foreach"
           , "--recursive"
           , "git -c core.autocrlf=false archive --prefix=$displaypath/ -o bar.tar HEAD;" <>
-            " rm -rf temp; mkdir temp; mv bar.tar temp/; tar " <>
+            " rm -rf temp; mkdir temp; mv bar.tar temp/; tar " <> forceLocal <>
             " -C temp -xf temp/bar.tar; " <>
-            "rm temp/bar.tar; tar " <>
+            "rm temp/bar.tar; tar " <> forceLocal <>
             " -C temp -rf " <>
             tarball <>
             " . ;"
