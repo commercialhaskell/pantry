@@ -1,11 +1,8 @@
-resolver: lts-13.28
+resolver: lts-14.20
 
 extra-deps:
-- http-download-0.1.0.0
-- rio-prettyprint-0.1.0.0
-- ansi-terminal-0.9
-- rio-0.1.11.0
-- unliftio-0.2.12
+- Cabal-3.0.0.0
+- hpack-0.33.0
 
 - github: fpco/casa
   commit: fc0ed26858bfc4f2966ed2dfb2871bae9266dda6
