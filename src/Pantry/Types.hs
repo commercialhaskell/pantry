@@ -470,7 +470,7 @@ instance PersistField RepoType where
     case i :: Int32 of
       1 -> pure RepoGit
       2 -> pure RepoHg
-      _ -> fail $ "Invalid RepoType: " ++ show i
+      _ -> Left $ fromString $ "Invalid RepoType: " ++ show i
 instance PersistFieldSql RepoType where
   sqlType _ = SqlInt32
 
@@ -1459,22 +1459,25 @@ instance Display ArchiveLocation where
 
 parseArchiveLocationObject :: Object -> WarningParser (Unresolved ArchiveLocation)
 parseArchiveLocationObject o =
-    ((o ..: "url") >>= validateUrl) <|>
-    ((o ..: "filepath") >>= validateFilePath) <|>
-    ((o ..: "archive") >>= parseArchiveLocationText) <|>
-    ((o ..: "location") >>= parseArchiveLocationText)
+    ((o ..: "url") >>= either (fail . T.unpack) pure . validateUrl) <|>
+    ((o ..: "filepath") >>= either (fail . T.unpack) pure . validateFilePath) <|>
+    ((o ..: "archive") >>= either (fail . T.unpack) pure . parseArchiveLocationText) <|>
+    ((o ..: "location") >>= either (fail . T.unpack) pure . parseArchiveLocationText)
 
 -- Forgive me my father, for I have sinned (bad fail, bad!)
-parseArchiveLocationText :: (Monad m, Alternative m) => Text -> m (Unresolved ArchiveLocation)
-parseArchiveLocationText t = validateUrl t <|> validateFilePath t
+parseArchiveLocationText :: Text -> Either Text (Unresolved ArchiveLocation)
+parseArchiveLocationText t =
+  case validateUrl t of
+    Left e -> validateFilePath t
+    Right x -> Right x
 
-validateUrl :: Monad m => Text -> m (Unresolved ArchiveLocation)
+validateUrl :: Text -> Either Text (Unresolved ArchiveLocation)
 validateUrl t =
   case parseRequest $ T.unpack t of
-    Left _ -> fail $ "Could not parse URL: " ++ T.unpack t
+    Left _ -> Left $ "Could not parse URL: " <> t
     Right _ -> pure $ pure $ ALUrl t
 
-validateFilePath :: Monad m => Text -> m (Unresolved ArchiveLocation)
+validateFilePath :: Text -> Either Text (Unresolved ArchiveLocation)
 validateFilePath t =
   if any (\ext -> ext `T.isSuffixOf` t) (T.words ".zip .tar .tar.gz")
     then pure $ Unresolved $ \mdir ->
@@ -1483,7 +1486,7 @@ validateFilePath t =
              Just dir -> do
                abs' <- resolveFile dir $ T.unpack t
                pure $ ALFilePath $ ResolvedPath (RelFilePath t) abs'
-    else fail $ "Does not have an archive file extension: " ++ T.unpack t
+    else Left $ "Does not have an archive file extension: " <> t
 
 instance ToJSON RawPackageLocation where
   toJSON (RPLImmutable rpli) = toJSON rpli
@@ -1599,8 +1602,8 @@ instance FromJSON (WithJSONWarnings (Unresolved (NonEmpty RawPackageLocationImmu
       http :: Value -> Parser (WithJSONWarnings (Unresolved (NonEmpty RawPackageLocationImmutable)))
       http = withText "UnresolvedPackageLocationImmutable.RPLIArchive (Text)" $ \t ->
         case parseArchiveLocationText t of
-          Nothing -> fail $ "Invalid archive location: " ++ T.unpack t
-          Just (Unresolved mkArchiveLocation) ->
+          Left _ -> fail $ "Invalid archive location: " ++ T.unpack t
+          Right (Unresolved mkArchiveLocation) ->
             pure $ noJSONWarnings $ Unresolved $ \mdir -> do
               raLocation <- mkArchiveLocation mdir
               let raHash = Nothing
