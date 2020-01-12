@@ -22,7 +22,6 @@ import qualified Pantry.HTTP as HTTP
 import Hackage.Security.Client hiding (Header)
 import Hackage.Security.Client.Repository.HttpLib
 import Hackage.Security.Util.Checked
-import qualified Hackage.Security.Util.Lens as Lens
 
 {-------------------------------------------------------------------------------
   Top-level API
@@ -133,7 +132,10 @@ setRequestHeaders opts =
     finalizeHeader (name, strs) = [(name, BS.intercalate ", " (reverse strs))]
 
     insert :: Eq a => a -> [b] -> [(a, [b])] -> [(a, [b])]
-    insert x y = Lens.modify (Lens.lookupM x) (++ y)
+    insert _ _ [] = []
+    insert x y ((k, v):pairs)
+      | x == k = (k, v ++ y) : insert x y pairs
+      | otherwise = (k, v) : insert x y pairs
 
 -- | Extract the response headers
 getResponseHeaders :: HTTP.Response a -> [HttpResponseHeader]
