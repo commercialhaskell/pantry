@@ -1264,7 +1264,7 @@ data PackageTarball = PackageTarball
 --
 -- @since 0.1.0.0
 parsePackageIdentifier :: String -> Maybe PackageIdentifier
-parsePackageIdentifier = either (error . show) Just . explicitEitherParsec (packageIdentifierParsec <* Parse.eof)
+parsePackageIdentifier = either (const Nothing) Just . explicitEitherParsec (packageIdentifierParsec <* Parse.eof)
 
 packageIdentifierParsec :: ParsecParser PackageIdentifier
 packageIdentifierParsec = do
