@@ -1464,11 +1464,17 @@ parseArchiveLocationObject o =
     ((o ..: "archive") >>= either (fail . T.unpack) pure . parseArchiveLocationText) <|>
     ((o ..: "location") >>= either (fail . T.unpack) pure . parseArchiveLocationText)
 
--- Forgive me my father, for I have sinned (bad fail, bad!)
 parseArchiveLocationText :: Text -> Either Text (Unresolved ArchiveLocation)
 parseArchiveLocationText t =
   case validateUrl t of
-    Left e -> validateFilePath t
+    Left e1 ->
+      case validateFilePath t of
+        Left e2 -> Left $ T.unlines
+          [ "Invalid archive location, neither a URL nor a file path"
+          , "  URL error: " <> e1
+          , "  File path error: " <> e2
+          ]
+        Right x -> Right x
     Right x -> Right x
 
 validateUrl :: Text -> Either Text (Unresolved ArchiveLocation)
