@@ -9,9 +9,6 @@ copyright:   2018-2019 FP Complete
 license:     BSD3
 github:      commercialhaskell/pantry
 
-default-extensions:
-- MonadFailDesugaring
-
 extra-source-files:
 - README.md
 - ChangeLog.md
@@ -49,7 +46,7 @@ dependencies:
 - persistent
 - persistent-sqlite >= 2.9.3
 - persistent-template
-- Cabal
+- Cabal >= 3 && < 3.1
 - path-io
 - rio-orphans
 - conduit-extra

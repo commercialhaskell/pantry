@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.1.
+-- This file has been generated from package.yaml by hpack version 0.31.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 74980cb1477449771da1155e452c1782f7561479d5c21e87ff622e74375e35f8
+-- hash: e21ca6fb88836607844fe30d32367d2758b9cd386a500fd359db40284ba90786
 
 name:           pantry
 version:        0.2.0.0
@@ -53,10 +53,9 @@ library
       Pantry.Types
   hs-source-dirs:
       src/
-  default-extensions: MonadFailDesugaring
   ghc-options: -Wall
   build-depends:
-      Cabal
+      Cabal >=3 && <3.1
     , aeson
     , ansi-terminal
     , base >=4.10 && <5
@@ -132,10 +131,9 @@ test-suite spec
       Paths_pantry
   hs-source-dirs:
       test
-  default-extensions: MonadFailDesugaring
   ghc-options: -Wall
   build-depends:
-      Cabal
+      Cabal >=3 && <3.1
     , QuickCheck
     , aeson
     , ansi-terminal

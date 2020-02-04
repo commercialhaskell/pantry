@@ -15,7 +15,7 @@ import Pantry.Types
 import RIO.FilePath ((</>), takeDirectory)
 import RIO.Directory (createDirectoryIfMissing, setPermissions, getPermissions, setOwnerExecutable)
 import Path (Path, Abs, Dir, toFilePath)
-import Distribution.Parsec.Common (PWarning (..))
+import Distribution.Parsec (PWarning (..))
 import Distribution.PackageDescription (GenericPackageDescription)
 import Distribution.PackageDescription.Parsec
 import Path (File)
