@@ -1464,10 +1464,15 @@ loadFromURL
   -> Maybe BlobKey
   -> RIO env ByteString
 loadFromURL url Nothing = do
-  mcached <- withStorage $ loadURLBlob url
-  case mcached of
-    Just bs -> return bs
-    Nothing -> loadWithCheck url Nothing
+  -- Question mark indicates a dynamic URL that should always be refetched if it's not locked,
+  -- bypassing Pantry cache.
+  if "?" `T.isSuffixOf` url
+     then loadWithCheck url Nothing
+     else do
+       mcached <- withStorage $ loadURLBlob url
+       case mcached of
+         Just bs -> return bs
+         Nothing -> loadWithCheck url Nothing
 loadFromURL url (Just bkey) = do
   mcached <- withStorage $ loadBlob bkey
   case mcached of
