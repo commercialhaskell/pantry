@@ -17,7 +17,6 @@ import Pantry.Storage as X
   , PackageName
   , PackageNameId
   , Tree(..)
-  , TreeEntry(..)
   , TreeEntryId
   , TreeId
   , Unique(..)
@@ -29,12 +28,8 @@ import Pantry.Storage as X
   , getTreeForKey
   , getVersionId
   , loadBlobById
-  , allBlobsSource
-  , allBlobsCount
-  , allHackageCabalCount
-  , allHackageCabalRawPackageLocations
+  , storeBlob
   , migrateAll
-  , treeCabal
   , Key(unBlobKey)
   )
 import Pantry.Types as X
@@ -45,11 +40,6 @@ import Pantry.Types as X
   , Storage(..)
   , VersionP(..)
   , mkSafeFilePath
-  , packageNameString
   , packageTreeKey
-  , parsePackageName
-  , parseVersion
-  , parseVersionThrowing
   , unSafeFilePath
-  , versionString
   )
