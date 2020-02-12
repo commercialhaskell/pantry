@@ -29,6 +29,7 @@ import Pantry.Storage as X
   , getTreeForKey
   , getVersionId
   , loadBlobById
+  , storeBlob
   , allBlobsSource
   , allBlobsCount
   , allHackageCabalCount
