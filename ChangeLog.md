@@ -1,6 +1,6 @@
 # Changelog for pantry
 
-## Unreleased changes
+## v0.3.0.0
 
 * Upgrade to Cabal 3.0
 
