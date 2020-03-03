@@ -1,6 +1,6 @@
 # pantry
 
-TODO: Add Travis and AppVeyor badges
+[![Build Status](https://dev.azure.com/commercialhaskell/pantry/_apis/build/status/commercialhaskell.pantry?branchName=master)](https://dev.azure.com/commercialhaskell/pantry/_build/latest?definitionId=6&branchName=master)
 
 Content addressable Haskell package management, providing for secure,
 reproducible acquisition of Haskell package contents and metadata.
