@@ -108,6 +108,7 @@ module Pantry.Types
   , SnapshotCacheHash (..)
   , getGlobalHintsFile
   , bsToBlobKey
+  , warnMissingCabalFile
   ) where
 
 import RIO
@@ -2298,3 +2299,17 @@ getGlobalHintsFile = do
 bsToBlobKey :: ByteString -> BlobKey
 bsToBlobKey bs =
     BlobKey (SHA256.hashBytes bs) (FileSize (fromIntegral (B.length bs)))
+
+-- | Warn if the package uses 'PCHpack'.
+--
+-- @since 0.3.1.0
+warnMissingCabalFile :: HasLogFunc env => Package -> RIO env ()
+warnMissingCabalFile pa =
+  case packageCabalEntry pa of
+    PCCabalFile _ -> pure ()
+    PCHpack _ -> logWarn $
+      "DEPRECATED: The package " <> fromString (packageIdentifierString (packageIdent pa)) <>
+      " does not include a cabal file.\n" <>
+      "Instead, it includes an hpack package.yaml file for generating a cabal file.\n" <>
+      "This usage is deprecated; please see https://github.com/commercialhaskell/stack/issues/5210.\n" <>
+      "Support for this workflow will be removed in the future.\n"

@@ -96,6 +96,8 @@ getArchive rpli archive rpm = do
         storeCache archive sha size pa
         pure (sha, size, pa)
 
+  warnMissingCabalFile pa
+
   either throwIO (\_ -> pure cached) $ checkPackageMetadata rpli rpm pa
 
 storeCache

@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.3.1.0
+
+* Add a deprecation warning when using a repo/archive without a cabal file, see [Stack #5210](https://github.com/commercialhaskell/stack/issues/5210)
+
 ## v0.3.0.0
 
 * Upgrade to Cabal 3.0
