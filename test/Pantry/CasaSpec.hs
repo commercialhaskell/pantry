@@ -17,7 +17,7 @@ completeSpec =
     "completePackageLocation: unliftio_0_2_12"
     (shouldReturn
        (runPantryAppClean
-          (completePackageLocation (argsRlpi unliftio_0_2_12)))
+          (cplComplete <$> completePackageLocation (argsRlpi unliftio_0_2_12)))
        ( PLIHackage
            (PackageIdentifier
               { pkgName = "unliftio"
