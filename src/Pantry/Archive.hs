@@ -136,9 +136,9 @@ loadCache rpli archive =
             _ -> do
               case loc of
                 ALUrl url -> do
-                  logWarn $ "Using archive from " <> display url <> " without a specified cryptographic hash"
-                  logWarn $ "Cached hash is " <> display sha <> ", file size " <> display size
-                  logWarn "For security and reproducibility, please add a hash and file size to your configuration"
+                  -- Only debug level, let lock files solve this
+                  logDebug $ "Using archive from " <> display url <> " without a specified cryptographic hash"
+                  logDebug $ "Cached hash is " <> display sha <> ", file size " <> display size
                 ALFilePath _ -> pure ()
               fmap (sha, size,) <$> loadFromCache tid
         Just sha'
@@ -146,15 +146,14 @@ loadCache rpli archive =
               case msize of
                 Nothing -> do
                   case loc of
-                    ALUrl url -> do
-                      logWarn $ "Archive from " <> display url <> " does not specify a size"
-                      logWarn $ "To avoid an overflow attack, please add the file size to your configuration: " <> display size
+                    -- Only debug level, let lock files solve this
+                    ALUrl url -> logDebug $ "Archive from " <> display url <> " does not specify a size"
                     ALFilePath _ -> pure ()
                   fmap (sha, size,) <$> loadFromCache tid
                 Just size'
                   | size == size' -> fmap (sha, size,) <$> loadFromCache tid
                   | otherwise -> do
-
+                      -- This is an actual warning, since we have a concrete mismatch
                       logWarn $ "Archive from " <> display loc <> " has a matching hash but mismatched size"
                       logWarn "Please verify that your configuration provides the correct size"
                       loop rest
