@@ -1,8 +1,10 @@
 # Changelog for pantry
 
-## v0.3.1.0
+## v0.4.0.0
 
 * Add a deprecation warning when using a repo/archive without a cabal file, see [Stack #5210](https://github.com/commercialhaskell/stack/issues/5210)
+* Do not include repo/archive dependencies which do not include cabal files in lock files
+* Remove some no longer used functions
 
 ## v0.3.0.0
 

@@ -104,9 +104,10 @@ module Pantry
   , AddPackagesConfig (..)
 
     -- * Completion functions
+  , CompletePackageLocation (..)
   , completePackageLocation
-  , completeSnapshotLayer
   , completeSnapshotLocation
+  , warnMissingCabalFile
 
     -- * Parsers
   , parseWantedCompiler
@@ -820,7 +821,8 @@ loadPackageRaw
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => RawPackageLocationImmutable
   -> RIO env Package
-loadPackageRaw rpli =
+loadPackageRaw rpli = do
+  logInfo $ "In loadPackageRaw: " <> display rpli
   case getRawTreeKey rpli of
     Just treeKey' -> do
       mpackage <- tryLoadPackageRawViaDbOrCasa rpli treeKey'
@@ -893,15 +895,28 @@ tryLoadPackageRawViaLocalDb rlpi treeKey' = do
     Just treeId ->
       fmap Just (withStorage (loadPackageById rlpi (entityKey treeId)))
 
+-- | Complete package location, plus whether the package has a cabal file. This
+-- is relevant to reproducibility, see
+-- <https://tech.fpcomplete.com/blog/storing-generated-cabal-files>
+--
+-- @since 0.4.0.0
+data CompletePackageLocation = CompletePackageLocation
+  { cplComplete :: !PackageLocationImmutable
+  , cplHasCabalFile :: !Bool
+  }
+
 -- | Fill in optional fields in a 'PackageLocationImmutable' for more reproducible builds.
 --
 -- @since 0.1.0.0
 completePackageLocation
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => RawPackageLocationImmutable
-  -> RIO env PackageLocationImmutable
+  -> RIO env CompletePackageLocation
 completePackageLocation (RPLIHackage (PackageIdentifierRevision n v (CFIHash sha (Just size))) (Just tk)) =
-  pure $ PLIHackage (PackageIdentifier n v) (BlobKey sha size) tk
+  pure CompletePackageLocation
+    { cplComplete = PLIHackage (PackageIdentifier n v) (BlobKey sha size) tk
+    , cplHasCabalFile = True
+    }
 completePackageLocation (RPLIHackage pir0@(PackageIdentifierRevision name version cfi0) _) = do
   logDebug $ "Completing package location information from " <> display pir0
   (pir, cfKey) <-
@@ -916,7 +931,10 @@ completePackageLocation (RPLIHackage pir0@(PackageIdentifierRevision name versio
         logDebug $ "Added in cabal file hash: " <> display pir
         pure (pir, BlobKey sha size)
   treeKey' <- getHackageTarballKey pir
-  pure $ PLIHackage (PackageIdentifier name version) cfKey treeKey'
+  pure CompletePackageLocation
+    { cplComplete = PLIHackage (PackageIdentifier name version) cfKey treeKey'
+    , cplHasCabalFile = True
+    }
 completePackageLocation pl@(RPLIArchive archive rpm) = do
   mpackage <-
     case rpmTreeKey rpm of
@@ -925,7 +943,13 @@ completePackageLocation pl@(RPLIArchive archive rpm) = do
   case (,,) <$> raHash archive <*> raSize archive <*> mpackage of
     Just (sha256, fileSize, package) -> do
       let RawArchive loc _ _ subdir = archive
-      pure $ PLIArchive (Archive loc sha256 fileSize subdir) (packagePM package)
+      pure CompletePackageLocation
+        { cplComplete = PLIArchive (Archive loc sha256 fileSize subdir) (packagePM package)
+        , cplHasCabalFile =
+            case packageCabalEntry package of
+              PCCabalFile{} -> True
+              PCHpack{} -> False
+        }
     Nothing -> byThirdParty (isJust mpackage)
   where
     byThirdParty warnAboutMissingSizeSha = do
@@ -933,7 +957,14 @@ completePackageLocation pl@(RPLIArchive archive rpm) = do
       when warnAboutMissingSizeSha (warnWith sha size)
       -- (getArchive checks archive and package metadata)
       let RawArchive loc _ _ subdir = archive
-      pure $ PLIArchive (Archive loc sha size subdir) (packagePM package)
+      logDebug $ fromString $ show (pl, sha, size, package)
+      pure CompletePackageLocation
+        { cplComplete = PLIArchive (Archive loc sha size subdir) (packagePM package)
+        , cplHasCabalFile =
+            case packageCabalEntry package of
+              PCCabalFile{} -> True
+              PCHpack{} -> False
+        }
     warnWith sha size =
       logWarn
         (mconcat
@@ -947,20 +978,29 @@ completePackageLocation pl@(RPLIArchive archive rpm) = do
            ])
 completePackageLocation pl@(RPLIRepo repo rpm) = do
   unless (isSHA1 (repoCommit repo)) $ throwIO $ CannotCompleteRepoNonSHA1 repo
-  PLIRepo repo <$> completePM pl rpm
+  completePM repo pl rpm
   where
     isSHA1 t = T.length t == 40 && T.all isHexDigit t
 
 completePM
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-  => RawPackageLocationImmutable
+  => Repo
+  -> RawPackageLocationImmutable
   -> RawPackageMetadata
-  -> RIO env PackageMetadata
-completePM plOrig rpm@(RawPackageMetadata mn mv mtk)
-  | Just n <- mn, Just v <- mv, Just tk <- mtk =
-      pure $ PackageMetadata (PackageIdentifier n v) tk
+  -> RIO env CompletePackageLocation
+completePM repo plOrig rpm@(RawPackageMetadata mn mv mtk)
+  | Just n <- mn, Just v <- mv, Just tk <- mtk = do
+      let pm = PackageMetadata (PackageIdentifier n v) tk
+      pure CompletePackageLocation
+        { cplComplete = PLIRepo repo pm
+        -- This next bit is a hack: we don't know for certain that this is the case.
+        -- However, for the use case where complete package metadata has been supplied,
+        -- we'll assume there's a cabal file for purposes of generating a deprecation warning.
+        , cplHasCabalFile = True
+        }
   | otherwise = do
-      pm <- packagePM <$> loadPackageRaw plOrig
+      package <- loadPackageRaw plOrig
+      let pm = packagePM package
       let isSame x (Just y) = x == y
           isSame _ _ = True
 
@@ -969,7 +1009,13 @@ completePM plOrig rpm@(RawPackageMetadata mn mv mtk)
             isSame (pkgVersion $ pmIdent pm) (rpmVersion rpm) &&
             isSame (pmTreeKey pm) (rpmTreeKey rpm)
       if allSame
-        then pure pm
+        then pure CompletePackageLocation
+               { cplComplete = PLIRepo repo pm
+               , cplHasCabalFile =
+                   case packageCabalEntry package of
+                     PCCabalFile{} -> True
+                     PCHpack{} -> False
+               }
         else throwIO $ CompletePackageMetadataMismatch plOrig pm
 
 packagePM :: Package -> PackageMetadata
@@ -991,27 +1037,6 @@ completeSnapshotLocation (RSLUrl url (Just blobKey)) = pure $ SLUrl url blobKey
 completeSnapshotLocation (RSLUrl url Nothing) = do
   bs <- loadFromURL url Nothing
   pure $ SLUrl url (bsToBlobKey bs)
-
--- | Fill in optional fields in a 'SnapshotLayer' for more reproducible builds.
---
--- @since 0.1.0.0
-completeSnapshotLayer
-  :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-  => RawSnapshotLayer
-  -> RIO env SnapshotLayer
-completeSnapshotLayer rsnapshot = do
-  parent' <- completeSnapshotLocation $ rslParent rsnapshot
-  pls <- traverseConcurrently completePackageLocation $ rslLocations rsnapshot
-  pure SnapshotLayer
-    { slParent = parent'
-    , slLocations = pls
-    , slCompiler= rslCompiler rsnapshot
-    , slDropPackages = rslDropPackages rsnapshot
-    , slFlags = rslFlags rsnapshot
-    , slHidden = rslHidden rsnapshot
-    , slGhcOptions = rslGhcOptions rsnapshot
-    , slPublishTime = rslPublishTime rsnapshot
-    }
 
 traverseConcurrently_
   :: (Foldable f, HasPantryConfig env)
@@ -1041,47 +1066,6 @@ traverseConcurrentlyWith_ count f t0 = do
           pure $ do
             f x
             loop
-
-traverseConcurrently
-  :: (HasPantryConfig env, Traversable t)
-  => (a -> RIO env b) -- ^ action to perform
-  -> t a -- ^ input values
-  -> RIO env (t b)
-traverseConcurrently f t0 = do
-  cnt <- view $ pantryConfigL.to pcConnectionCount
-  traverseConcurrentlyWith cnt f t0
-
--- | Like 'traverse', but does things on
--- up to N separate threads at once.
-traverseConcurrentlyWith
-  :: (MonadUnliftIO m, Traversable t)
-  => Int -- ^ concurrent workers
-  -> (a -> m b) -- ^ action to perform
-  -> t a -- ^ input values
-  -> m (t b)
-traverseConcurrentlyWith count f t0 = do
-  (queue, t1) <- atomically $ do
-    queueDList <- newTVar id
-    t1 <- for t0 $ \x -> do
-      res <- newEmptyTMVar
-      modifyTVar queueDList (. ((x, res):))
-      pure $ atomically $ takeTMVar res
-    dlist <- readTVar queueDList
-    queue <- newTVar $ dlist []
-    pure (queue, t1)
-
-  replicateConcurrently_ count $
-    fix $ \loop -> join $ atomically $ do
-      toProcess <- readTVar queue
-      case toProcess of
-        [] -> pure (pure ())
-        ((x, res):rest) -> do
-          writeTVar queue rest
-          pure $ do
-            y <- f x
-            atomically $ putTMVar res y
-            loop
-  sequence t1
 
 -- | Parse a 'RawSnapshot' (all layers) from a 'RawSnapshotLocation'.
 --
@@ -1202,6 +1186,7 @@ loadAndCompleteSnapshotRaw rawLoc cacheSL cachePL = do
       in pure (snapshot, [CompletedSL (RSLCompiler wc) (SLCompiler wc)], [])
     Right (rsl, sloc) -> do
       (snap0, slocs, completed0) <- loadAndCompleteSnapshotRaw (rslParent rsl) cacheSL cachePL
+      logDebug $ fromString $ show rsl
       (packages, completed, unused) <-
         addAndCompletePackagesToSnapshot
           rawLoc
@@ -1337,12 +1322,14 @@ addPackagesToSnapshot source newPackages (AddPackagesConfig drops flags hiddens 
 cachedSnapshotCompletePackageLocation :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => Map RawPackageLocationImmutable PackageLocationImmutable
   -> RawPackageLocationImmutable
-  -> RIO env PackageLocationImmutable
+  -> RIO env (Maybe PackageLocationImmutable)
 cachedSnapshotCompletePackageLocation cachePackages rpli = do
   let xs = Map.lookup rpli cachePackages
   case xs of
-    Nothing -> completePackageLocation rpli
-    Just x -> pure x
+    Nothing -> do
+      cpl <- completePackageLocation rpli
+      pure $ if cplHasCabalFile cpl then Just (cplComplete cpl) else Nothing
+    Just x -> pure $ Just x
 
 -- | Add more packages to a snapshot completing their locations if needed
 --
@@ -1372,18 +1359,23 @@ addAndCompletePackagesToSnapshot loc cachedPL newPackages (AddPackagesConfig dro
                  -> RawPackageLocationImmutable
                  -> RIO env ([(PackageName, SnapshotPackage)], [CompletedPLI])
       addPackage (ps, completed) rawLoc = do
-        complLoc <- cachedSnapshotCompletePackageLocation cachedPL rawLoc
-        let PackageIdentifier name _ = packageLocationIdent complLoc
-            p = (name, SnapshotPackage
-              { spLocation = complLoc
-              , spFlags = Map.findWithDefault mempty name flags
-              , spHidden = Map.findWithDefault False name hiddens
-              , spGhcOptions = Map.findWithDefault [] name options
-              })
-            completed' = if toRawPLI complLoc == rawLoc
-                         then completed
-                         else CompletedPLI rawLoc complLoc:completed
-        pure (p:ps, completed')
+        mcomplLoc <- cachedSnapshotCompletePackageLocation cachedPL rawLoc
+        case mcomplLoc of
+          Nothing -> do
+            warnMissingCabalFile rawLoc
+            pure (ps, completed)
+          Just complLoc -> do
+            let PackageIdentifier name _ = packageLocationIdent complLoc
+                p = (name, SnapshotPackage
+                  { spLocation = complLoc
+                  , spFlags = Map.findWithDefault mempty name flags
+                  , spHidden = Map.findWithDefault False name hiddens
+                  , spGhcOptions = Map.findWithDefault [] name options
+                  })
+                completed' = if toRawPLI complLoc == rawLoc
+                             then completed
+                             else CompletedPLI rawLoc complLoc:completed
+            pure (p:ps, completed')
   (revNew, revCompleted) <- foldM addPackage ([], []) newPackages
   let (newSingles, newMultiples)
         = partitionEithers
