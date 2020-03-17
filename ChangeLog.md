@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.4.0.1
+
+* Removed errant log message
+
 ## v0.4.0.0
 
 * Add a deprecation warning when using a repo/archive without a cabal file, see [Stack #5210](https://github.com/commercialhaskell/stack/issues/5210)

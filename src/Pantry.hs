@@ -822,7 +822,6 @@ loadPackageRaw
   => RawPackageLocationImmutable
   -> RIO env Package
 loadPackageRaw rpli = do
-  logInfo $ "In loadPackageRaw: " <> display rpli
   case getRawTreeKey rpli of
     Just treeKey' -> do
       mpackage <- tryLoadPackageRawViaDbOrCasa rpli treeKey'
