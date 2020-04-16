@@ -31,6 +31,10 @@ import Pantry.Storage as X
   , storeBlob
   , migrateAll
   , Key(unBlobKey)
+  , allHackageCabalCount
+  , allBlobsSource
+  , allBlobsCount
+  , allHackageCabalRawPackageLocations
   )
 import Pantry.Types as X
   ( ModuleNameP(..)
