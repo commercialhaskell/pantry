@@ -26,6 +26,7 @@ module Pantry
   , hpackExecutableL
 
     -- * Types
+  , P.ResolveData (..)
 
     -- ** Exceptions
   , PantryException (..)
@@ -1417,12 +1418,12 @@ loadRawSnapshotLayer rsl@(RSLUrl url blob) =
   handleAny (throwIO . InvalidSnapshot rsl) $ do
     bs <- loadFromURL url blob
     value <- Yaml.decodeThrow bs
-    snapshot <- warningsParserHelperRaw rsl value Nothing
+    snapshot <- warningsParserHelperRaw rsl value mempty
     pure $ Right (snapshot, (CompletedSL rsl (SLUrl url (bsToBlobKey bs))))
 loadRawSnapshotLayer rsl@(RSLFilePath fp) =
   handleAny (throwIO . InvalidSnapshot rsl) $ do
     value <- Yaml.decodeFileThrow $ toFilePath $ resolvedAbsolute fp
-    snapshot <- warningsParserHelperRaw rsl value $ Just $ parent $ resolvedAbsolute fp
+    snapshot <- warningsParserHelperRaw rsl value $ ResolveData (Just $ parent $ resolvedAbsolute fp) Nothing
     pure $ Right (snapshot, CompletedSL rsl (SLFilePath fp))
 
 -- | Parse a 'SnapshotLayer' value from a 'SnapshotLocation'.
@@ -1441,12 +1442,12 @@ loadSnapshotLayer sl@(SLUrl url blob) =
   handleAny (throwIO . InvalidSnapshot (toRawSL sl)) $ do
     bs <- loadFromURL url (Just blob)
     value <- Yaml.decodeThrow bs
-    snapshot <- warningsParserHelper sl value Nothing
+    snapshot <- warningsParserHelper sl value mempty
     pure $ Right snapshot
 loadSnapshotLayer sl@(SLFilePath fp) =
   handleAny (throwIO . InvalidSnapshot (toRawSL sl)) $ do
     value <- Yaml.decodeFileThrow $ toFilePath $ resolvedAbsolute fp
-    snapshot <- warningsParserHelper sl value $ Just $ parent $ resolvedAbsolute fp
+    snapshot <- warningsParserHelper sl value $ ResolveData (Just $ parent $ resolvedAbsolute fp) Nothing
     pure $ Right snapshot
 
 loadFromURL
@@ -1502,31 +1503,31 @@ warningsParserHelperRaw
   :: HasLogFunc env
   => RawSnapshotLocation
   -> Value
-  -> Maybe (Path Abs Dir)
+  -> ResolveData
   -> RIO env RawSnapshotLayer
-warningsParserHelperRaw rsl val mdir =
+warningsParserHelperRaw rsl val res =
   case parseEither Yaml.parseJSON val of
     Left e -> throwIO $ Couldn'tParseSnapshot rsl e
     Right (WithJSONWarnings x ws) -> do
       unless (null ws) $ do
         logWarn $ "Warnings when parsing snapshot " <> display rsl
         for_ ws $ logWarn . display
-      resolvePaths mdir x
+      resolvePaths res x
 
 warningsParserHelper
   :: HasLogFunc env
   => SnapshotLocation
   -> Value
-  -> Maybe (Path Abs Dir)
+  -> ResolveData
   -> RIO env RawSnapshotLayer
-warningsParserHelper sl val mdir =
+warningsParserHelper sl val res =
   case parseEither Yaml.parseJSON val of
     Left e -> throwIO $ Couldn'tParseSnapshot (toRawSL sl) e
     Right (WithJSONWarnings x ws) -> do
       unless (null ws) $ do
         logWarn $ "Warnings when parsing snapshot " <> display sl
         for_ ws $ logWarn . display
-      resolvePaths mdir x
+      resolvePaths res x
 
 -- | Get the 'PackageName' of the package at the given location.
 --
