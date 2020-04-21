@@ -273,8 +273,10 @@ data ResolveData = ResolveData
     -- version identifiers.
     -- If @Just url@ is provided, then:
     --   * "lts-X.Y" resolves to "url/lts/X/Y.yaml"
-    --   * "nightly-YYYY-MM-DD" resolves to "nightly/YYYY/MM/DD.yaml"
-    -- Note: @url@ must not end with a trailing @/@.
+    --       (see 'ltsSnapshotLocation')
+    --   * "nightly-YYYY-MM-DD" resolves to "url/nightly/YYYY/MM/DD.yaml"
+    --      (see 'nightlySnapshotLocation')
+    -- Note: @url@ must not contain a trailing @/@.
     --
     -- @since TODO:
   }
