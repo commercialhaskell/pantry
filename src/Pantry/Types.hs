@@ -45,7 +45,6 @@ module Pantry.Types
   , parseTreeM
   , SHA256
   , Unresolved
-  , ResolveData (..)
   , resolvePaths
   , Package (..)
   , PackageCabal (..)
@@ -86,6 +85,7 @@ module Pantry.Types
   , ResolvedPath (..)
   , HpackExecutable (..)
   , WantedCompiler (..)
+  --, resolveSnapshotLocation
   , ltsSnapshotLocation
   , nightlySnapshotLocation
   , RawSnapshotLocation (..)
@@ -257,55 +257,28 @@ data PantryConfig = PantryConfig
 -- @since 0.1.0.0
 data PrintWarnings = YesPrintWarnings | NoPrintWarnings
 
--- | Contains the base locations that are used to resolve
--- relative paths in (1) package locations, and
--- (2) snapshot location.
---
--- @since TODO:
-data ResolveData = ResolveData
-  { baseDirectory :: !(Maybe (Path Abs Dir))
-    -- ^ Directory to use for relative paths
-    --
-    -- @since TODO:
-  , baseSnapshotLocation :: !(Maybe Text)
-    -- ^ Base URL used to expand snapshot location
-    -- synonyms, i.e. LTS Haskell and Stackage Nightly
-    -- version identifiers.
-    -- If @Just url@ is provided, then:
-    --   * "lts-X.Y" resolves to "url/lts/X/Y.yaml"
-    --       (see 'ltsSnapshotLocation')
-    --   * "nightly-YYYY-MM-DD" resolves to "url/nightly/YYYY/MM/DD.yaml"
-    --      (see 'nightlySnapshotLocation')
-    -- Note: @url@ must not contain a trailing @/@.
-    --
-    -- @since TODO:
-  }
-instance Semigroup ResolveData where
-  (<>) a b =
-    ResolveData
-      (baseDirectory a <|> baseDirectory b)
-        (baseSnapshotLocation a <|> baseSnapshotLocation b)
-instance Monoid ResolveData where
-  mempty = ResolveData Nothing Nothing
-
 -- | Wraps a value which potentially contains relative paths. Needs to
--- be provided with base locations to resolve these paths.
+-- be provided with a base directory to resolve these paths.
 --
 -- Unwrap this using 'resolvePaths'.
 --
--- @since TODO:
-type Unresolved a = ReaderT ResolveData IO a
+-- @since 0.1.0.0
+newtype Unresolved a = Unresolved (Maybe (Path Abs Dir) -> IO a)
+  deriving Functor
+instance Applicative Unresolved where
+  pure = Unresolved . const . pure
+  Unresolved f <*> Unresolved x = Unresolved $ \mdir -> f mdir <*> x mdir
 
--- | Resolve all of the paths in an 'Unresolved' relative to the
--- given base locations.
+-- | Resolve all of the file paths in an 'Unresolved' relative to the
+-- given directory.
 --
--- @since TODO:
+-- @since 0.1.0.0
 resolvePaths
   :: MonadIO m
-  => ResolveData -- ^ the base locations
+  => Maybe (Path Abs Dir) -- ^ directory to use for relative paths
   -> Unresolved a
   -> m a
-resolvePaths r a = liftIO $ runReaderT a r
+resolvePaths mdir (Unresolved f) = liftIO (f mdir)
 
 -- | A combination of the relative path provided in a config file,
 -- together with the resolved absolute path.
@@ -1514,8 +1487,7 @@ validateUrl t =
 validateFilePath :: Text -> Either Text (Unresolved ArchiveLocation)
 validateFilePath t =
   if any (\ext -> ext `T.isSuffixOf` t) (T.words ".zip .tar .tar.gz")
-    then pure $ do
-           mdir <- asks baseDirectory
+    then pure $ Unresolved $ \mdir ->
            case mdir of
              Nothing -> throwIO $ InvalidFilePathSnapshot t
              Just dir -> do
@@ -1532,8 +1504,7 @@ instance FromJSON (WithJSONWarnings (Unresolved (NonEmpty RawPackageLocation))) 
     ((noJSONWarnings . mkMutable) <$> parseJSON v)
     where
       mkMutable :: Text -> Unresolved (NonEmpty RawPackageLocation)
-      mkMutable t = do
-        mdir <- asks baseDirectory
+      mkMutable t = Unresolved $ \mdir -> do
         case mdir of
           Nothing -> throwIO $ MutablePackageLocationFromUrl t
           Just dir -> do
@@ -1591,12 +1562,12 @@ instance FromJSON (WithJSONWarnings (Unresolved PackageLocationImmutable)) where
           archiveObject =
             withObjectWarnings "UnresolvedPackageLocationImmutable.PLIArchive" $ \o -> do
               pm <- parsePackageMetadata o
-              mkArchiveLocation <- parseArchiveLocationObject o
+              Unresolved mkArchiveLocation <- parseArchiveLocationObject o
               archiveHash <- o ..: "sha256"
               archiveSize <- o ..: "size"
               archiveSubdir <- o ..:? "subdir" ..!= ""
-              pure $ do
-                archiveLocation <- mkArchiveLocation
+              pure $ Unresolved $ \mdir -> do
+                archiveLocation <- mkArchiveLocation mdir
                 pure $ PLIArchive Archive {..} pm
 
           hackageObject =
@@ -1639,9 +1610,9 @@ instance FromJSON (WithJSONWarnings (Unresolved (NonEmpty RawPackageLocationImmu
       http = withText "UnresolvedPackageLocationImmutable.RPLIArchive (Text)" $ \t ->
         case parseArchiveLocationText t of
           Left _ -> fail $ "Invalid archive location: " ++ T.unpack t
-          Right mkArchiveLocation ->
-            pure $ noJSONWarnings $ do
-              raLocation <- mkArchiveLocation
+          Right (Unresolved mkArchiveLocation) ->
+            pure $ noJSONWarnings $ Unresolved $ \mdir -> do
+              raLocation <- mkArchiveLocation mdir
               let raHash = Nothing
                   raSize = Nothing
                   raSubdir = T.empty
@@ -1692,12 +1663,12 @@ instance FromJSON (WithJSONWarnings (Unresolved (NonEmpty RawPackageLocationImmu
         pure $ pure $ NE.map (\(repoSubdir, pm) -> RPLIRepo Repo {..} pm) (osToRpms os)
 
       archiveObject = withObjectWarnings "UnresolvedPackageLocationImmutable.RPLIArchive" $ \o -> do
-        mkArchiveLocation <- parseArchiveLocationObject o
+        Unresolved mkArchiveLocation <- parseArchiveLocationObject o
         raHash <- o ..:? "sha256"
         raSize <- o ..:? "size"
         os <- optionalSubdirs o
-        pure $ do
-          raLocation <- mkArchiveLocation
+        pure $ Unresolved $ \mdir -> do
+          raLocation <- mkArchiveLocation mdir
           pure $ NE.map (\(raSubdir, pm) -> RPLIArchive RawArchive {..} pm) (osToRpms os)
 
       github = withObjectWarnings "PLArchive:github" $ \o -> do
@@ -1895,11 +1866,11 @@ parseRawSnapshotLocation t0 = fromMaybe (parseRawSnapshotLocationPath t0) $
       Right (x, t2) <- Just $ decimal t1
       t3 <- T.stripPrefix "." t2
       Right (y, "") <- Just $ decimal t3
-      Just $ ltsSnapshotLocation x y
+      Just $ pure $ ltsSnapshotLocation x y
     parseNightly = do
       t1 <- T.stripPrefix "nightly-" t0
       date <- readMaybe (T.unpack t1)
-      Just $ nightlySnapshotLocation date
+      Just $ pure $ nightlySnapshotLocation date
 
     parseGithub = do
       t1 <- T.stripPrefix "github:" t0
@@ -1912,8 +1883,8 @@ parseRawSnapshotLocation t0 = fromMaybe (parseRawSnapshotLocationPath t0) $
     parseUrl = parseRequest (T.unpack t0) $> pure (RSLUrl t0 Nothing)
 
 parseRawSnapshotLocationPath :: Text -> Unresolved RawSnapshotLocation
-parseRawSnapshotLocationPath t = do
-  mdir <- asks baseDirectory
+parseRawSnapshotLocationPath t =
+  Unresolved $ \mdir ->
   case mdir of
     Nothing -> throwIO $ InvalidFilePathSnapshot t
     Just dir -> do
@@ -1938,39 +1909,26 @@ defUser = "commercialhaskell"
 defRepo :: Text
 defRepo = "stackage-snapshots"
 
--- | Expand a relative path to obtain the URL
--- of a snapshot synonym
---
--- @since TODO:
-resolveSnapshotLocation
-  :: Maybe Text -- ^ the base location
-  -> Text -- the relative path
-  -> RawSnapshotLocation
-resolveSnapshotLocation Nothing = githubSnapshotLocation defUser defRepo
-resolveSnapshotLocation (Just url) =
-  \rel -> RSLUrl (url `T.append` "/" `T.append` rel) Nothing
-
 -- | Location of an LTS snapshot
 --
--- @since TODO:
+-- @since 0.1.0.0
 ltsSnapshotLocation
   :: Int -- ^ major version
   -> Int -- ^ minor version
-  -> Unresolved RawSnapshotLocation
+  -> RawSnapshotLocation
 ltsSnapshotLocation x y =
-  resolveSnapshotLocation
-    <$> asks baseSnapshotLocation
-    <*> (pure $ utf8BuilderToText $ "lts/" <> display x <> "/" <> display y <> ".yaml")
+  githubSnapshotLocation defUser defRepo $
+  utf8BuilderToText $
+  "lts/" <> display x <> "/" <> display y <> ".yaml"
 
 -- | Location of a Stackage Nightly snapshot
 --
 -- @since 0.1.0.0
-nightlySnapshotLocation :: Day -> Unresolved RawSnapshotLocation
+nightlySnapshotLocation :: Day -> RawSnapshotLocation
 nightlySnapshotLocation date =
-  resolveSnapshotLocation
-    <$> asks baseSnapshotLocation
-    <*> (pure $ utf8BuilderToText $
-           "nightly/" <> display year <> "/" <> display month <> "/" <> display day <> ".yaml")
+  githubSnapshotLocation defUser defRepo $
+  utf8BuilderToText $
+  "nightly/" <> display year <> "/" <> display month <> "/" <> display day <> ".yaml"
   where
     (year, month, day) = toGregorian date
 
@@ -2073,8 +2031,7 @@ instance FromJSON (WithJSONWarnings (Unresolved SnapshotLocation)) where
       where
         file = withObjectWarnings "SLFilepath" $ \o -> do
            ufp <- o ..: "filepath"
-           pure $ do
-             mdir <- asks baseDirectory
+           pure $ Unresolved $ \mdir ->
              case mdir of
                Nothing -> throwIO $ InvalidFilePathSnapshot ufp
                Just dir -> do
@@ -2085,10 +2042,10 @@ instance FromJSON (WithJSONWarnings (Unresolved SnapshotLocation)) where
           url' <- o ..: "url"
           sha <- o ..: "sha256"
           size <- o ..: "size"
-          pure $ pure $ SLUrl url' (BlobKey sha size)
+          pure $ Unresolved $ \_ -> pure $ SLUrl url' (BlobKey sha size)
         compiler = withObjectWarnings "SLCompiler" $ \o -> do
           c <- o ..: "compiler"
-          pure $ pure $ SLCompiler c
+          pure $ Unresolved $ \_ -> pure $ SLCompiler c
 
 -- | Convert snapshot location to its "raw" equivalent.
 --
@@ -2231,8 +2188,8 @@ instance FromJSON (WithJSONWarnings (Unresolved RawSnapshotLayer)) where
       case (mcompiler, mresolver) of
         (Nothing, Nothing) -> fail "Snapshot must have either resolver or compiler"
         (Just compiler, Nothing) -> pure $ pure (RSLCompiler compiler, Nothing)
-        (_, Just usl) -> pure $ do
-          sl <- usl
+        (_, Just (Unresolved usl)) -> pure $ Unresolved $ \mdir -> do
+          sl <- usl mdir
           case (sl, mcompiler) of
             (RSLCompiler c1, Just c2) -> throwIO $ InvalidOverrideCompiler c1 c2
             _ -> pure (sl, mcompiler)

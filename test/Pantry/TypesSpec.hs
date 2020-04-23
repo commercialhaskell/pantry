@@ -107,22 +107,20 @@ spec = do
   describe "(Raw)SnapshotLayer" $ do
     let parseSl :: String -> IO RawSnapshotLayer
         parseSl str = case Yaml.decodeThrow . S8.pack $ str of
-          (Just (WithJSONWarnings x _)) -> resolvePaths mempty x
+          (Just (WithJSONWarnings x _)) -> resolvePaths Nothing x
           Nothing -> fail "Can't parse RawSnapshotLayer"
 
     it "parses snapshot using 'resolver'" $ do
       RawSnapshotLayer{..} <- parseSl $
         "name: 'test'\n" ++
         "resolver: lts-2.10\n"
-      expected <- resolvePaths mempty $ ltsSnapshotLocation 2 10
-      rslParent `shouldBe` expected
+      rslParent `shouldBe` ltsSnapshotLocation 2 10
 
     it "parses snapshot using 'snapshot'" $ do
       RawSnapshotLayer{..} <- parseSl $
         "name: 'test'\n" ++
         "snapshot: lts-2.10\n"
-      expected <- resolvePaths mempty $ ltsSnapshotLocation 2 10
-      rslParent `shouldBe` expected
+      rslParent `shouldBe` ltsSnapshotLocation 2 10
 
     it "throws if both 'resolver' and 'snapshot' are present" $ do
       let go = parseSl $
@@ -145,22 +143,20 @@ spec = do
       (major, minor) <- forAll $ (,)
         <$> Gen.integral (Range.linear 1 10000)
         <*> Gen.integral (Range.linear 1 10000)
-      liftIO $ do
-        gen <- resolvePaths mempty $ ltsSnapshotLocation major minor
-        Yaml.toJSON gen `shouldBe`
-          Yaml.String (T.pack $ concat ["lts-", show major, ".", show minor])
+      liftIO $
+        Yaml.toJSON (ltsSnapshotLocation major minor) `shouldBe`
+        Yaml.String (T.pack $ concat ["lts-", show major, ".", show minor])
 
     hh "rendering a nightly gives a nice name" $ property $ do
       days <- forAll $ Gen.integral $ Range.linear 1 10000000
       let day = ModifiedJulianDay days
-      liftIO $ do
-        gen <- resolvePaths mempty $ nightlySnapshotLocation day
-        Yaml.toJSON gen `shouldBe`
-          Yaml.String (T.pack $ "nightly-" ++ show day)
+      liftIO $
+        Yaml.toJSON (nightlySnapshotLocation day) `shouldBe`
+        Yaml.String (T.pack $ "nightly-" ++ show day)
     it "FromJSON instance for PLIRepo" $ do
       WithJSONWarnings unresolvedPli warnings <- Yaml.decodeThrow samplePLIRepo
       warnings `shouldBe` []
-      pli <- resolvePaths mempty unresolvedPli
+      pli <- resolvePaths Nothing unresolvedPli
       let repoValue =
               Repo
                   { repoSubdir = "wai"
@@ -187,7 +183,7 @@ spec = do
 
       WithJSONWarnings reparsed warnings2 <- Yaml.decodeThrow $ Yaml.encode pli
       warnings2 `shouldBe` []
-      reparsed' <- resolvePaths mempty reparsed
+      reparsed' <- resolvePaths Nothing reparsed
       reparsed' `shouldBe` pli
     it "parseHackageText parses" $ do
       let txt =
@@ -207,8 +203,8 @@ spec = do
     it "roundtripping a PLIRepo" $ do
       WithJSONWarnings unresolvedPli warnings <- Yaml.decodeThrow samplePLIRepo2
       warnings `shouldBe` []
-      pli <- resolvePaths mempty unresolvedPli
+      pli <- resolvePaths Nothing unresolvedPli
       WithJSONWarnings unresolvedPli2 warnings2 <- Yaml.decodeThrow $ Yaml.encode pli
       warnings2 `shouldBe` []
-      pli2 <- resolvePaths mempty unresolvedPli2
+      pli2 <- resolvePaths Nothing unresolvedPli2
       pli2 `shouldBe` (pli :: PackageLocationImmutable)

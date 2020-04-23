@@ -24,7 +24,7 @@ spec =
             decode'' bs = do
               WithJSONWarnings unresolved warnings <- decode' bs
               unless (null warnings) $ error $ show warnings
-              resolvePaths mempty unresolved
+              resolvePaths Nothing unresolved
 
         it "'github' and 'commit' keys" $ do
           let contents :: ByteString
