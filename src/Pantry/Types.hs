@@ -255,7 +255,7 @@ data PantryConfig = PantryConfig
   -- ^ The location of snapshot synonyms
   }
 
--- | Get the location of a snapshot synonym from a 'PantryConfig'.
+-- | Get the location of a snapshot synonym from the 'PantryConfig'.
 --
 -- @since TODO:
 snapshotLocation :: HasPantryConfig env => SnapName -> RIO env RawSnapshotLocation
@@ -2007,7 +2007,6 @@ instance ToJSON RawSnapshotLocation where
     : maybe [] blobKeyPairs mblob
   toJSON (RSLFilePath resolved) = object ["filepath" .= resolvedRelative resolved]
   toJSON (RSLSynonym syn) = toJSON syn
-  -- to
 
 -- | Where to load a snapshot from.
 --
