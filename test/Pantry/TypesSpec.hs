@@ -114,13 +114,13 @@ spec = do
       RawSnapshotLayer{..} <- parseSl $
         "name: 'test'\n" ++
         "resolver: lts-2.10\n"
-      rslParent `shouldBe` RSLLTS 2 10
+      rslParent `shouldBe` (RSLSynonym $ LTS 2 10)
 
     it "parses snapshot using 'snapshot'" $ do
       RawSnapshotLayer{..} <- parseSl $
         "name: 'test'\n" ++
         "snapshot: lts-2.10\n"
-      rslParent `shouldBe` RSLLTS 2 10
+      rslParent `shouldBe` (RSLSynonym $ LTS 2 10)
 
     it "throws if both 'resolver' and 'snapshot' are present" $ do
       let go = parseSl $
@@ -145,14 +145,14 @@ spec = do
         <$> Gen.integral (Range.linear 1 10000)
         <*> Gen.integral (Range.linear 1 10000)
       liftIO $
-        Yaml.toJSON (RSLLTS major minor) `shouldBe`
+        Yaml.toJSON (RSLSynonym $ LTS major minor) `shouldBe`
         Yaml.String (T.pack $ concat ["lts-", show major, ".", show minor])
 
     hh "rendering a nightly gives a nice name" $ property $ do
       days <- forAll $ Gen.integral $ Range.linear 1 10000000
       let day = ModifiedJulianDay days
       liftIO $
-        Yaml.toJSON (RSLNightly day) `shouldBe`
+        Yaml.toJSON (RSLSynonym $ Nightly day) `shouldBe`
         Yaml.String (T.pack $ "nightly-" ++ show day)
     it "FromJSON instance for PLIRepo" $ do
       WithJSONWarnings unresolvedPli warnings <- Yaml.decodeThrow samplePLIRepo

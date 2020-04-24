@@ -14,8 +14,7 @@ module Pantry
   , defaultHackageSecurityConfig
   , defaultCasaRepoPrefix
   , defaultCasaMaxPerRequest
-  , defaultLTSSnapshotLocation
-  , defaultNightlySnapshotLocation
+  , defaultSnapshotLocation
   , HasPantryConfig (..)
   , withPantryConfig
   , HpackExecutable (..)
@@ -89,6 +88,8 @@ module Pantry
   , SnapshotLayer (..)
   , toRawSnapshotLayer
   , WantedCompiler (..)
+  , SnapName (..)
+  , snapshotLocation
 
     -- * Loading values
   , resolvePaths
@@ -124,10 +125,6 @@ module Pantry
   , parseFlagName
   , parseVersion
   , parseVersionThrowing
-
-    -- * Stackage snapshots
-  , ltsSnapshotLocation
-  , nightlySnapshotLocation
 
     -- * Cabal helpers
   , packageIdentifierString
@@ -217,7 +214,7 @@ import Data.Aeson.Types (parseEither)
 import Data.Monoid (Endo (..))
 import Pantry.HTTP
 import Data.Char (isHexDigit)
-import Data.Time (getCurrentTime, diffUTCTime, Day)
+import Data.Time (getCurrentTime, diffUTCTime)
 
 -- | Create a new 'PantryConfig' with the given settings.
 --
@@ -241,14 +238,12 @@ withPantryConfig
   -- ^ The casa pull URL e.g. https://casa.fpcomplete.com/v1/pull.
   -> Int
   -- ^ Max casa keys to pull per request.
-  -> (Int -> Int -> RawSnapshotLocation)
-  -- ^ The location of LTS Haskell snapshots
-  -> (Day -> RawSnapshotLocation)
-  -- ^ The location of Stackage Nightly snapshots
+  -> (SnapName -> RawSnapshotLocation)
+  -- ^ The location of snapshot synonyms
   -> (PantryConfig -> RIO env a)
   -- ^ What to do with the config
   -> RIO env a
-withPantryConfig root hsc he count pullURL maxPerRequest ltsLoc nightlyLoc inner = do
+withPantryConfig root hsc he count pullURL maxPerRequest snapLoc inner = do
   env <- ask
   pantryRelFile <- parseRelFile "pantry.sqlite3"
   -- Silence persistent's logging output, which is really noisy
@@ -267,8 +262,7 @@ withPantryConfig root hsc he count pullURL maxPerRequest ltsLoc nightlyLoc inner
       , pcParsedCabalFilesMutable = ref2
       , pcCasaRepoPrefix = pullURL
       , pcCasaMaxPerRequest = maxPerRequest
-      , pcLTSSnapshotLocation = ltsLoc
-      , pcNightlySnapshotLocation = nightlyLoc
+      , pcSnapshotLocation = snapLoc
       }
 
 -- | Default pull URL for Casa.
@@ -1044,10 +1038,8 @@ completeSnapshotLocation (RSLUrl url (Just blobKey)) = pure $ SLUrl url blobKey
 completeSnapshotLocation (RSLUrl url Nothing) = do
   bs <- loadFromURL url Nothing
   pure $ SLUrl url (bsToBlobKey bs)
-completeSnapshotLocation (RSLLTS x y) =
-  completeSnapshotLocation =<< ltsSnapshotLocation x y 
-completeSnapshotLocation (RSLNightly date) =
-  completeSnapshotLocation =<< nightlySnapshotLocation date
+completeSnapshotLocation (RSLSynonym syn) =
+  completeSnapshotLocation =<< snapshotLocation syn
 
 traverseConcurrently_
   :: (Foldable f, HasPantryConfig env)
@@ -1436,14 +1428,8 @@ loadRawSnapshotLayer rsl@(RSLFilePath fp) =
     value <- Yaml.decodeFileThrow $ toFilePath $ resolvedAbsolute fp
     snapshot <- warningsParserHelperRaw rsl value $ Just $ parent $ resolvedAbsolute fp
     pure $ Right (snapshot, CompletedSL rsl (SLFilePath fp))
-loadRawSnapshotLayer rsl@(RSLLTS x y) = do
-  loc <- ltsSnapshotLocation x y
-  comp <- loadRawSnapshotLayer loc
-  pure $ case comp of
-    Left wc -> Left wc
-    Right (l, CompletedSL _ n) -> Right (l, CompletedSL rsl n)
-loadRawSnapshotLayer rsl@(RSLNightly date) = do
-  loc <- nightlySnapshotLocation date
+loadRawSnapshotLayer rsl@(RSLSynonym syn) = do
+  loc <- snapshotLocation syn
   comp <- loadRawSnapshotLayer loc
   pure $ case comp of
     Left wc -> Left wc
@@ -1689,8 +1675,7 @@ runPantryAppWith maxConnCount casaRepoPrefix casaMaxPerRequest f = runSimpleApp 
     maxConnCount
     casaRepoPrefix
     casaMaxPerRequest
-    defaultLTSSnapshotLocation
-    defaultNightlySnapshotLocation
+    defaultSnapshotLocation
     $ \pc ->
       runRIO
         PantryApp
@@ -1717,8 +1702,7 @@ runPantryAppClean f = liftIO $ withSystemTempDirectory "pantry-clean" $ \dir -> 
     8
     defaultCasaRepoPrefix
     defaultCasaMaxPerRequest
-    defaultLTSSnapshotLocation
-    defaultNightlySnapshotLocation
+    defaultSnapshotLocation
     $ \pc ->
       runRIO
         PantryApp

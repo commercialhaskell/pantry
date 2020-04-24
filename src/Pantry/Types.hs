@@ -86,10 +86,9 @@ module Pantry.Types
   , HpackExecutable (..)
   , WantedCompiler (..)
   --, resolveSnapshotLocation
-  , ltsSnapshotLocation
-  , nightlySnapshotLocation
-  , defaultLTSSnapshotLocation
-  , defaultNightlySnapshotLocation
+  , snapshotLocation
+  , defaultSnapshotLocation
+  , SnapName (..)
   , RawSnapshotLocation (..)
   , SnapshotLocation (..)
   , toRawSL
@@ -252,27 +251,17 @@ data PantryConfig = PantryConfig
   -- ^ The pull URL e.g. @https://casa.fpcomplete.com/v1/pull@
   , pcCasaMaxPerRequest :: !Int
   -- ^ Maximum blobs sent per pull request.
-  , pcLTSSnapshotLocation :: Int -> Int -> RawSnapshotLocation
-  -- ^ The location of LTS Haskell snapshots
-  , pcNightlySnapshotLocation :: Day -> RawSnapshotLocation
-  -- ^ The location of Stackage Nightly snapshots
+  , pcSnapshotLocation :: SnapName -> RawSnapshotLocation
+  -- ^ The location of snapshot synonyms
   }
 
--- | Get the location of LTS Haskell snapshots from the 'PantryConfig'.
+-- | Get the location of a snapshot synonym from a 'PantryConfig'.
 --
 -- @since TODO:
-ltsSnapshotLocation :: HasPantryConfig env => Int -> Int -> RIO env RawSnapshotLocation
-ltsSnapshotLocation x y = do
-  loc <- view $ pantryConfigL.to pcLTSSnapshotLocation
-  return $ loc x y
-
--- | Get the location of Stackage Nightly snapshots from the 'PantryConfig'.
---
--- @since TODO:
-nightlySnapshotLocation :: HasPantryConfig env => Day -> RIO env RawSnapshotLocation
-nightlySnapshotLocation date = do
-  loc <- view $ pantryConfigL.to pcNightlySnapshotLocation
-  return $ loc date
+snapshotLocation :: HasPantryConfig env => SnapName -> RIO env RawSnapshotLocation
+snapshotLocation name = do
+  loc <- view $ pantryConfigL.to pcSnapshotLocation
+  pure $ loc name
 
 -- | Should we print warnings when loading a cabal file?
 --
@@ -1886,11 +1875,11 @@ parseRawSnapshotLocation t0 = fromMaybe (parseRawSnapshotLocationPath t0) $
       Right (x, t2) <- Just $ decimal t1
       t3 <- T.stripPrefix "." t2
       Right (y, "") <- Just $ decimal t3
-      Just $ pure $ RSLLTS x y
+      Just $ pure $ RSLSynonym $ LTS x y
     parseNightly = do
       t1 <- T.stripPrefix "nightly-" t0
       date <- readMaybe (T.unpack t1)
-      Just $ pure $ RSLNightly date
+      Just $ pure $ RSLSynonym $ Nightly date
 
     parseGithub = do
       t1 <- T.stripPrefix "github:" t0
@@ -1929,28 +1918,52 @@ defUser = "commercialhaskell"
 defRepo :: Text
 defRepo = "stackage-snapshots"
 
--- | Default location of an LTS snapshot
+-- | Default location of snapshot synonyms
+-- , i.e. commercialhaskell's GitHub repository.
 --
--- @since 0.1.0.0
-defaultLTSSnapshotLocation
-  :: Int -- ^ major version
-  -> Int -- ^ minor version
+-- @since TODO:
+defaultSnapshotLocation
+  :: SnapName
   -> RawSnapshotLocation
-defaultLTSSnapshotLocation x y =
+defaultSnapshotLocation (LTS x y) =
   githubSnapshotLocation defUser defRepo $
   utf8BuilderToText $
   "lts/" <> display x <> "/" <> display y <> ".yaml"
-
--- | Default location of a Stackage Nightly snapshot
---
--- @since 0.1.0.0
-defaultNightlySnapshotLocation :: Day -> RawSnapshotLocation
-defaultNightlySnapshotLocation date =
+defaultSnapshotLocation (Nightly date) =
   githubSnapshotLocation defUser defRepo $
   utf8BuilderToText $
   "nightly/" <> display year <> "/" <> display month <> "/" <> display day <> ".yaml"
   where
     (year, month, day) = toGregorian date
+
+-- | A snapshot synonym.
+-- It is expanded according to the field 'snapshotLocation'
+-- of a 'PantryConfig'.
+--
+-- @ since TODO:
+data SnapName
+    -- | LTS Haskell snapshot,
+    -- displayed as @"lts-maj.min"@.
+    --
+    -- @since TODO:
+    = LTS
+        !Int -- ^ Major version 
+        !Int -- ^ Minor version
+    -- | Stackage Nightly snapshot,
+    -- displayed as @"nighly-YYYY-MM-DD"@.
+    --
+    -- @since TODO:
+    | Nightly !Day
+    deriving (Show, Eq, Ord, Generic)
+
+instance NFData SnapName
+
+instance Display SnapName where
+  display (LTS x y) = "lts-" <> display x <> "." <> display y
+  display (Nightly date) = "nightly-" <> displayShow date
+
+instance ToJSON SnapName where
+  toJSON syn = String $ utf8BuilderToText $ display syn
 
 -- | Where to load a snapshot from in raw form
 -- (RSUrl could have a missing BlobKey)
@@ -1971,14 +1984,10 @@ data RawSnapshotLocation
     -- ^ Snapshot at a local file path.
     --
     -- @since 0.1.0.0
-  | RSLLTS !Int !Int
-    -- ^ LTS Haskell snapshot
+  | RSLSynonym !SnapName
+    -- ^ Snapshot synonym (LTS/Nightly).
     --
-    -- @since FIXME:
-  | RSLNightly !Day
-    -- ^ Stackage Nightly snapshot
-    --
-    -- @since FIXME:
+    -- @since TODO:
   deriving (Show, Eq, Ord, Generic)
 
 instance NFData RawSnapshotLocation
@@ -1988,8 +1997,8 @@ instance Display RawSnapshotLocation where
   display (RSLUrl url Nothing) = display url
   display (RSLUrl url (Just blob)) = display url <> " (" <> display blob <> ")"
   display (RSLFilePath resolved) = display (resolvedRelative resolved)
-  display (RSLLTS x y) = "lts-" <> display x <> "." <> display y
-  display (RSLNightly date) = "nightly-" <> displayShow date
+  display (RSLSynonym syn) = display syn
+  
 
 instance ToJSON RawSnapshotLocation where
   toJSON (RSLCompiler compiler) = object ["compiler" .= compiler]
@@ -1997,8 +2006,7 @@ instance ToJSON RawSnapshotLocation where
     $ "url" .= url
     : maybe [] blobKeyPairs mblob
   toJSON (RSLFilePath resolved) = object ["filepath" .= resolvedRelative resolved]
-  toJSON rsl@(RSLLTS _ _) = String $ utf8BuilderToText $ display rsl
-  toJSON rsl@(RSLNightly _) = String $ utf8BuilderToText $ display rsl
+  toJSON (RSLSynonym syn) = toJSON syn
   -- to
 
 -- | Where to load a snapshot from.
