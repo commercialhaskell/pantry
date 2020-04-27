@@ -89,6 +89,7 @@ module Pantry.Types
   , snapshotLocation
   , defaultSnapshotLocation
   , SnapName (..)
+  , parseSnapName
   , RawSnapshotLocation (..)
   , SnapshotLocation (..)
   , toRawSL
@@ -853,6 +854,7 @@ data PantryException
   | DuplicatePackageNames !Utf8Builder ![(PackageName, [RawPackageLocationImmutable])]
   | MigrationFailure !Text !(Path Abs File) !SomeException
   | InvalidTreeFromCasa !BlobKey !ByteString
+  | ParseSnapNameException !Text
 
   deriving Typeable
 instance Exception PantryException where
@@ -1037,6 +1039,7 @@ instance Display PantryException where
     "\nPlease report this on https://github.com/commercialhaskell/stack/issues" <>
     "\nAs a workaround you may delete " <> display desc <> " database in " <>
     fromString (toFilePath fp) <> " triggering its recreation."
+  display (ParseSnapNameException t) = "Invalid snapshot name: " <> display t
 
 data FuzzyResults
   = FRNameNotFound ![PackageName]
@@ -1865,22 +1868,10 @@ instance Display SnapshotLocation where
 parseRawSnapshotLocation :: Text -> Unresolved RawSnapshotLocation
 parseRawSnapshotLocation t0 = fromMaybe (parseRawSnapshotLocationPath t0) $
   (either (const Nothing) (Just . pure . RSLCompiler) (parseWantedCompiler t0)) <|>
-  parseLts <|>
-  parseNightly <|>
+  (pure <$> RSLSynonym <$> parseSnapName t0) <|>
   parseGithub <|>
   parseUrl
   where
-    parseLts = do
-      t1 <- T.stripPrefix "lts-" t0
-      Right (x, t2) <- Just $ decimal t1
-      t3 <- T.stripPrefix "." t2
-      Right (y, "") <- Just $ decimal t3
-      Just $ pure $ RSLSynonym $ LTS x y
-    parseNightly = do
-      t1 <- T.stripPrefix "nightly-" t0
-      date <- readMaybe (T.unpack t1)
-      Just $ pure $ RSLSynonym $ Nightly date
-
     parseGithub = do
       t1 <- T.stripPrefix "github:" t0
       let (user, t2) = T.break (== '/') t1
@@ -1954,7 +1945,7 @@ data SnapName
     --
     -- @since TODO:
     | Nightly !Day
-    deriving (Show, Eq, Ord, Generic)
+    deriving (Eq, Ord, Generic)
 
 instance NFData SnapName
 
@@ -1962,8 +1953,30 @@ instance Display SnapName where
   display (LTS x y) = "lts-" <> display x <> "." <> display y
   display (Nightly date) = "nightly-" <> displayShow date
 
+instance Show SnapName where
+  show = T.unpack . utf8BuilderToText . display
+
 instance ToJSON SnapName where
   toJSON syn = String $ utf8BuilderToText $ display syn
+
+-- | Parse the short representation of a 'SnapName'.
+--
+-- @since TODO:
+parseSnapName :: MonadThrow m => Text -> m SnapName
+parseSnapName t0 =
+    case lts <|> nightly of
+        Nothing -> throwM $ ParseSnapNameException t0
+        Just sn -> return sn
+  where
+    lts = do
+        t1 <- T.stripPrefix "lts-" t0
+        Right (x, t2) <- Just $ decimal t1
+        t3 <- T.stripPrefix "." t2
+        Right (y, "") <- Just $ decimal t3
+        return $ LTS x y
+    nightly = do
+        t1 <- T.stripPrefix "nightly-" t0
+        Nightly <$> readMaybe (T.unpack t1)
 
 -- | Where to load a snapshot from in raw form
 -- (RSUrl could have a missing BlobKey)

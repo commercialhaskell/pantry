@@ -114,6 +114,7 @@ module Pantry
 
     -- * Parsers
   , parseWantedCompiler
+  , parseSnapName
   , parseRawSnapshotLocation
   , parsePackageIdentifierRevision
   , parseHackageText
