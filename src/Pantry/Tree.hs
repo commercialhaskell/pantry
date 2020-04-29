@@ -52,7 +52,7 @@ rawParseGPD
   -> m ([PWarning], GenericPackageDescription)
 rawParseGPD loc bs =
     case eres of
-      Left (mversion, errs) -> throwM $ InvalidCabalFile loc mversion errs warnings
+      Left (mversion, errs) -> throwM $ InvalidCabalFile loc mversion (toList errs) warnings
       Right gpkg -> return (warnings, gpkg)
   where
     (warnings, eres) = runParseResult $ parseGenericPackageDescription bs

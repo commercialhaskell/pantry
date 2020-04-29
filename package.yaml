@@ -46,7 +46,7 @@ dependencies:
 - persistent
 - persistent-sqlite >= 2.9.3
 - persistent-template
-- Cabal >= 3 && < 3.1
+- Cabal >= 3 && < 3.3
 - path-io
 - rio-orphans
 - conduit-extra
