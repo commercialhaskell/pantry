@@ -258,7 +258,7 @@ data PantryConfig = PantryConfig
 
 -- | Get the location of a snapshot synonym from the 'PantryConfig'.
 --
--- @since TODO:
+-- @since 0.5.0.0
 snapshotLocation :: HasPantryConfig env => SnapName -> RIO env RawSnapshotLocation
 snapshotLocation name = do
   loc <- view $ pantryConfigL.to pcSnapshotLocation
@@ -1912,7 +1912,7 @@ defRepo = "stackage-snapshots"
 -- | Default location of snapshot synonyms
 -- , i.e. commercialhaskell's GitHub repository.
 --
--- @since TODO:
+-- @since 0.5.0.0
 defaultSnapshotLocation
   :: SnapName
   -> RawSnapshotLocation
@@ -1931,19 +1931,19 @@ defaultSnapshotLocation (Nightly date) =
 -- It is expanded according to the field 'snapshotLocation'
 -- of a 'PantryConfig'.
 --
--- @ since TODO:
+-- @ since 0.5.0.0
 data SnapName
     -- | LTS Haskell snapshot,
     -- displayed as @"lts-maj.min"@.
     --
-    -- @since TODO:
+    -- @since 0.5.0.0
     = LTS
         !Int -- ^ Major version 
         !Int -- ^ Minor version
     -- | Stackage Nightly snapshot,
     -- displayed as @"nighly-YYYY-MM-DD"@.
     --
-    -- @since TODO:
+    -- @since 0.5.0.0
     | Nightly !Day
     deriving (Eq, Ord, Generic)
 
@@ -1961,7 +1961,7 @@ instance ToJSON SnapName where
 
 -- | Parse the short representation of a 'SnapName'.
 --
--- @since TODO:
+-- @since 0.5.0.0
 parseSnapName :: MonadThrow m => Text -> m SnapName
 parseSnapName t0 =
     case lts <|> nightly of
@@ -2000,7 +2000,7 @@ data RawSnapshotLocation
   | RSLSynonym !SnapName
     -- ^ Snapshot synonym (LTS/Nightly).
     --
-    -- @since TODO:
+    -- @since 0.5.0.0
   deriving (Show, Eq, Ord, Generic)
 
 instance NFData RawSnapshotLocation

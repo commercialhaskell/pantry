@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.5.0.0
+
+* Make the location of LTS/Nightly snapshots configurable
+
 ## v0.4.0.1
 
 * Removed errant log message
