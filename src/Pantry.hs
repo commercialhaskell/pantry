@@ -14,6 +14,7 @@ module Pantry
   , defaultHackageSecurityConfig
   , defaultCasaRepoPrefix
   , defaultCasaMaxPerRequest
+  , defaultSnapshotLocation
   , HasPantryConfig (..)
   , withPantryConfig
   , HpackExecutable (..)
@@ -87,6 +88,8 @@ module Pantry
   , SnapshotLayer (..)
   , toRawSnapshotLayer
   , WantedCompiler (..)
+  , SnapName (..)
+  , snapshotLocation
 
     -- * Loading values
   , resolvePaths
@@ -111,6 +114,7 @@ module Pantry
 
     -- * Parsers
   , parseWantedCompiler
+  , parseSnapName
   , parseRawSnapshotLocation
   , parsePackageIdentifierRevision
   , parseHackageText
@@ -122,10 +126,6 @@ module Pantry
   , parseFlagName
   , parseVersion
   , parseVersionThrowing
-
-    -- * Stackage snapshots
-  , ltsSnapshotLocation
-  , nightlySnapshotLocation
 
     -- * Cabal helpers
   , packageIdentifierString
@@ -239,10 +239,12 @@ withPantryConfig
   -- ^ The casa pull URL e.g. https://casa.fpcomplete.com/v1/pull.
   -> Int
   -- ^ Max casa keys to pull per request.
+  -> (SnapName -> RawSnapshotLocation)
+  -- ^ The location of snapshot synonyms
   -> (PantryConfig -> RIO env a)
   -- ^ What to do with the config
   -> RIO env a
-withPantryConfig root hsc he count pullURL maxPerRequest inner = do
+withPantryConfig root hsc he count pullURL maxPerRequest snapLoc inner = do
   env <- ask
   pantryRelFile <- parseRelFile "pantry.sqlite3"
   -- Silence persistent's logging output, which is really noisy
@@ -261,6 +263,7 @@ withPantryConfig root hsc he count pullURL maxPerRequest inner = do
       , pcParsedCabalFilesMutable = ref2
       , pcCasaRepoPrefix = pullURL
       , pcCasaMaxPerRequest = maxPerRequest
+      , pcSnapshotLocation = snapLoc
       }
 
 -- | Default pull URL for Casa.
@@ -1036,6 +1039,8 @@ completeSnapshotLocation (RSLUrl url (Just blobKey)) = pure $ SLUrl url blobKey
 completeSnapshotLocation (RSLUrl url Nothing) = do
   bs <- loadFromURL url Nothing
   pure $ SLUrl url (bsToBlobKey bs)
+completeSnapshotLocation (RSLSynonym syn) =
+  completeSnapshotLocation =<< snapshotLocation syn
 
 traverseConcurrently_
   :: (Foldable f, HasPantryConfig env)
@@ -1424,6 +1429,12 @@ loadRawSnapshotLayer rsl@(RSLFilePath fp) =
     value <- Yaml.decodeFileThrow $ toFilePath $ resolvedAbsolute fp
     snapshot <- warningsParserHelperRaw rsl value $ Just $ parent $ resolvedAbsolute fp
     pure $ Right (snapshot, CompletedSL rsl (SLFilePath fp))
+loadRawSnapshotLayer rsl@(RSLSynonym syn) = do
+  loc <- snapshotLocation syn
+  comp <- loadRawSnapshotLayer loc
+  pure $ case comp of
+    Left wc -> Left wc
+    Right (l, CompletedSL _ n) -> Right (l, CompletedSL rsl n)
 
 -- | Parse a 'SnapshotLayer' value from a 'SnapshotLocation'.
 --
@@ -1665,6 +1676,7 @@ runPantryAppWith maxConnCount casaRepoPrefix casaMaxPerRequest f = runSimpleApp 
     maxConnCount
     casaRepoPrefix
     casaMaxPerRequest
+    defaultSnapshotLocation
     $ \pc ->
       runRIO
         PantryApp
@@ -1691,6 +1703,7 @@ runPantryAppClean f = liftIO $ withSystemTempDirectory "pantry-clean" $ \dir -> 
     8
     defaultCasaRepoPrefix
     defaultCasaMaxPerRequest
+    defaultSnapshotLocation
     $ \pc ->
       runRIO
         PantryApp

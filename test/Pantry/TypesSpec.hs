@@ -114,13 +114,13 @@ spec = do
       RawSnapshotLayer{..} <- parseSl $
         "name: 'test'\n" ++
         "resolver: lts-2.10\n"
-      rslParent `shouldBe` ltsSnapshotLocation 2 10
+      rslParent `shouldBe` (RSLSynonym $ LTS 2 10)
 
     it "parses snapshot using 'snapshot'" $ do
       RawSnapshotLayer{..} <- parseSl $
         "name: 'test'\n" ++
         "snapshot: lts-2.10\n"
-      rslParent `shouldBe` ltsSnapshotLocation 2 10
+      rslParent `shouldBe` (RSLSynonym $ LTS 2 10)
 
     it "throws if both 'resolver' and 'snapshot' are present" $ do
       let go = parseSl $
@@ -139,19 +139,19 @@ spec = do
         "compiler: ghc-8.0.1\n"
       rslParent `shouldBe` RSLCompiler (WCGhc (mkVersion [8, 0, 1]))
 
-    hh "rendering an LTS gives a nice name" $ property $ do
+    hh "rendering the name of an LTS to JSON" $ property $ do
       (major, minor) <- forAll $ (,)
         <$> Gen.integral (Range.linear 1 10000)
         <*> Gen.integral (Range.linear 1 10000)
       liftIO $
-        Yaml.toJSON (ltsSnapshotLocation major minor) `shouldBe`
+        Yaml.toJSON (RSLSynonym $ LTS major minor) `shouldBe`
         Yaml.String (T.pack $ concat ["lts-", show major, ".", show minor])
 
-    hh "rendering a nightly gives a nice name" $ property $ do
+    hh "rendering the name of a nightly to JSON" $ property $ do
       days <- forAll $ Gen.integral $ Range.linear 1 10000000
       let day = ModifiedJulianDay days
       liftIO $
-        Yaml.toJSON (nightlySnapshotLocation day) `shouldBe`
+        Yaml.toJSON (RSLSynonym $ Nightly day) `shouldBe`
         Yaml.String (T.pack $ "nightly-" ++ show day)
     it "FromJSON instance for PLIRepo" $ do
       WithJSONWarnings unresolvedPli warnings <- Yaml.decodeThrow samplePLIRepo
@@ -208,3 +208,22 @@ spec = do
       warnings2 `shouldBe` []
       pli2 <- resolvePaths Nothing unresolvedPli2
       pli2 `shouldBe` (pli :: PackageLocationImmutable)
+
+  describe "completeSnapshotLocation" $ do
+    let sameUrl (SLUrl txt _) (RSLUrl txt' _) txt'' =
+          do
+          txt `shouldBe` txt'
+          txt `shouldBe` txt''
+        sameUrl _ _ _ = liftIO $ error "Snapshot synonym did not complete as expected"
+
+    it "default location for nightly-2020-01-01" $ do
+      let sn = Nightly $ ModifiedJulianDay 58849
+      loc <- runPantryAppClean $ completeSnapshotLocation $ RSLSynonym sn
+      sameUrl loc (defaultSnapshotLocation sn)
+        "https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2020/1/1.yaml"
+
+    it "default location for lts-15.1" $ do
+      let sn = LTS 15 1
+      loc <- runPantryAppClean $ completeSnapshotLocation $ RSLSynonym sn
+      sameUrl loc (defaultSnapshotLocation sn)
+        "https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/15/1.yaml"
