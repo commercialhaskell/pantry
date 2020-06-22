@@ -1,0 +1,10 @@
+resolver: lts-14.20
+
+extra-deps:
+- Cabal-3.0.0.0
+- hpack-0.33.0
+- casa-client-0.0.1
+- casa-types-0.0.1
+
+ghc-options:
+   "$locals": -fhide-source-paths
