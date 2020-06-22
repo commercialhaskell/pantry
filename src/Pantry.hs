@@ -375,14 +375,15 @@ fetchTreeKeys treeKeys = do
   -- Pull down those tree keys from Casa, automatically inserting into
   -- our local database.
   treeKeyBlobs :: Map TreeKey P.Tree <-
-    fmap
+    handleAny (const mempty)
+    (fmap
       Map.fromList
       (withStorage
          (runConduitRes
             (casaBlobSource
                (fmap unTreeKey (mapMaybe getRawTreeKey packageLocationsMissing)) .|
              mapMC parseTreeM .|
-             sinkList)))
+             sinkList))))
   pullTreeEnd <- liftIO getCurrentTime
   let pulledPackages =
         mapMaybe
@@ -398,21 +399,23 @@ fetchTreeKeys treeKeys = do
           (\(P.TreeMap files) -> Set.fromList (map teBlob (toList files)))
           treeKeyBlobs
   pullBlobStart <- liftIO getCurrentTime
-  pulledBlobKeys :: Int <-
-    withStorage
+  mpulledBlobKeys :: Maybe Int <-
+    handleAny (const (pure Nothing))
+    (fmap Just (withStorage
       (runConduitRes
-         (casaBlobSource uniqueFileBlobKeys .| mapC (const 1) .| sumC))
-  pullBlobEnd <- liftIO getCurrentTime
-  logDebug
-    ("Pulled from Casa: " <>
-     mconcat (List.intersperse ", " (map display pulledPackages)) <>
-     " (" <>
-     display (T.pack (show (diffUTCTime pullTreeEnd pullTreeStart))) <>
-     "), " <>
-     plural pulledBlobKeys "file" <>
-     " (" <>
-     display (T.pack (show (diffUTCTime pullBlobEnd pullBlobStart))) <>
-     ")")
+         (casaBlobSource uniqueFileBlobKeys .| mapC (const 1) .| sumC))))
+  for_ mpulledBlobKeys $ \pulledBlobKeys -> do
+    pullBlobEnd <- liftIO getCurrentTime
+    logDebug
+      ("Pulled from Casa: " <>
+       mconcat (List.intersperse ", " (map display pulledPackages)) <>
+       " (" <>
+       display (T.pack (show (diffUTCTime pullTreeEnd pullTreeStart))) <>
+       "), " <>
+       plural pulledBlobKeys "file" <>
+       " (" <>
+       display (T.pack (show (diffUTCTime pullBlobEnd pullBlobStart))) <>
+       ")")
   -- Store the tree for each missing package.
   for_
     packageLocationsMissing

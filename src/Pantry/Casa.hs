@@ -21,8 +21,9 @@ casaLookupTree ::
   => TreeKey
   -> RIO env (Maybe (TreeKey, P.Tree))
 casaLookupTree (P.TreeKey key) =
-  withStorage
-    (runConduitRes (casaBlobSource (Identity key) .| mapMC parseTreeM .| await))
+  handleAny (const (pure Nothing))
+    (withStorage
+      (runConduitRes (casaBlobSource (Identity key) .| mapMC parseTreeM .| await)))
 
 -- | Lookup a single blob. If possible, prefer 'casaBlobSource', and
 -- query a group of keys at once, rather than one at a time. This will
@@ -32,9 +33,10 @@ casaLookupKey ::
   => BlobKey
   -> RIO env (Maybe ByteString)
 casaLookupKey key =
-  fmap
+  handleAny (const (pure Nothing))
+  (fmap
     (fmap snd)
-    (withStorage (runConduitRes (casaBlobSource (Identity key) .| await)))
+    (withStorage (runConduitRes (casaBlobSource (Identity key) .| await))))
 
 -- | A source of blobs given a set of keys. All blobs are
 -- automatically stored in the local pantry database.

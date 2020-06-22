@@ -1,9 +1,9 @@
 resolver: nightly-2020-01-08
 
 extra-deps:
-- hackage-security-0.6.0.0
-- hpack-0.33.0
-- lukko-0.1.1.1
+- hackage-security-0.6.0.1@rev:1
+- hpack-0.34.2@rev:0
+- lukko-0.1.1.2@rev:0
 - github: fpco/casa
   commit: fc0ed26858bfc4f2966ed2dfb2871bae9266dda6
   subdirs:
