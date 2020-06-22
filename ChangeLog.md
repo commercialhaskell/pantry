@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.5.1.0
+
+* Catch all exceptions from Casa calls and recover
+
 ## v0.5.0.0
 
 * Make the location of LTS/Nightly snapshots configurable
