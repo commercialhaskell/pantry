@@ -26,6 +26,7 @@ spec = do
     "/test/file/../bob/fred" ! Nothing
     "test/file/../bob/fred/" ! Just "test/bob/fred"
     "test/file/../bob/fred" ! Just "test/bob/fred"
+    "test0/test1/file/../../bob/fred" ! Just "test0/bob/fred"
     "../bob/fred" ! Nothing
     "../bob/fred/" ! Nothing
     "./bob/fred/" ! Just "bob/fred"
