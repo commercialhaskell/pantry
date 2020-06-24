@@ -59,11 +59,11 @@ normalizeParents fp = do
 
   let c2 = filter (\x -> not (T.null x || x == ".")) c1
 
-  let loop [] = []
-      loop (_:"..":rest) = loop rest
-      loop (x:xs) = x : loop xs
+  let loop [] routput = reverse routput
+      loop ("..":rest) (_:routput) = loop rest routput
+      loop (x:xs) routput = loop xs (x:routput)
 
-  case loop c2 of
+  case loop c2 [] of
     [] -> Left "no non-empty components"
     c' -> Right $ T.unpack $ T.intercalate "/" c'
 
