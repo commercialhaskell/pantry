@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.5.1.1
+
+* Fix to allow mulitiple relative path of symlink.
+
 ## v0.5.1.0
 
 * Catch all exceptions from Casa calls and recover
