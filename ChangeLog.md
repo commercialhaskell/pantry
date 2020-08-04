@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.4.0.2
+
+* Allow building with Cabal-3.2.*
+
 ## v0.4.0.1
 
 * Removed errant log message
