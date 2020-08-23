@@ -56,7 +56,8 @@ spec = do
     pair1 <- loadPackageRaw tarPL
     pair2 <- loadPackageRaw gitPL
     liftIO $ pair2 `shouldBe` pair1
-  it "archive and Hg repo match" $ asIO $ runPantryAppClean $ do
+  -- https://github.com/commercialhaskell/pantry/issues/26
+  xit "archive and Hg repo match" $ asIO $ runPantryAppClean $ do
     pair1 <- loadPackageRaw tarPL
     pair2 <- loadPackageRaw hgPL
     liftIO $ pair2 `shouldBe` pair1

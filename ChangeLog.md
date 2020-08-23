@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.5.1.2
+
+* Skip a test for [#26](https://github.com/commercialhaskell/pantry/issues/26)
+
 ## v0.5.1.1
 
 * Fix to allow mulitiple relative path of symlink.
