@@ -70,6 +70,7 @@ module Pantry.Storage
   , VersionId
   , ModuleNameId
   , Version
+  , versionVersion
   , Unique(..)
   , EntityField(..)
     -- avoid warnings

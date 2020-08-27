@@ -21,6 +21,7 @@ import Pantry.Storage as X
   , TreeId
   , Unique(..)
   , Version
+  , versionVersion
   , VersionId
   , getBlobKey
   , getPackageNameById
