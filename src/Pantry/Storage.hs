@@ -91,6 +91,7 @@ module Pantry.Storage
   , UrlBlobId
   , SnapshotCacheId
   , PackageExposedModuleId
+  , checkAllBlobsPresent
   ) where
 
 import RIO hiding (FilePath)
@@ -1175,3 +1176,33 @@ loadExposedModulePackages cacheId mName =
     ]
   where
     go (Single (P.PackageNameP m)) = m
+
+-- | Ensure that all blobs needed for this package are present in the cache
+checkAllBlobsPresent :: Package -> ReaderT SqlBackend (RIO env) Bool
+checkAllBlobsPresent (Package treeKey tree cabal _ident) =
+  allM blobPresent $ concat
+    [ case treeKey of
+        P.TreeKey blob -> [blob]
+    , case tree of
+        P.TreeMap m -> map P.teBlob $ toList m
+    , map P.teBlob $ cabalBlobs cabal
+    ]
+  where
+    blobPresent :: BlobKey -> ReaderT SqlBackend (RIO env) Bool
+    blobPresent (P.BlobKey sha _size) =
+      -- Ignoring failure cases of more than 1 (impossible)
+      -- or mismatched size (incredibly improbable)
+      (== 1) <$> count [BlobSha ==. sha]
+
+    cabalBlobs :: P.PackageCabal -> [P.TreeEntry]
+    cabalBlobs (P.PCCabalFile te) = [te]
+    cabalBlobs (P.PCHpack h) = [P.phOriginal h, P.phGenerated h]
+
+    allM :: Monad m => (a -> m Bool) -> [a] -> m Bool
+    allM f =
+      loop
+      where
+        loop [] = pure True
+        loop (x:xs) = do
+          y <- f x
+          if y then loop xs else pure False

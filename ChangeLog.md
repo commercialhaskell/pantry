@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.5.1.3
+
+* Handle case where tree exists in cache by blobs are missing [#27](https://github.com/commercialhaskell/pantry/issues/27)
+
 ## v0.5.1.2
 
 * Skip a test for [#26](https://github.com/commercialhaskell/pantry/issues/26)

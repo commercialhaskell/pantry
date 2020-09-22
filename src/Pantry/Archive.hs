@@ -81,10 +81,18 @@ getArchive
   -> RawPackageMetadata
   -> RIO env (SHA256, FileSize, Package)
 getArchive rpli archive rpm = do
-  -- Check if the value is in the archive, and use it if possible
-  mcached <- loadCache rpli archive
+  -- Check if the value is in the cache, and use it if possible
+  mcached0 <- loadCache rpli archive
+  -- Ensure that all of the blobs referenced exist in the cache
+  -- See: https://github.com/commercialhaskell/pantry/issues/27
+  mcached1 <-
+    case mcached0 of
+      Nothing -> pure Nothing
+      Just (_, _, pa) -> do
+        allBlobsPresent <- withStorage $ checkAllBlobsPresent pa
+        pure $ if allBlobsPresent then mcached0 else Nothing
   cached@(_, _, pa) <-
-    case mcached of
+    case mcached1 of
       Just stored -> pure stored
       -- Not in the archive. Load the archive. Completely ignore the
       -- PackageMetadata for now, we'll check that the Package
