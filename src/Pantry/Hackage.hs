@@ -2,6 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 module Pantry.Hackage
   ( updateHackageIndex
   , forceUpdateHackageIndex
@@ -610,8 +611,8 @@ getHackageTarball pir mtreeKey = do
             , T.pack $ Distribution.Text.display ver
             , ".tar.gz"
             ]
-    package <-
-      getArchivePackage
+    (_, _, package, cachedTree) <-
+      getArchive
         rpli
         RawArchive
           { raLocation = ALUrl url
@@ -624,16 +625,14 @@ getHackageTarball pir mtreeKey = do
           , rpmVersion = Just ver
           , rpmTreeKey = Nothing -- with a revision cabal file will differ giving a different tree
           }
-    case packageTree package of
-      TreeMap m -> do
+    case cachedTree of
+      CachedTreeMap m -> do
         let ft =
               case packageCabalEntry package of
                 PCCabalFile (TreeEntry _ ft') -> ft'
                 _ -> error "Impossible: Hackage does not support hpack"
             cabalEntry = TreeEntry cabalFileKey ft
-            tree' = TreeMap $ Map.insert (cabalFileName name) cabalEntry m
-            ident = PackageIdentifier name ver
-        cabalBS <-
+        (cabalBS, cabalBlobId) <-
           withStorage $ do
             let BlobKey sha' _ = cabalFileKey
             mcabalBS <- loadBlobBySHA sha'
@@ -641,7 +640,9 @@ getHackageTarball pir mtreeKey = do
               Nothing ->
                 error $
                 "Invariant violated, cabal file key: " ++ show cabalFileKey
-              Just bid -> loadBlobById bid
+              Just bid -> (, bid) <$> loadBlobById bid
+        let tree' = CachedTreeMap $ Map.insert (cabalFileName name) (cabalEntry, cabalBlobId) m
+            ident = PackageIdentifier name ver
         (_warnings, gpd) <- rawParseGPD (Left rpli) cabalBS
         let gpdIdent = Cabal.package $ Cabal.packageDescription gpd
         when (ident /= gpdIdent) $
@@ -657,7 +658,7 @@ getHackageTarball pir mtreeKey = do
             { htrPackage =
                 Package
                   { packageTreeKey = treeKey'
-                  , packageTree = tree'
+                  , packageTree = unCachedTree tree'
                   , packageIdent = ident
                   , packageCabalEntry = PCCabalFile cabalEntry
                   }

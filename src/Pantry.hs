@@ -438,14 +438,20 @@ fetchTreeKeys treeKeys = do
                    identifier <-
                      getRawPackageLocationIdent rawPackageLocationImmutable
                    case findCabalOrHpackFile rawPackageLocationImmutable tree of
-                     Just buildFile ->
-                       void
-                         (withStorage
-                            (storeTree
-                               rawPackageLocationImmutable
-                               identifier
-                               tree
-                               buildFile))
+                     Just buildFile -> withStorage $ do
+                       ecachedTree <- loadCachedTree tree
+                       case ecachedTree of
+                         Left e ->
+                           lift $ logWarn
+                           ("Loading cached tree after download from Casa failed on " <>
+                            display rawPackageLocationImmutable <> ": " <>
+                            displayShow e)
+                         Right cachedTree ->
+                           void $ storeTree
+                             rawPackageLocationImmutable
+                             identifier
+                             cachedTree
+                             buildFile
                      Nothing ->
                        logWarn
                          ("Unable to find build file for package: " <>
@@ -958,7 +964,7 @@ completePackageLocation pl@(RPLIArchive archive rpm) = do
     Nothing -> byThirdParty (isJust mpackage)
   where
     byThirdParty warnAboutMissingSizeSha = do
-      (sha, size, package) <- getArchive pl archive rpm
+      (sha, size, package, _cachedTree) <- getArchive pl archive rpm
       when warnAboutMissingSizeSha (warnWith sha size)
       -- (getArchive checks archive and package metadata)
       let RawArchive loc _ _ subdir = archive

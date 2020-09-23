@@ -15,6 +15,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TupleSections #-}
 module Pantry.Storage
   ( SqlBackend
   , initStorage
@@ -91,7 +92,9 @@ module Pantry.Storage
   , UrlBlobId
   , SnapshotCacheId
   , PackageExposedModuleId
-  , checkAllBlobsPresent
+  , loadCachedTree
+  , CachedTree (..)
+  , unCachedTree
   ) where
 
 import RIO hiding (FilePath)
@@ -678,16 +681,23 @@ getFilePathId sfp =
   where
     fp = T.unpack (P.unSafeFilePath sfp)
 
+-- | A tree that has already been stored in the database
+newtype CachedTree
+  = CachedTreeMap (Map SafeFilePath (P.TreeEntry, BlobId))
+  deriving Show
+
+unCachedTree :: CachedTree -> P.Tree
+unCachedTree (CachedTreeMap m) = P.TreeMap $ fst <$> m
 
 storeTree
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => P.RawPackageLocationImmutable -- ^ for exceptions
   -> P.PackageIdentifier
-  -> P.Tree
+  -> CachedTree
   -> P.BuildFile
   -> ReaderT SqlBackend (RIO env) (TreeId, P.TreeKey)
-storeTree rpli (P.PackageIdentifier name version) tree@(P.TreeMap m) buildFile = do
-  (bid, blobKey) <- storeBlob $ P.renderTree tree
+storeTree rpli (P.PackageIdentifier name version) tree@(CachedTreeMap m) buildFile = do
+  (bid, blobKey) <- storeBlob $ P.renderTree $ unCachedTree tree
   (cabalid, ftype) <- case buildFile of
                 P.BFHpack (P.TreeEntry _ ftype) -> pure (Nothing, ftype)
                 P.BFCabal _ (P.TreeEntry (P.BlobKey btypeSha _) ftype) -> do
@@ -710,13 +720,8 @@ storeTree rpli (P.PackageIdentifier name version) tree@(P.TreeMap m) buildFile =
   (tid, pTreeKey) <- case etid of
     Left (Entity tid _) -> pure (tid, P.TreeKey blobKey) -- already in database, assume it matches
     Right tid -> do
-      for_ (Map.toList m) $ \(sfp, P.TreeEntry blobKey' ft) -> do
+      for_ (Map.toList m) $ \(sfp, (P.TreeEntry _blobKey ft, bid')) -> do
         sfpid <- getFilePathId sfp
-        mbid <- getBlobId blobKey'
-        bid' <-
-          case mbid of
-            Nothing -> error $ "Cannot store tree, contains unknown blob: " ++ show blobKey'
-            Just bid' -> pure bid'
         insert_ TreeEntry
           { treeEntryTree = tid
           , treeEntryPath = sfpid
@@ -1177,32 +1182,21 @@ loadExposedModulePackages cacheId mName =
   where
     go (Single (P.PackageNameP m)) = m
 
+data LoadCachedTreeException = MissingBlob !BlobKey
+  deriving (Show, Typeable)
+instance Exception LoadCachedTreeException
+
 -- | Ensure that all blobs needed for this package are present in the cache
-checkAllBlobsPresent :: Package -> ReaderT SqlBackend (RIO env) Bool
-checkAllBlobsPresent (Package treeKey tree cabal _ident) =
-  allM blobPresent $ concat
-    [ case treeKey of
-        P.TreeKey blob -> [blob]
-    , case tree of
-        P.TreeMap m -> map P.teBlob $ toList m
-    , map P.teBlob $ cabalBlobs cabal
-    ]
+loadCachedTree :: forall env. P.Tree -> ReaderT SqlBackend (RIO env) (Either LoadCachedTreeException CachedTree)
+loadCachedTree (P.TreeMap m) =
+    try $ CachedTreeMap <$> traverse loadEntry m
   where
-    blobPresent :: BlobKey -> ReaderT SqlBackend (RIO env) Bool
-    blobPresent (P.BlobKey sha _size) =
-      -- Ignoring failure cases of more than 1 (impossible)
-      -- or mismatched size (incredibly improbable)
-      (== 1) <$> count [BlobSha ==. sha]
+    loadEntry :: P.TreeEntry -> ReaderT SqlBackend (RIO env) (P.TreeEntry, BlobId)
+    loadEntry te = (te, ) <$> loadBlob' (P.teBlob te)
 
-    cabalBlobs :: P.PackageCabal -> [P.TreeEntry]
-    cabalBlobs (P.PCCabalFile te) = [te]
-    cabalBlobs (P.PCHpack h) = [P.phOriginal h, P.phGenerated h]
-
-    allM :: Monad m => (a -> m Bool) -> [a] -> m Bool
-    allM f =
-      loop
-      where
-        loop [] = pure True
-        loop (x:xs) = do
-          y <- f x
-          if y then loop xs else pure False
+    loadBlob' :: BlobKey -> ReaderT SqlBackend (RIO env) BlobId
+    loadBlob' blobKey@(P.BlobKey sha _) = do
+      mbid <- loadBlobBySHA sha
+      case mbid of
+        Nothing -> throwIO $ MissingBlob blobKey
+        Just bid -> pure bid

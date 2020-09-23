@@ -63,8 +63,8 @@ getArchiveKey
 getArchiveKey rpli archive rpm =
   packageTreeKey <$> getArchivePackage rpli archive rpm -- potential optimization
 
-thd3 :: (a, b, c) -> c
-thd3 (_, _, z) = z
+thd4 :: (a, b, c, d) -> c
+thd4 (_, _, z, _) = z
 
 getArchivePackage
   :: forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env, HasCallStack)
@@ -72,37 +72,41 @@ getArchivePackage
   -> RawArchive
   -> RawPackageMetadata
   -> RIO env Package
-getArchivePackage rpli archive rpm = thd3 <$> getArchive rpli archive rpm
+getArchivePackage rpli archive rpm = thd4 <$> getArchive rpli archive rpm
 
 getArchive
   :: forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env, HasCallStack)
   => RawPackageLocationImmutable -- ^ for exceptions
   -> RawArchive
   -> RawPackageMetadata
-  -> RIO env (SHA256, FileSize, Package)
+  -> RIO env (SHA256, FileSize, Package, CachedTree)
 getArchive rpli archive rpm = do
   -- Check if the value is in the cache, and use it if possible
-  mcached0 <- loadCache rpli archive
+  mcached <- loadCache rpli archive
   -- Ensure that all of the blobs referenced exist in the cache
   -- See: https://github.com/commercialhaskell/pantry/issues/27
-  mcached1 <-
-    case mcached0 of
+  mtree <-
+    case mcached of
       Nothing -> pure Nothing
       Just (_, _, pa) -> do
-        allBlobsPresent <- withStorage $ checkAllBlobsPresent pa
-        pure $ if allBlobsPresent then mcached0 else Nothing
-  cached@(_, _, pa) <-
-    case mcached1 of
-      Just stored -> pure stored
+        etree <- withStorage $ loadCachedTree $ packageTree pa
+        case etree of
+          Left e -> do
+            logDebug $ "getArchive of " <> displayShow rpli <> ": loadCachedTree failed: " <> displayShow e
+            pure Nothing
+          Right x -> pure $ Just x
+  cached@(_, _, pa, _) <-
+    case (mcached, mtree) of
+      (Just (a, b, c), Just d) -> pure (a, b, c, d)
       -- Not in the archive. Load the archive. Completely ignore the
       -- PackageMetadata for now, we'll check that the Package
       -- info matches next.
-      Nothing -> withArchiveLoc archive $ \fp sha size -> do
-        pa <- parseArchive rpli archive fp
+      _ -> withArchiveLoc archive $ \fp sha size -> do
+        (pa, tree) <- parseArchive rpli archive fp
         -- Storing in the cache exclusively uses information we have
         -- about the archive itself, not metadata from the user.
         storeCache archive sha size pa
-        pure (sha, size, pa)
+        pure (sha, size, pa, tree)
 
   either throwIO (\_ -> pure cached) $ checkPackageMetadata rpli rpm pa
 
@@ -343,7 +347,7 @@ parseArchive
   => RawPackageLocationImmutable
   -> RawArchive
   -> FilePath -- ^ file holding the archive
-  -> RIO env Package
+  -> RIO env (Package, CachedTree)
 parseArchive rpli archive fp = do
   let loc = raLocation archive
       getFiles [] = throwIO $ UnknownArchiveType loc
@@ -421,20 +425,20 @@ parseArchive rpli archive fp = do
         Left e -> throwIO $ UnsupportedTarball loc $ T.pack e
         Right safeFiles -> do
           let toSave = Set.fromList $ map (seSource . snd) safeFiles
-          (blobs :: Map FilePath BlobKey)  <-
+          (blobs :: Map FilePath (BlobKey, BlobId))  <-
             foldArchive loc fp at mempty $ \m me ->
               if mePath me `Set.member` toSave
                 then do
                   bs <- mconcat <$> sinkList
-                  (_, blobKey) <- lift $ withStorage $ storeBlob bs
-                  pure $ Map.insert (mePath me) blobKey m
+                  (blobId, blobKey) <- lift $ withStorage $ storeBlob bs
+                  pure $ Map.insert (mePath me) (blobKey, blobId) m
                 else pure m
-          tree <- fmap (TreeMap . Map.fromList) $ for safeFiles $ \(sfp, se) ->
+          tree :: CachedTree <- fmap (CachedTreeMap . Map.fromList) $ for safeFiles $ \(sfp, se) ->
             case Map.lookup (seSource se) blobs of
               Nothing -> error $ "Impossible: blob not found for: " ++ seSource se
-              Just blobKey -> pure (sfp, TreeEntry blobKey (seType se))
+              Just (blobKey, blobId) -> pure (sfp, (TreeEntry blobKey (seType se), blobId))
           -- parse the cabal file and ensure it has the right name
-          buildFile <- findCabalOrHpackFile rpli tree
+          buildFile <- findCabalOrHpackFile rpli $ unCachedTree tree
           (buildFilePath, buildFileBlobKey, buildFileEntry) <- case buildFile of
                                                                  BFCabal fpath te@(TreeEntry key _) -> pure (fpath, key, te)
                                                                  BFHpack te@(TreeEntry key _) -> pure (hpackSafeFilePath, key, te)
@@ -445,7 +449,7 @@ parseArchive rpli archive fp = do
               Just bs -> pure bs
           cabalBs <- case buildFile of
             BFCabal _ _ -> pure bs
-            BFHpack _ -> snd <$> hpackToCabal rpli tree
+            BFHpack _ -> snd <$> hpackToCabal rpli (unCachedTree tree)
           (_warnings, gpd) <- rawParseGPD (Left rpli) cabalBs
           let ident@(PackageIdentifier name _) = package $ packageDescription gpd
           case buildFile of
@@ -462,12 +466,12 @@ parseArchive rpli archive fp = do
                               hpackSoftwareVersion <- hpackVersion
                               let cabalTreeEntry = TreeEntry cabalKey (teType buildFileEntry)
                               pure $ PCHpack $ PHpack { phOriginal = buildFileEntry, phGenerated = cabalTreeEntry, phVersion = hpackSoftwareVersion}
-          pure Package
+          pure (Package
             { packageTreeKey = treeKey'
-            , packageTree = tree
+            , packageTree = unCachedTree tree
             , packageCabalEntry = packageCabal
             , packageIdent = ident
-            }
+            }, tree)
 
 -- | Find all of the files in the Map with the given directory as a
 -- prefix. Directory is given without trailing slash. Returns the
