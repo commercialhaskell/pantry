@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.5.1.4
+
+* Allow building with persistent-2.11 [#28](https://github.com/commercialhaskell/pantry/pull/28)
+
 ## v0.5.1.3
 
 * Handle case where tree exists in cache by blobs are missing [#27](https://github.com/commercialhaskell/pantry/issues/27)
