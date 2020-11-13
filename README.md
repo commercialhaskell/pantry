@@ -7,8 +7,7 @@ reproducible acquisition of Haskell package contents and metadata.
 
 ## What is Pantry
 
-* A Haskell library, command line executable, storage specification, and
-  network protocol
+* A Haskell library, storage specification, and network protocol
 * Intended for content-addressable storage of Haskell packages
 * Allows non-centralized package storage
 * Primarily for use by Stackage and Stack, hopefully other tools as well
