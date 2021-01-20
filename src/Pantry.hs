@@ -295,7 +295,7 @@ defaultHackageSecurityConfig = HackageSecurityConfig
       , "fe331502606802feac15e514d9b9ea83fee8b6ffef71335479a2e68d84adc6b0"
       ]
   , hscKeyThreshold = 3
-  , hscDownloadPrefix = "https://s3.amazonaws.com/hackage.fpcomplete.com/"
+  , hscDownloadPrefix = "https://hackage.haskell.org/"
   , hscIgnoreExpiry = False
   }
 
