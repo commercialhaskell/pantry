@@ -1,5 +1,8 @@
 # Changelog for pantry
 
+## v0.5.1.5
+* Switch back to hackage.haskell.org [#30](https://github.com/commercialhaskell/pantry/pull/30)
+
 ## v0.5.1.4
 
 * Allow building with persistent-2.11 [#28](https://github.com/commercialhaskell/pantry/pull/28)
