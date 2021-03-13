@@ -42,6 +42,7 @@ import qualified Distribution.Text
 import qualified Distribution.PackageDescription as Cabal
 import qualified Data.List.NonEmpty as NE
 import Data.Text.Metrics (damerauLevenshtein)
+import System.IO (SeekMode (..)) -- Needed on GHC 8.6
 import Distribution.PackageDescription (GenericPackageDescription)
 import Distribution.Types.Version (versionNumbers)
 import Distribution.Types.VersionRange (withinRange)
