@@ -40,7 +40,6 @@ import Data.Time (getCurrentTime)
 import Path ((</>), Path, Abs, Rel, Dir, File, toFilePath, parseRelDir, parseRelFile)
 import qualified Distribution.Text
 import qualified Distribution.PackageDescription as Cabal
-import System.IO (SeekMode (..))
 import qualified Data.List.NonEmpty as NE
 import Data.Text.Metrics (damerauLevenshtein)
 import Distribution.PackageDescription (GenericPackageDescription)
