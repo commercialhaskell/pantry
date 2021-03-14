@@ -124,8 +124,7 @@ import qualified RIO.Map as Map
 import qualified RIO.HashMap as HM
 import qualified Data.Map.Strict as Map (mapKeysMonotonic)
 import qualified RIO.Set as Set
-import Data.Aeson (ToJSON (..), FromJSON (..), withText, FromJSONKey (..))
-import Data.Aeson.Types (ToJSONKey (..) ,toJSONKeyText, Parser)
+import Data.Aeson.Types (toJSONKeyText, Parser)
 import Pantry.Internal.AesonExtended
 import Data.Aeson.Encoding.Internal (unsafeToEncoding)
 import Data.ByteString.Builder (toLazyByteString, byteString, wordDec)
@@ -150,7 +149,6 @@ import Network.HTTP.Types (Status, statusCode)
 import Data.Text.Read (decimal)
 import Path (Path, Abs, Dir, File, toFilePath, filename, (</>), parseRelFile)
 import Path.IO (resolveFile, resolveDir)
-import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NE
 import Casa.Client (CasaRepoPrefix)
 
@@ -1938,7 +1936,7 @@ data SnapName
     --
     -- @since 0.5.0.0
     = LTS
-        !Int -- ^ Major version 
+        !Int -- ^ Major version
         !Int -- ^ Minor version
     -- | Stackage Nightly snapshot,
     -- displayed as @"nighly-YYYY-MM-DD"@.
@@ -2011,7 +2009,7 @@ instance Display RawSnapshotLocation where
   display (RSLUrl url (Just blob)) = display url <> " (" <> display blob <> ")"
   display (RSLFilePath resolved) = display (resolvedRelative resolved)
   display (RSLSynonym syn) = display syn
-  
+
 
 instance ToJSON RawSnapshotLocation where
   toJSON (RSLCompiler compiler) = object ["compiler" .= compiler]

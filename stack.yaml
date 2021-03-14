@@ -1,12 +1,4 @@
-resolver: lts-15.2
-compiler: ghc-8.8.3 # Windows bug with Cabal on 8.8.2
-
-extra-deps:
-- hackage-security-0.6.0.0
-- hpack-0.33.0
-- lukko-0.1.1.1
-- casa-client-0.0.1
-- casa-types-0.0.1
+resolver: lts-17.5
 
 ghc-options:
    "$locals": -fhide-source-paths
