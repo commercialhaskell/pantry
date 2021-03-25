@@ -116,7 +116,7 @@ setRequestHeaders opts =
           -> [HttpRequestHeader]
           -> [HTTP.Header]
     trOpt acc [] =
-      concatMap finalizeHeader acc
+      map finalizeHeader acc
     trOpt acc (HttpRequestMaxAge0:os) =
       trOpt (insert HTTP.hCacheControl ["max-age=0"] acc) os
     trOpt acc (HttpRequestNoTransform:os) =
@@ -131,8 +131,8 @@ setRequestHeaders opts =
     --
     -- TODO: Right we we just comma-separate all of them.
     finalizeHeader :: (HTTP.HeaderName, [ByteString])
-                   -> [HTTP.Header]
-    finalizeHeader (name, strs) = [(name, BS.intercalate ", " (reverse strs))]
+                   -> HTTP.Header
+    finalizeHeader (name, strs) = (name, BS.intercalate ", " (reverse strs))
 
     insert :: Eq a => a -> [b] -> [(a, [b])] -> [(a, [b])]
     insert _ _ [] = []
