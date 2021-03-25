@@ -107,8 +107,11 @@ setRange from to =
 setRequestHeaders :: [HttpRequestHeader]
                   -> HTTP.Request -> HTTP.Request
 setRequestHeaders opts =
-    HTTP.setRequestHeaders (trOpt disallowCompressionByDefault opts)
+    setRequestHeaders' (trOpt disallowCompressionByDefault opts)
   where
+    setRequestHeaders' :: [HTTP.Header] -> HTTP.Request -> HTTP.Request
+    setRequestHeaders' = foldr (\(name, val) f -> f . HTTP.setRequestHeader name [val]) id
+
     trOpt :: [(HTTP.HeaderName, [ByteString])]
           -> [HttpRequestHeader]
           -> [HTTP.Header]
