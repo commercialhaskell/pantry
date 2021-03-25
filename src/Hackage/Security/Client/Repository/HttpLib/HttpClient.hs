@@ -4,9 +4,9 @@
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings   #-}
--- Taken from
--- https://github.com/well-typed/hackage-security/tree/master/hackage-security-http-client
--- to avoid extra dependencies
+
+-- Adapted from `hackage-security-http-client` to use our own
+-- `Pantry.HTTP` implementation
 module Hackage.Security.Client.Repository.HttpLib.HttpClient (
     httpLib
   ) where
