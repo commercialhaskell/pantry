@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Pantry.HTTP
   ( module Export
+  , setRequestHeaders
   , withResponse
   , httpSink
   , httpSinkChecked
@@ -21,8 +22,7 @@ import           Network.HTTP.Simple          as Export (HttpException (..),
                                                          getResponseBody,
                                                          getResponseHeaders,
                                                          getResponseStatus,
-                                                         setRequestHeader,
-                                                         setRequestHeaders)
+                                                         setRequestHeader)
 import qualified Network.HTTP.Simple          as HTTP hiding (withResponse)
 import           Network.HTTP.Types           as Export (Header, HeaderName,
                                                          Status, hCacheControl,
@@ -34,6 +34,16 @@ import           Pantry.Types
 import           RIO
 import qualified RIO.ByteString               as B
 import qualified RIO.Text                     as T
+
+-- | Equivalent to running `setRequestHeader` for each provided header.
+--
+-- Differs from Network.HTTP.Simple.setRequestHeaders in that it doesn't wipe
+-- out __all__ previously set headers; it only wipes out headers replaced by
+-- the provided headers
+setRequestHeaders :: [Header] -> Request -> Request
+setRequestHeaders = foldr go id
+  where
+    go (name, val) f = f . setRequestHeader name [val]
 
 setUserAgent :: Request -> Request
 setUserAgent = setRequestHeader "User-Agent" ["Haskell pantry package"]
