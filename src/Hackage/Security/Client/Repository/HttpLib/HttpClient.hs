@@ -4,9 +4,9 @@
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings   #-}
--- Taken from
--- https://github.com/well-typed/hackage-security/tree/master/hackage-security-http-client
--- to avoid extra dependencies
+
+-- Adapted from `hackage-security-http-client` to use our own
+-- `Pantry.HTTP` implementation
 module Hackage.Security.Client.Repository.HttpLib.HttpClient (
     httpLib
   ) where
@@ -107,13 +107,16 @@ setRange from to =
 setRequestHeaders :: [HttpRequestHeader]
                   -> HTTP.Request -> HTTP.Request
 setRequestHeaders opts =
-    HTTP.setRequestHeaders (trOpt disallowCompressionByDefault opts)
+    setRequestHeaders' (trOpt disallowCompressionByDefault opts)
   where
+    setRequestHeaders' :: [HTTP.Header] -> HTTP.Request -> HTTP.Request
+    setRequestHeaders' = foldr (\(name, val) f -> f . HTTP.setRequestHeader name [val]) id
+
     trOpt :: [(HTTP.HeaderName, [ByteString])]
           -> [HttpRequestHeader]
           -> [HTTP.Header]
     trOpt acc [] =
-      concatMap finalizeHeader acc
+      map finalizeHeader acc
     trOpt acc (HttpRequestMaxAge0:os) =
       trOpt (insert HTTP.hCacheControl ["max-age=0"] acc) os
     trOpt acc (HttpRequestNoTransform:os) =
@@ -128,8 +131,8 @@ setRequestHeaders opts =
     --
     -- TODO: Right we we just comma-separate all of them.
     finalizeHeader :: (HTTP.HeaderName, [ByteString])
-                   -> [HTTP.Header]
-    finalizeHeader (name, strs) = [(name, BS.intercalate ", " (reverse strs))]
+                   -> HTTP.Header
+    finalizeHeader (name, strs) = (name, BS.intercalate ", " (reverse strs))
 
     insert :: Eq a => a -> [b] -> [(a, [b])] -> [(a, [b])]
     insert _ _ [] = []

@@ -21,8 +21,7 @@ import           Network.HTTP.Simple          as Export (HttpException (..),
                                                          getResponseBody,
                                                          getResponseHeaders,
                                                          getResponseStatus,
-                                                         setRequestHeader,
-                                                         setRequestHeaders)
+                                                         setRequestHeader)
 import qualified Network.HTTP.Simple          as HTTP hiding (withResponse)
 import           Network.HTTP.Types           as Export (Header, HeaderName,
                                                          Status, hCacheControl,
