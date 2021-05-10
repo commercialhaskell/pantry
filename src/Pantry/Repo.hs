@@ -31,15 +31,9 @@ data TarType = Gnu | Bsd
 
 getTarType :: (HasProcessContext env, HasLogFunc env) => RIO env TarType
 getTarType = do
-  (stdoutBS, _) <- proc "tar" ["--version"] readProcess_
+  (_, stdoutBS, _) <- proc "tar" ["--version"] readProcess
   let bs = toStrict stdoutBS
-  if "GNU" `isInfixOf` bs
-  then pure Gnu
-  else if "bsdtar" `isInfixOf` bs
-       then pure Bsd
-       else do
-         logError $ "Either GNU Tar or BSD tar is required on the PATH."
-         throwString "Proper tar executable not found in the environment"
+  pure $ if "GNU" `isInfixOf` bs then Gnu else Bsd
 
 fetchReposRaw
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
