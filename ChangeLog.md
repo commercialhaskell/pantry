@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.5.2
+
+* Fall back to BSD tar when type cannot be detected [#33](https://github.com/commercialhaskell/pantry/issues/33)
+
 ## v0.5.1.5
 * Switch back to hackage.haskell.org [#30](https://github.com/commercialhaskell/pantry/pull/30)
 * Pass through basic auth credentials specified in URLs [#32](https://github.com/commercialhaskell/pantry/pull/32)
