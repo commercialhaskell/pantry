@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.5.2.1
+
+* Support persistent 2.13 [#35](https://github.com/commercialhaskell/pantry/issues/35)
+
 ## v0.5.2
 
 * Fall back to BSD tar when type cannot be detected [#33](https://github.com/commercialhaskell/pantry/issues/33)

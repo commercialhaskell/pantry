@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -111,6 +112,7 @@ module Pantry.Types
   , getGlobalHintsFile
   , bsToBlobKey
   , warnMissingCabalFile
+  , connRDBMS
   ) where
 
 import RIO
@@ -151,6 +153,10 @@ import Path (Path, Abs, Dir, File, toFilePath, filename, (</>), parseRelFile)
 import Path.IO (resolveFile, resolveDir)
 import qualified Data.List.NonEmpty as NE
 import Casa.Client (CasaRepoPrefix)
+
+#if MIN_VERSION_persistent(2, 13, 0)
+import Database.Persist.SqlBackend.Internal (connRDBMS)
+#endif
 
 -- | Parsed tree with more information on the Haskell package it contains.
 --
