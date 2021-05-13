@@ -120,7 +120,7 @@ import Path.IO (listDir, createTempDir, getTempDir, removeDirRecur)
 import Pantry.HPack (hpackVersion, hpack)
 import Conduit
 import Data.Acquire (with)
-import Pantry.Types (PackageNameP (..), VersionP (..), SHA256, FileSize (..), FileType (..), HasPantryConfig, BlobKey, Repo (..), TreeKey, SafeFilePath, Revision (..), Package (..), SnapshotCacheHash (..))
+import Pantry.Types (PackageNameP (..), VersionP (..), SHA256, FileSize (..), FileType (..), HasPantryConfig, BlobKey, Repo (..), TreeKey, SafeFilePath, Revision (..), Package (..), SnapshotCacheHash (..), connRDBMS)
 import qualified Pantry.SQLite as SQLite
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
@@ -289,7 +289,7 @@ rdbmsAwareQuery
   :: RdbmsActions env a
   -> ReaderT SqlBackend (RIO env) a
 rdbmsAwareQuery RdbmsActions {raSqlite, raPostgres} = do
-  rdbms <- connRDBMS <$> ask
+  rdbms <- Pantry.Types.connRDBMS <$> ask
   case rdbms of
     "postgresql" -> raPostgres
     "sqlite" -> raSqlite
