@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 339dac5ed1a5c1ff7d64ece01352e881e1006e2a941ed185d3d2aa0aae75816a
+-- hash: 3189eca431facc81fcf68d1337afe04b7a3df3819668bc0f33790582f797c467
 
 name:           pantry
 version:        0.5.2.1
@@ -55,7 +55,7 @@ library
       src/
   ghc-options: -Wall
   build-depends:
-      Cabal >=3 && <3.3
+      Cabal >=3 && <3.5
     , aeson
     , ansi-terminal
     , base >=4.10 && <5
@@ -133,7 +133,7 @@ test-suite spec
       test
   ghc-options: -Wall
   build-depends:
-      Cabal >=3 && <3.3
+      Cabal >=3 && <3.5
     , QuickCheck
     , aeson
     , ansi-terminal
