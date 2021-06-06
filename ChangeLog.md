@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.5.2.2
+
+* Support for Cabal 3.4 [#38](https://github.com/commercialhaskell/pantry/pull/38)
+
 ## v0.5.2.1
 
 * Support persistent 2.13 [#35](https://github.com/commercialhaskell/pantry/issues/35)
