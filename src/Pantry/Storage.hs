@@ -272,7 +272,7 @@ withStorage
   => ReaderT SqlBackend (RIO env) a
   -> RIO env a
 withStorage action =
-  flip SQLite.withStorage_ action =<< view (P.pantryConfigL.to P.pcStorage)
+  flip (\x y -> SQLite.withStorage_ x y) action =<< view (P.pantryConfigL.to P.pcStorage)
 
 -- | This is a helper type to distinguish db queries between different rdbms backends. The important
 -- part is that the affects described in this data type should be semantically equivalent between
