@@ -7,7 +7,7 @@ cabal-version: 1.12
 -- hash: 290314cf42f0f169e5cb395c4b35e867438c4e2652df972ec59c548dc39f1b6d
 
 name:           pantry
-version:        0.5.2.2
+version:        0.5.2.3
 synopsis:       Content addressable Haskell package management
 description:    Please see the README on Github at <https://github.com/commercialhaskell/pantry#readme>
 category:       Development

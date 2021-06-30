@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.5.2.3
+
+* Support for GHC 9 [#39](https://github.com/commercialhaskell/pantry/pull/39)
+
 ## v0.5.2.2
 
 * Support for Cabal 3.4 [#38](https://github.com/commercialhaskell/pantry/pull/38)
