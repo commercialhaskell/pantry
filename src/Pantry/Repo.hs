@@ -1,6 +1,9 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE LambdaCase #-}
 module Pantry.Repo
   ( fetchReposRaw
   , fetchRepos
@@ -10,6 +13,7 @@ module Pantry.Repo
   , withRepoArchive
   , withRepo
   ) where
+
 
 import Pantry.Types
 import Pantry.Archive
@@ -35,12 +39,21 @@ getTarType = do
   let bs = toStrict stdoutBS
   pure $ if "GNU" `isInfixOf` bs then Gnu else Bsd
 
+-- | Like 'fetchRepos', except with 'RawPackageMetadata' instead of 'PackageMetadata'.
+--
+-- @since 0.5.3
 fetchReposRaw
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => [(Repo, RawPackageMetadata)]
   -> RIO env ()
-fetchReposRaw pairs = for_ pairs $ uncurry getRepo
+fetchReposRaw pairs = do
+  let repos = toAggregateRepos pairs
+  logDebug (displayShow repos)
+  for_ repos getRepos
 
+-- | Fetch the given repositories at once and populate the pantry database.
+--
+-- @since 0.5.3
 fetchRepos
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => [(Repo, PackageMetadata)]
@@ -61,7 +74,7 @@ getRepo
   => Repo
   -> RawPackageMetadata
   -> RIO env Package
-getRepo repo pm =
+getRepo repo pm = do
   withCache $ getRepo' repo pm
   where
     withCache
@@ -85,8 +98,8 @@ getRepo'
   => Repo
   -> RawPackageMetadata
   -> RIO env Package
-getRepo' repo rpm = do
-  withRepoArchive repo $ \tarball -> do
+getRepo' repo@Repo{..} rpm = do
+  withRepoArchive (rToSimpleRepo repo) $ \tarball -> do
     abs' <- resolveFile' tarball
     getArchivePackage
       (RPLIRepo repo rpm)
@@ -97,21 +110,69 @@ getRepo' repo rpm = do
             }
         , raHash = Nothing
         , raSize = Nothing
-        , raSubdir = repoSubdir repo
+        , raSubdir = repoSubdir
         }
       rpm
+
+getRepos
+  :: forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+  => AggregateRepo
+  -> RIO env [Package]
+getRepos repo@AggregateRepo{..} =
+  withCache getRepos'
+  where
+    withCache inner = do
+      pkgs <- forM aRepoSubdirs $ \(subdir, rpm) -> withStorage $ do
+        loadRepoCache (Repo aRepoUrl aRepoCommit aRepoType subdir) subdir >>= \case
+          Just tid -> fmap Right $ (, subdir) <$> loadPackageById (RPLIRepo (Repo aRepoUrl aRepoCommit aRepoType subdir) rpm) tid
+          Nothing  -> pure $ Left (subdir, rpm)
+      let (missingPkgs, cachedPkgs) = partitionEithers pkgs
+      newPkgs <-
+        if null missingPkgs
+        then pure []
+        else do
+          packages <- inner repo { aRepoSubdirs = missingPkgs }
+          forM packages $ \(package, subdir) -> do
+            withStorage $ do
+              ment <- getTreeForKey $ packageTreeKey package
+              case ment of
+                Nothing -> error $ "invariant violated, Tree not found: " ++ show (packageTreeKey package)
+                Just (Entity tid _) -> storeRepoCache (Repo aRepoUrl aRepoCommit aRepoType subdir) subdir tid
+            pure package
+      pure (nubOrd ((fst <$> cachedPkgs) ++ newPkgs))
+
+getRepos'
+  :: forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+  => AggregateRepo
+  -> RIO env [(Package, Text)] -- ^ [(package, subdir)]
+getRepos' ar@AggregateRepo{..} = do
+  withRepoArchive (arToSimpleRepo ar) $ \tarball -> do
+    abs' <- resolveFile' tarball
+    forM aRepoSubdirs $ \(subdir, rpm) -> do
+      (,subdir) <$> getArchivePackage
+        (RPLIRepo (Repo aRepoUrl aRepoCommit aRepoType subdir) rpm)
+        RawArchive
+          { raLocation = ALFilePath $ ResolvedPath
+              { resolvedRelative = RelFilePath $ T.pack tarball
+              , resolvedAbsolute = abs'
+              }
+          , raHash = Nothing
+          , raSize = Nothing
+          , raSubdir = subdir
+          }
+        rpm
 
 -- | Fetch a repository and create a (temporary) tar archive from it. Pass the
 -- path of the generated tarball to the given action.
 withRepoArchive
   :: forall env a. (HasLogFunc env, HasProcessContext env)
-  => Repo
+  => SimpleRepo
   -> (FilePath -> RIO env a)
   -> RIO env a
-withRepoArchive repo action =
-  withSystemTempDirectory "with-repo-archive" $ \tmpdir -> do
-    let tarball = tmpdir </> "foo.tar"
-    createRepoArchive repo tarball
+withRepoArchive sr action =
+  withSystemTempDirectory "with-repo-archive" $ \tmpdirArchive -> do
+    let tarball = tmpdirArchive </> "foo.tar"
+    createRepoArchive sr tarball
     action tarball
 
 -- | Run a git command, setting appropriate environment variable settings. See
@@ -174,12 +235,12 @@ runHgCommand args = void $ proc "hg" args readProcess_
 -- | Create a tarball containing files from a repository
 createRepoArchive ::
      forall env. (HasLogFunc env, HasProcessContext env)
-  => Repo
+  => SimpleRepo
   -> FilePath -- ^ Output tar archive filename
   -> RIO env ()
-createRepoArchive repo tarball = do
-  withRepo repo $
-    case repoType repo of
+createRepoArchive sr tarball = do
+  withRepo sr $
+    case sRepoType sr of
       RepoGit -> do
         runGitCommand
           ["-c", "core.autocrlf=false", "archive", "-o", tarball, "HEAD"]
@@ -193,10 +254,10 @@ createRepoArchive repo tarball = do
 -- @since 0.1.0.0
 withRepo
   :: forall env a. (HasLogFunc env, HasProcessContext env)
-  => Repo
+  => SimpleRepo
   -> RIO env a
   -> RIO env a
-withRepo repo@(Repo url commit repoType' _subdir) action =
+withRepo sr@SimpleRepo{..} action =
   withSystemTempDirectory "with-repo" $ \tmpDir -> do
     -- Note we do not immediately change directories into the new temporary directory,
     -- but instead wait until we have finished cloning the repo. This is because the
@@ -204,15 +265,15 @@ withRepo repo@(Repo url commit repoType' _subdir) action =
     -- it as relative to the current directory, not the temporary directory.
     let dir = tmpDir </> "cloned"
         (runCommand, resetArgs, submoduleArgs) =
-          case repoType' of
+          case sRepoType of
             RepoGit ->
               ( runGitCommand
-              , ["reset", "--hard", T.unpack commit]
+              , ["reset", "--hard", T.unpack sRepoCommit]
               , Just ["submodule", "update", "--init", "--recursive"]
               )
             RepoHg ->
               ( runHgCommand
-              , ["update", "-C", T.unpack commit]
+              , ["update", "-C", T.unpack sRepoCommit]
               , Nothing
               )
         fixANSIForWindows =
@@ -222,11 +283,11 @@ withRepo repo@(Repo url commit repoType' _subdir) action =
           -- folowing hack re-enables the lost ANSI-capability.
           when osIsWindows $ void $ liftIO $ hSupportsANSIWithoutEmulation stdout
 
-    logInfo $ "Cloning " <> display commit <> " from " <> display url
-    runCommand ["clone", T.unpack url, dir]
+    logInfo $ "Cloning " <> display sRepoCommit <> " from " <> display sRepoUrl
+    runCommand ["clone", T.unpack sRepoUrl, dir]
     fixANSIForWindows
     created <- doesDirectoryExist dir
-    unless created $ throwIO $ FailedToCloneRepo repo
+    unless created $ throwIO $ FailedToCloneRepo sr
 
     withWorkingDir dir $ do
       runCommand resetArgs

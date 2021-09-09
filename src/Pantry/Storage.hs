@@ -68,6 +68,7 @@ module Pantry.Storage
   , getSnapshotCacheId
   , storeSnapshotModuleCache
   , loadExposedModulePackages
+  , findOrGenerateCabalFile
   , PackageNameId
   , PackageName
   , VersionId

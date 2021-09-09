@@ -12,6 +12,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE NamedFieldPuns #-}
 module Pantry.Types
   ( PantryConfig (..)
   , HackageSecurityConfig (..)
@@ -61,6 +62,11 @@ module Pantry.Types
   , Archive (..)
   , toRawArchive
   , Repo (..)
+  , AggregateRepo (..)
+  , SimpleRepo (..)
+  , toAggregateRepos
+  , rToSimpleRepo
+  , arToSimpleRepo
   , RepoType (..)
   , parsePackageIdentifier
   , parsePackageName
@@ -120,7 +126,7 @@ import qualified Data.Conduit.Tar as Tar
 import qualified RIO.Text as T
 import qualified RIO.ByteString as B
 import qualified RIO.ByteString.Lazy as BL
-import RIO.List (intersperse)
+import RIO.List (intersperse, groupBy)
 import RIO.Time (toGregorian, Day, UTCTime)
 import qualified RIO.Map as Map
 import qualified RIO.HashMap as HM
@@ -181,18 +187,18 @@ data Package = Package
   --
   -- @since 0.1.0.0
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 data PHpack = PHpack
     {
       phOriginal :: !TreeEntry, -- ^ Original hpack file
       phGenerated :: !TreeEntry, -- ^ Generated Cabal file
       phVersion :: !Version -- ^ Version of Hpack used
-    } deriving (Show, Eq)
+    } deriving (Show, Eq, Ord)
 
 data PackageCabal = PCCabalFile !TreeEntry -- ^ TreeEntry of Cabal file
                   | PCHpack !PHpack
-                  deriving (Show, Eq)
+                  deriving (Show, Eq, Ord)
 
 cabalFileName :: PackageName -> SafeFilePath
 cabalFileName name =
@@ -530,6 +536,46 @@ instance Display Repo where
       then mempty
       else " in subdirectory " <> display subdir)
 
+rToSimpleRepo :: Repo -> SimpleRepo
+rToSimpleRepo Repo {..} = SimpleRepo { sRepoUrl = repoUrl, sRepoCommit = repoCommit, sRepoType = repoType }
+
+data AggregateRepo = AggregateRepo
+  { aRepoUrl :: !Text
+  , aRepoCommit :: !Text
+  , aRepoType :: !RepoType
+  , aRepoSubdirs :: [(Text, RawPackageMetadata)]
+  }
+    deriving (Show, Generic, Eq, Ord, Typeable)
+
+
+-- | Group input repositories by non-subdir values.
+toAggregateRepos :: [(Repo, RawPackageMetadata)] -> [AggregateRepo]
+toAggregateRepos =
+  fmap (\xs@((Repo{repoUrl, repoCommit, repoType}, _):_) -> AggregateRepo repoUrl repoCommit repoType (fmap (first repoSubdir) xs))
+  . groupBy (\(Repo url1 commit1 type1 _, _) (Repo url2 commit2 type2 _, _) -> (url1, commit1 ,type1) == (url2, commit2, type2))
+
+arToSimpleRepo :: AggregateRepo -> SimpleRepo
+arToSimpleRepo AggregateRepo {..} = SimpleRepo { sRepoUrl = aRepoUrl, sRepoCommit = aRepoCommit, sRepoType = aRepoType }
+
+-- | Repository without subdirectory information.
+--
+-- @since 0.5.3
+data SimpleRepo = SimpleRepo
+  { sRepoUrl :: !Text
+  , sRepoCommit :: !Text
+  , sRepoType :: !RepoType
+  }
+    deriving (Generic, Eq, Ord, Typeable)
+
+instance Display SimpleRepo where
+  display (SimpleRepo url commit typ) =
+    (case typ of
+       RepoGit -> "Git"
+       RepoHg -> "Mercurial") <>
+    " repo at " <>
+    display url <>
+    ", commit " <>
+    display commit
 
 -- An unexported newtype wrapper to hang a 'FromJSON' instance off of. Contains
 -- a GitHub user and repo name separated by a forward slash, e.g. "foo/bar".
@@ -844,7 +890,7 @@ data PantryException
   | InvalidTarFileType !ArchiveLocation !FilePath !Tar.FileType
   | UnsupportedTarball !ArchiveLocation !Text
   | NoHackageCryptographicHash !PackageIdentifier
-  | FailedToCloneRepo !Repo
+  | FailedToCloneRepo !SimpleRepo
   | TreeReferencesMissingBlob !RawPackageLocationImmutable !SafeFilePath !BlobKey
   | CompletePackageMetadataMismatch !RawPackageLocationImmutable !PackageMetadata
   | CRC32Mismatch !ArchiveLocation !FilePath !(Mismatch Word32)
@@ -1101,7 +1147,7 @@ data BuildFile = BFCabal !SafeFilePath !TreeEntry
   deriving (Show, Eq)
 
 data FileType = FTNormal | FTExecutable
-  deriving (Show, Eq, Enum, Bounded)
+  deriving (Show, Eq, Enum, Bounded, Ord)
 instance PersistField FileType where
   toPersistValue FTNormal = PersistInt64 1
   toPersistValue FTExecutable = PersistInt64 2
@@ -1119,7 +1165,7 @@ data TreeEntry = TreeEntry
   { teBlob :: !BlobKey
   , teType :: !FileType
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 newtype SafeFilePath = SafeFilePath Text
   deriving (Show, Eq, Ord, Display)
@@ -1177,7 +1223,7 @@ newtype Tree
   -- In the future, consider allowing more lax parsing
   -- See: https://www.fpcomplete.com/blog/2018/07/pantry-part-2-trees-keys
   -- TreeTarball !PackageTarball
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 renderTree :: Tree -> ByteString
 renderTree = BL.toStrict . toLazyByteString . go
