@@ -540,9 +540,7 @@ rToSimpleRepo :: Repo -> SimpleRepo
 rToSimpleRepo Repo {..} = SimpleRepo { sRepoUrl = repoUrl, sRepoCommit = repoCommit, sRepoType = repoType }
 
 data AggregateRepo = AggregateRepo
-  { aRepoUrl :: !Text
-  , aRepoCommit :: !Text
-  , aRepoType :: !RepoType
+  { aRepo :: !SimpleRepo
   , aRepoSubdirs :: [(Text, RawPackageMetadata)]
   }
     deriving (Show, Generic, Eq, Ord, Typeable)
@@ -551,11 +549,11 @@ data AggregateRepo = AggregateRepo
 -- | Group input repositories by non-subdir values.
 toAggregateRepos :: [(Repo, RawPackageMetadata)] -> [AggregateRepo]
 toAggregateRepos =
-  fmap (\xs@((Repo{repoUrl, repoCommit, repoType}, _):_) -> AggregateRepo repoUrl repoCommit repoType (fmap (first repoSubdir) xs))
+  fmap (\xs@((repo, _):_) -> AggregateRepo (rToSimpleRepo repo) (fmap (first repoSubdir) xs))
   . groupBy (\(Repo url1 commit1 type1 _, _) (Repo url2 commit2 type2 _, _) -> (url1, commit1 ,type1) == (url2, commit2, type2))
 
 arToSimpleRepo :: AggregateRepo -> SimpleRepo
-arToSimpleRepo AggregateRepo {..} = SimpleRepo { sRepoUrl = aRepoUrl, sRepoCommit = aRepoCommit, sRepoType = aRepoType }
+arToSimpleRepo AggregateRepo {..} = aRepo
 
 -- | Repository without subdirectory information.
 --
@@ -565,7 +563,7 @@ data SimpleRepo = SimpleRepo
   , sRepoCommit :: !Text
   , sRepoType :: !RepoType
   }
-    deriving (Generic, Eq, Ord, Typeable)
+    deriving (Show, Generic, Eq, Ord, Typeable)
 
 instance Display SimpleRepo where
   display (SimpleRepo url commit typ) =

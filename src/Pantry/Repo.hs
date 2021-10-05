@@ -118,13 +118,13 @@ getRepos
   :: forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => AggregateRepo
   -> RIO env [Package]
-getRepos repo@AggregateRepo{..} =
+getRepos repo@(AggregateRepo (SimpleRepo{..}) repoSubdirs) =
   withCache getRepos'
   where
     withCache inner = do
-      pkgs <- forM aRepoSubdirs $ \(subdir, rpm) -> withStorage $ do
-        loadRepoCache (Repo aRepoUrl aRepoCommit aRepoType subdir) subdir >>= \case
-          Just tid -> fmap Right $ (, subdir) <$> loadPackageById (RPLIRepo (Repo aRepoUrl aRepoCommit aRepoType subdir) rpm) tid
+      pkgs <- forM repoSubdirs $ \(subdir, rpm) -> withStorage $ do
+        loadRepoCache (Repo sRepoUrl sRepoCommit sRepoType subdir) subdir >>= \case
+          Just tid -> fmap Right $ (, subdir) <$> loadPackageById (RPLIRepo (Repo sRepoUrl sRepoCommit sRepoType subdir) rpm) tid
           Nothing  -> pure $ Left (subdir, rpm)
       let (missingPkgs, cachedPkgs) = partitionEithers pkgs
       newPkgs <-
@@ -137,7 +137,7 @@ getRepos repo@AggregateRepo{..} =
               ment <- getTreeForKey $ packageTreeKey package
               case ment of
                 Nothing -> error $ "invariant violated, Tree not found: " ++ show (packageTreeKey package)
-                Just (Entity tid _) -> storeRepoCache (Repo aRepoUrl aRepoCommit aRepoType subdir) subdir tid
+                Just (Entity tid _) -> storeRepoCache (Repo sRepoUrl sRepoCommit sRepoType subdir) subdir tid
             pure package
       pure (nubOrd ((fst <$> cachedPkgs) ++ newPkgs))
 
@@ -145,12 +145,12 @@ getRepos'
   :: forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => AggregateRepo
   -> RIO env [(Package, Text)] -- ^ [(package, subdir)]
-getRepos' ar@AggregateRepo{..} = do
+getRepos' ar@(AggregateRepo (SimpleRepo{..}) repoSubdirs) = do
   withRepoArchive (arToSimpleRepo ar) $ \tarball -> do
     abs' <- resolveFile' tarball
-    forM aRepoSubdirs $ \(subdir, rpm) -> do
+    forM repoSubdirs $ \(subdir, rpm) -> do
       (,subdir) <$> getArchivePackage
-        (RPLIRepo (Repo aRepoUrl aRepoCommit aRepoType subdir) rpm)
+        (RPLIRepo (Repo sRepoUrl sRepoCommit sRepoType subdir) rpm)
         RawArchive
           { raLocation = ALFilePath $ ResolvedPath
               { resolvedRelative = RelFilePath $ T.pack tarball
