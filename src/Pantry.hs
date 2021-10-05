@@ -67,7 +67,10 @@ module Pantry
     -- ** Repos
   , Repo (..)
   , RepoType (..)
+  , SimpleRepo (..)
   , withRepo
+  , fetchRepos
+  , fetchReposRaw
 
     -- ** Package location
   , RawPackageLocation (..)
@@ -193,7 +196,7 @@ import Pantry.Casa
 import Casa.Client (thParserCasaRepo, CasaRepoPrefix)
 import Pantry.Repo
 import qualified Pantry.SHA256 as SHA256
-import Pantry.Storage hiding (TreeEntry, PackageName, Version)
+import Pantry.Storage hiding (TreeEntry, PackageName, Version, findOrGenerateCabalFile)
 import Pantry.Tree
 import Pantry.Types as P
 import Pantry.Hackage

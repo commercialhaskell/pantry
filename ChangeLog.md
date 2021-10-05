@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.5.3
+
+* improve and expose `fetchRepos`/`fetchReposRaw`
+
 ## v0.5.2.3
 
 * Support for GHC 9 [#39](https://github.com/commercialhaskell/pantry/pull/39)
