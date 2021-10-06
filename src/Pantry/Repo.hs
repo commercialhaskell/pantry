@@ -81,7 +81,7 @@ getRepo repo pm = do
       :: RIO env Package
       -> RIO env Package
     withCache inner = do
-      mtid <- withStorage (loadRepoCache repo (repoSubdir repo))
+      mtid <- withStorage (loadRepoCache repo)
       case mtid of
         Just tid -> withStorage $ loadPackageById (RPLIRepo repo pm) tid
         Nothing -> do
@@ -123,7 +123,7 @@ getRepos repo@(AggregateRepo (SimpleRepo{..}) repoSubdirs) =
   where
     withCache inner = do
       pkgs <- forM repoSubdirs $ \(subdir, rpm) -> withStorage $ do
-        loadRepoCache (Repo sRepoUrl sRepoCommit sRepoType subdir) subdir >>= \case
+        loadRepoCache (Repo sRepoUrl sRepoCommit sRepoType subdir) >>= \case
           Just tid -> fmap Right $ (, subdir) <$> loadPackageById (RPLIRepo (Repo sRepoUrl sRepoCommit sRepoType subdir) rpm) tid
           Nothing  -> pure $ Left (subdir, rpm)
       let (missingPkgs, cachedPkgs) = partitionEithers pkgs

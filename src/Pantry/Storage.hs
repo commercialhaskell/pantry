@@ -991,13 +991,12 @@ storeRepoCache repo subdir tid = do
 
 loadRepoCache
   :: Repo
-  -> Text -- ^ subdir
   -> ReaderT SqlBackend (RIO env) (Maybe TreeId)
-loadRepoCache repo subdir = fmap (repoCacheTree . entityVal) <$> selectFirst
+loadRepoCache repo = fmap (repoCacheTree . entityVal) <$> selectFirst
   [ RepoCacheUrl ==. repoUrl repo
   , RepoCacheType ==. repoType repo
   , RepoCacheCommit ==. repoCommit repo
-  , RepoCacheSubdir ==. subdir
+  , RepoCacheSubdir ==. repoSubdir repo
   ]
   [Desc RepoCacheTime]
 
