@@ -34,35 +34,35 @@ module Pantry.Internal.AesonExtended (
 import Control.Monad.Trans.Writer.Strict (WriterT, mapWriterT, runWriterT, tell)
 import Data.Aeson as Export hiding ((.:), (.:?))
 import qualified Data.Aeson as A
+import Data.Aeson.Key (toString, toText)
+import Data.Aeson.KeyMap (member, keys)
 import Data.Aeson.Types hiding ((.:), (.:?))
-import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set as Set
-import Data.Text (unpack)
 import qualified Data.Text as T
 import Generics.Deriving.Monoid (mappenddefault, memptydefault)
 import RIO
 import RIO.PrettyPrint.StylesUpdate (StylesUpdate)
 
 -- | Extends @.:@ warning to include field name.
-(.:) :: FromJSON a => Object -> Text -> Parser a
-(.:) o p = modifyFailure (("failed to parse field '" <> unpack p <> "': ") <>) (o A..: p)
+(.:) :: FromJSON a => Object -> Key -> Parser a
+(.:) o p = modifyFailure (("failed to parse field '" <> toString p <> "': ") <>) (o A..: p)
 {-# INLINE (.:) #-}
 
 -- | Extends @.:?@ warning to include field name.
-(.:?) :: FromJSON a => Object -> Text -> Parser (Maybe a)
-(.:?) o p = modifyFailure (("failed to parse field '" <> unpack p <> "': ") <>) (o A..:? p)
+(.:?) :: FromJSON a => Object -> Key -> Parser (Maybe a)
+(.:?) o p = modifyFailure (("failed to parse field '" <> toString p <> "': ") <>) (o A..:? p)
 {-# INLINE (.:?) #-}
 
 -- | 'WarningParser' version of @.:@.
 (..:)
     :: FromJSON a
-    => Object -> Text -> WarningParser a
+    => Object -> Key -> WarningParser a
 o ..: k = tellJSONField k >> lift (o .: k)
 
 -- | 'WarningParser' version of @.:?@.
 (..:?)
     :: FromJSON a
-    => Object -> Text -> WarningParser (Maybe a)
+    => Object -> Key -> WarningParser (Maybe a)
 o ..:? k = tellJSONField k >> lift (o .:? k)
 
 -- | 'WarningParser' version of @.!=@.
@@ -73,11 +73,11 @@ wp ..!= d =
          do a <- fmap snd p
             fmap (, a) (fmap fst p .!= d)
 
-presentCount :: Object -> [Text] -> Int
-presentCount o ss = length . filter (\x -> HashMap.member x o) $ ss
+presentCount :: Object -> [Key] -> Int
+presentCount o ss = length . filter (\x -> member x o) $ ss
 
 -- | Synonym version of @..:@.
-(...:) :: FromJSON a => Object -> [Text] -> WarningParser a
+(...:) :: FromJSON a => Object -> [Key] -> WarningParser a
 _ ...: [] = fail "failed to find an empty key"
 o ...: ss@(key:_) = apply
     where pc = presentCount o ss
@@ -93,7 +93,7 @@ o ...: ss@(key:_) = apply
                 | otherwise = asum $ map (o..:) ss
 
 -- | Synonym version of @..:?@.
-(...:?) :: FromJSON a => Object -> [Text] -> WarningParser (Maybe a)
+(...:?) :: FromJSON a => Object -> [Key] -> WarningParser (Maybe a)
 _ ...:? [] = fail "failed to find an empty key"
 o ...:? ss@(key:_) = apply
     where pc = presentCount o ss
@@ -106,7 +106,7 @@ o ...:? ss@(key:_) = apply
                 | otherwise = asum $ map (o..:) ss
 
 -- | Tell warning parser about an expected field, so it doesn't warn about it.
-tellJSONField :: Text -> WarningParser ()
+tellJSONField :: Key -> WarningParser ()
 tellJSONField key = tell (mempty { wpmExpectedFields = Set.singleton key})
 
 -- | 'WarningParser' version of 'withObject'.
@@ -121,7 +121,7 @@ withObjectWarnings expected f =
             let unrecognizedFields =
                     Set.toList
                         (Set.difference
-                             (Set.fromList (HashMap.keys obj))
+                             (Set.fromList (keys obj))
                              (wpmExpectedFields w))
             return
                 (WithJSONWarnings a
@@ -177,7 +177,7 @@ type WarningParser a = WriterT WarningParserMonoid Parser a
 
 -- | Monoid used by 'WarningParser' to track expected fields and warnings.
 data WarningParserMonoid = WarningParserMonoid
-    { wpmExpectedFields :: !(Set Text)
+    { wpmExpectedFields :: !(Set Key)
     , wpmWarnings :: [JSONWarning]
     } deriving Generic
 instance Semigroup WarningParserMonoid where
@@ -200,16 +200,16 @@ instance Monoid a => Monoid (WithJSONWarnings a) where
     mappend = (<>)
 
 -- | Warning output from 'WarningParser'.
-data JSONWarning = JSONUnrecognizedFields String [Text]
+data JSONWarning = JSONUnrecognizedFields String [Key]
                  | JSONGeneralWarning !Text
     deriving Eq
 instance Show JSONWarning where
   show = T.unpack . utf8BuilderToText . display
 instance Display JSONWarning where
   display (JSONUnrecognizedFields obj [field]) =
-    "Unrecognized field in " <> fromString obj <> ": " <> display field
+    "Unrecognized field in " <> fromString obj <> ": " <> display (toText field)
   display (JSONUnrecognizedFields obj fields) =
-    "Unrecognized fields in " <> fromString obj <> ": " <> display (T.intercalate ", " fields)
+    "Unrecognized fields in " <> fromString obj <> ": " <> display (T.intercalate ", " $ fmap toText fields)
   display (JSONGeneralWarning t) = display t
 
 instance IsString JSONWarning where

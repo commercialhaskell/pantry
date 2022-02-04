@@ -129,12 +129,12 @@ import qualified RIO.ByteString.Lazy as BL
 import RIO.List (intersperse, groupBy)
 import RIO.Time (toGregorian, Day, UTCTime)
 import qualified RIO.Map as Map
-import qualified RIO.HashMap as HM
 import qualified Data.Map.Strict as Map (mapKeysMonotonic)
 import qualified RIO.Set as Set
-import Data.Aeson.Types (toJSONKeyText, Parser)
+import Data.Aeson.Types (toJSONKeyText, Parser, Pair)
 import Pantry.Internal.AesonExtended
 import Data.Aeson.Encoding.Internal (unsafeToEncoding)
+import qualified Data.Aeson.KeyMap as A
 import Data.ByteString.Builder (toLazyByteString, byteString, wordDec)
 import Database.Persist
 import Database.Persist.Sql
@@ -646,7 +646,7 @@ instance Show BlobKey where
 instance Display BlobKey where
   display (BlobKey sha size') = display sha <> "," <> display size'
 
-blobKeyPairs :: BlobKey -> [(Text, Value)]
+blobKeyPairs :: BlobKey -> [Pair]
 blobKeyPairs (BlobKey sha size') =
     [ "sha256" .= sha
     , "size" .= size'
@@ -679,7 +679,7 @@ instance FromJSON PackageNameP where
 instance ToJSONKey PackageNameP where
   toJSONKey =
     ToJSONKeyText
-      (T.pack . packageNameString . unPackageNameP)
+      (fromString . packageNameString . unPackageNameP)
       (unsafeToEncoding . getUtf8Builder . display)
 instance FromJSONKey PackageNameP where
   fromJSONKey = FromJSONKeyText $ PackageNameP . mkPackageName . T.unpack
@@ -1600,7 +1600,7 @@ instance ToJSON RawPackageLocationImmutable where
           RepoGit -> "git"
           RepoHg  -> "hg"
 
-rpmToPairs :: RawPackageMetadata -> [(Text, Value)]
+rpmToPairs :: RawPackageMetadata -> [Pair]
 rpmToPairs (RawPackageMetadata mname mversion mtree) = concat
   [ maybe [] (\name -> ["name" .= CabalString name]) mname
   , maybe [] (\version -> ["version" .= CabalString version]) mversion
@@ -1692,7 +1692,7 @@ instance FromJSON (WithJSONWarnings (Unresolved (NonEmpty RawPackageLocationImmu
       optionalSubdirs :: Object -> WarningParser OptionalSubdirs
       optionalSubdirs o =
         -- if subdirs exists, it needs to be valid
-        case HM.lookup "subdirs" o of
+        case A.lookup "subdirs" o of
           Just v' -> do
             tellJSONField "subdirs"
             subdirs <- lift $ parseJSON v'
@@ -2063,9 +2063,7 @@ instance Display RawSnapshotLocation where
 
 instance ToJSON RawSnapshotLocation where
   toJSON (RSLCompiler compiler) = object ["compiler" .= compiler]
-  toJSON (RSLUrl url mblob) = object
-    $ "url" .= url
-    : maybe [] blobKeyPairs mblob
+  toJSON (RSLUrl url mblob) = object $ "url" .= url : maybe [] blobKeyPairs mblob
   toJSON (RSLFilePath resolved) = object ["filepath" .= resolvedRelative resolved]
   toJSON (RSLSynonym syn) = toJSON syn
 
