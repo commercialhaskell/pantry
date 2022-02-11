@@ -3,8 +3,6 @@ cabal-version: 1.12
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: 290314cf42f0f169e5cb395c4b35e867438c4e2652df972ec59c548dc39f1b6d
 
 name:           pantry
 version:        0.5.3
