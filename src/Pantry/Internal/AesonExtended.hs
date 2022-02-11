@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -35,7 +36,6 @@ import Control.Monad.Trans.Writer.Strict (WriterT, mapWriterT, runWriterT, tell)
 import Data.Aeson as Export hiding ((.:), (.:?))
 import qualified Data.Aeson as A
 import Data.Aeson.Types hiding ((.:), (.:?))
-import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Set as Set
 import Data.Text (unpack)
 import qualified Data.Text as T
@@ -43,14 +43,33 @@ import Generics.Deriving.Monoid (mappenddefault, memptydefault)
 import RIO
 import RIO.PrettyPrint.StylesUpdate (StylesUpdate)
 
+#if MIN_VERSION_aeson(2, 0, 0)
+import qualified Data.Aeson.Key
+import qualified Data.Aeson.KeyMap as HashMap
+
+keyToText :: Data.Aeson.Key.Key -> Text
+keyToText = Data.Aeson.Key.toText
+
+textToKey :: Text -> Data.Aeson.Key.Key
+textToKey = Data.Aeson.Key.fromText
+#else
+import qualified Data.HashMap.Strict as HashMap
+
+keyToText :: Text -> Text
+keyToText = id
+
+textToKey :: Text -> Text
+textToKey = id
+#endif
+
 -- | Extends @.:@ warning to include field name.
 (.:) :: FromJSON a => Object -> Text -> Parser a
-(.:) o p = modifyFailure (("failed to parse field '" <> unpack p <> "': ") <>) (o A..: p)
+(.:) o p = modifyFailure (("failed to parse field '" <> unpack p <> "': ") <>) (o A..: textToKey p)
 {-# INLINE (.:) #-}
 
 -- | Extends @.:?@ warning to include field name.
 (.:?) :: FromJSON a => Object -> Text -> Parser (Maybe a)
-(.:?) o p = modifyFailure (("failed to parse field '" <> unpack p <> "': ") <>) (o A..:? p)
+(.:?) o p = modifyFailure (("failed to parse field '" <> unpack p <> "': ") <>) (o A..:? textToKey p)
 {-# INLINE (.:?) #-}
 
 -- | 'WarningParser' version of @.:@.
@@ -74,7 +93,7 @@ wp ..!= d =
             fmap (, a) (fmap fst p .!= d)
 
 presentCount :: Object -> [Text] -> Int
-presentCount o ss = length . filter (\x -> HashMap.member x o) $ ss
+presentCount o ss = length . filter (\x -> HashMap.member (textToKey x) o) $ ss
 
 -- | Synonym version of @..:@.
 (...:) :: FromJSON a => Object -> [Text] -> WarningParser a
@@ -121,7 +140,7 @@ withObjectWarnings expected f =
             let unrecognizedFields =
                     Set.toList
                         (Set.difference
-                             (Set.fromList (HashMap.keys obj))
+                             (Set.fromList (map keyToText (HashMap.keys obj)))
                              (wpmExpectedFields w))
             return
                 (WithJSONWarnings a

@@ -129,7 +129,6 @@ import qualified RIO.ByteString.Lazy as BL
 import RIO.List (intersperse, groupBy)
 import RIO.Time (toGregorian, Day, UTCTime)
 import qualified RIO.Map as Map
-import qualified RIO.HashMap as HM
 import qualified Data.Map.Strict as Map (mapKeysMonotonic)
 import qualified RIO.Set as Set
 import Data.Aeson.Types (toJSONKeyText, Parser)
@@ -162,6 +161,17 @@ import Casa.Client (CasaRepoPrefix)
 
 #if MIN_VERSION_persistent(2, 13, 0)
 import Database.Persist.SqlBackend.Internal (connRDBMS)
+#endif
+
+#if MIN_VERSION_aeson(2, 0, 0)
+import qualified Data.Aeson.KeyMap as HM
+import qualified Data.Aeson.Key
+
+type AesonKey = Data.Aeson.Key.Key
+#else
+import qualified RIO.HashMap as HM
+
+type AesonKey = Text
 #endif
 
 -- | Parsed tree with more information on the Haskell package it contains.
@@ -646,7 +656,7 @@ instance Show BlobKey where
 instance Display BlobKey where
   display (BlobKey sha size') = display sha <> "," <> display size'
 
-blobKeyPairs :: BlobKey -> [(Text, Value)]
+blobKeyPairs :: BlobKey -> [(AesonKey, Value)]
 blobKeyPairs (BlobKey sha size') =
     [ "sha256" .= sha
     , "size" .= size'
@@ -679,7 +689,7 @@ instance FromJSON PackageNameP where
 instance ToJSONKey PackageNameP where
   toJSONKey =
     ToJSONKeyText
-      (T.pack . packageNameString . unPackageNameP)
+      (fromString . packageNameString . unPackageNameP)
       (unsafeToEncoding . getUtf8Builder . display)
 instance FromJSONKey PackageNameP where
   fromJSONKey = FromJSONKeyText $ PackageNameP . mkPackageName . T.unpack
@@ -1600,7 +1610,7 @@ instance ToJSON RawPackageLocationImmutable where
           RepoGit -> "git"
           RepoHg  -> "hg"
 
-rpmToPairs :: RawPackageMetadata -> [(Text, Value)]
+rpmToPairs :: RawPackageMetadata -> [(AesonKey, Value)]
 rpmToPairs (RawPackageMetadata mname mversion mtree) = concat
   [ maybe [] (\name -> ["name" .= CabalString name]) mname
   , maybe [] (\version -> ["version" .= CabalString version]) mversion

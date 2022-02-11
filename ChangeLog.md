@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.5.4
+
+* Support aeson 2
+
 ## v0.5.3
 
 * improve and expose `fetchRepos`/`fetchReposRaw`
