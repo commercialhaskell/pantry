@@ -1,0 +1,5 @@
+# GHC 9.2.2
+resolver: nightly-2022-04-04
+
+ghc-options:
+   "$locals": -fhide-source-paths

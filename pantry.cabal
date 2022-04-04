@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -53,7 +53,7 @@ library
       src/
   ghc-options: -Wall
   build-depends:
-      Cabal >=3 && <3.5
+      Cabal >=3 && <3.7
     , aeson
     , ansi-terminal
     , base >=4.10 && <5
@@ -131,7 +131,7 @@ test-suite spec
       test
   ghc-options: -Wall
   build-depends:
-      Cabal >=3 && <3.5
+      Cabal >=3 && <3.7
     , QuickCheck
     , aeson
     , ansi-terminal
