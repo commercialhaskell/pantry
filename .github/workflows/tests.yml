@@ -1,0 +1,49 @@
+name: Tests
+
+on:
+    pull_request:
+    push:
+        branches:
+        - master
+
+jobs:
+  build:
+    name: CI
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-latest
+        - macos-latest
+        - windows-latest
+        args:
+        - --stack-yaml stack-ghc-86.yaml
+        - --stack-yaml stack-ghc-88.yaml
+        - --stack-yaml stack-ghc-922.yaml
+        - --stack-yaml stack-persistent-211.yaml
+        - --stack-yaml stack-persistent-213.yaml
+        - --stack-yaml stack-cabal-3.4.yaml
+        - --stack-yaml stack-aeson2.yaml
+
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v2
+
+# Getting weird OS X errors...
+#      - name: Cache dependencies
+#        uses: actions/cache@v1
+#        with:
+#          path: ~/.stack
+#          key: ${{ runner.os }}-${{ matrix.resolver }}-${{ hashFiles('stack.yaml') }}
+#          restore-keys: |
+#            ${{ runner.os }}-${{ matrix.resolver }}-
+
+      - name: Build and run tests
+        shell: bash
+        run: |
+            set -ex
+            mkdir -p ../_newstack
+            stack upgrade --force-download --local-bin-path ../_newstack
+            ../_newstack/stack --version
+            ../_newstack/stack ${{ matrix.args }} test --bench --no-run-benchmarks --haddock --no-haddock-deps
