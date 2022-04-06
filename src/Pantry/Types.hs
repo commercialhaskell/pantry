@@ -140,7 +140,12 @@ import Database.Persist.Sql
 import Pantry.SHA256 (SHA256)
 import qualified Pantry.SHA256 as SHA256
 import qualified Distribution.Compat.CharParsing as Parse
-import Distribution.CabalSpecVersion (CabalSpecVersion (..), cabalSpecLatest)
+import Distribution.CabalSpecVersion (cabalSpecLatest)
+#if MIN_VERSION_Cabal(3,4,0)
+import Distribution.CabalSpecVersion (cabalSpecToVersionDigits)
+#else
+import Distribution.CabalSpecVersion (CabalSpecVersion (..))
+#endif
 import Distribution.Parsec (PError (..), PWarning (..), showPos, parsec, explicitEitherParsec, ParsecParser)
 import Distribution.Types.PackageName (PackageName, unPackageName, mkPackageName)
 import Distribution.Types.VersionRange (VersionRange)
@@ -1130,25 +1135,27 @@ orSeparated xs
 commaSeparated :: NonEmpty Utf8Builder -> Utf8Builder
 commaSeparated = fold . NE.intersperse ", "
 
--- You'd really think there'd be a better way to do this in Cabal.
 cabalSpecLatestVersion :: Version
-cabalSpecLatestVersion =
-  case cabalSpecLatest of
-    CabalSpecV1_0 -> error "this cannot happen"
-    CabalSpecV1_2 -> error "this cannot happen"
-    CabalSpecV1_4 -> error "this cannot happen"
-    CabalSpecV1_6 -> error "this cannot happen"
-    CabalSpecV1_8 -> error "this cannot happen"
-    CabalSpecV1_10 -> error "this cannot happen"
-    CabalSpecV1_12 -> error "this cannot happen"
-    CabalSpecV1_18 -> error "this cannot happen"
-    CabalSpecV1_20 -> error "this cannot happen"
-    CabalSpecV1_22 -> error "this cannot happen"
-    CabalSpecV1_24 -> error "this cannot happen"
-    CabalSpecV2_0 -> error "this cannot happen"
-    CabalSpecV2_2 -> error "this cannot happen"
-    CabalSpecV2_4 -> error "this cannot happen"
-    CabalSpecV3_0 -> mkVersion [3, 0]
+cabalSpecLatestVersion = mkVersion $ cabalSpecToVersionDigits cabalSpecLatest
+
+#if !MIN_VERSION_Cabal(3,4,0)
+cabalSpecToVersionDigits :: CabalSpecVersion -> [Int]
+cabalSpecToVersionDigits CabalSpecV3_0   = [3,0]
+cabalSpecToVersionDigits CabalSpecV2_4   = [2,4]
+cabalSpecToVersionDigits CabalSpecV2_2   = [2,2]
+cabalSpecToVersionDigits CabalSpecV2_0   = [2,0]
+cabalSpecToVersionDigits CabalSpecV1_24  = [1,24]
+cabalSpecToVersionDigits CabalSpecV1_22  = [1,22]
+cabalSpecToVersionDigits CabalSpecV1_20  = [1,20]
+cabalSpecToVersionDigits CabalSpecV1_18  = [1,18]
+cabalSpecToVersionDigits CabalSpecV1_12  = [1,12]
+cabalSpecToVersionDigits CabalSpecV1_10  = [1,10]
+cabalSpecToVersionDigits CabalSpecV1_8   = [1,8]
+cabalSpecToVersionDigits CabalSpecV1_6   = [1,6]
+cabalSpecToVersionDigits CabalSpecV1_4   = [1,4]
+cabalSpecToVersionDigits CabalSpecV1_2   = [1,2]
+cabalSpecToVersionDigits CabalSpecV1_0   = [1,0]
+#endif
 
 data BuildFile = BFCabal !SafeFilePath !TreeEntry
                | BFHpack !TreeEntry -- We don't need SafeFilePath for Hpack since it has to be package.yaml file
