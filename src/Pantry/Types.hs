@@ -560,12 +560,19 @@ data AggregateRepo = AggregateRepo
   }
     deriving (Show, Generic, Eq, Ord, Typeable)
 
-
 -- | Group input repositories by non-subdir values.
 toAggregateRepos :: [(Repo, RawPackageMetadata)] -> [AggregateRepo]
-toAggregateRepos =
-  fmap (\xs@((repo, _):_) -> AggregateRepo (rToSimpleRepo repo) (fmap (first repoSubdir) xs))
-  . groupBy (\(Repo url1 commit1 type1 _, _) (Repo url2 commit2 type2 _, _) -> (url1, commit1 ,type1) == (url2, commit2, type2))
+toAggregateRepos = mapMaybe toAggregateRepo . groupBy matchRepoExclSubdir
+ where
+  toAggregateRepo :: [(Repo, RawPackageMetadata)] -> Maybe AggregateRepo
+  toAggregateRepo [] = Nothing
+  toAggregateRepo xs@((repo, _):_) =
+    Just $ AggregateRepo (rToSimpleRepo repo) (fmap (first repoSubdir) xs)
+
+  matchRepoExclSubdir x1 x2 =
+    let (Repo url1 commit1 type1 _, _) = x1
+        (Repo url2 commit2 type2 _, _) = x2
+    in  (url1, commit1, type1) == (url2, commit2, type2)
 
 arToSimpleRepo :: AggregateRepo -> SimpleRepo
 arToSimpleRepo AggregateRepo {..} = aRepo
