@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.5.5
+
+* Support Cabal 3.6
+
 ## v0.5.4
 
 * Support aeson 2
