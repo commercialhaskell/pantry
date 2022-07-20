@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.5.6
+
+* Remove operational and mirror keys from bootstrap key set [#53](https://github.com/commercialhaskell/pantry/pull/53)
+
 ## v0.5.5
 
 * Support Cabal 3.6
