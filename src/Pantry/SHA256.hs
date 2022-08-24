@@ -10,7 +10,7 @@
 --
 -- Some nomenclature:
 --
--- * Hashing calculates a new hash value from some input. @from@ takes a value that representats an existing hash.
+-- * Hashing calculates a new hash value from some input. @from@ takes a value that represents an existing hash.
 --
 -- * Raw means a raw binary representation of the hash value, without any hex encoding.
 --
