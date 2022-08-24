@@ -280,7 +280,7 @@ withRepo sr@SimpleRepo{..} action =
           -- On Windows 10, an upstream issue with the `git clone` command means that
           -- command clears, but does not then restore, the
           -- ENABLE_VIRTUAL_TERMINAL_PROCESSING flag for native terminals. The
-          -- folowing hack re-enables the lost ANSI-capability.
+          -- following hack re-enables the lost ANSI-capability.
           when osIsWindows $ void $ liftIO $ hSupportsANSIWithoutEmulation stdout
 
     logInfo $ "Cloning " <> display sRepoCommit <> " from " <> display sRepoUrl
