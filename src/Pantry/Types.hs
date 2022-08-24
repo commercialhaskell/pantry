@@ -1511,7 +1511,7 @@ parsePackageMetadata o = do
   pure PackageMetadata {..}
 
 
--- | Conver package metadata to its "raw" equivalent.
+-- | Convert package metadata to its "raw" equivalent.
 --
 -- @since 0.1.0.0
 toRawPM :: PackageMetadata -> RawPackageMetadata
