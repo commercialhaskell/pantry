@@ -1028,7 +1028,7 @@ instance Display PantryException where
     "Couldn't parse snapshot from " <> display sl <> ": " <> fromString e
   display (WrongCabalFileName pl sfp name) =
     "Wrong cabal file name for package " <> display pl <>
-    "\nCabal file is named " <> display sfp <>
+    "\nThe cabal file is named " <> display sfp <>
     ", but package name is " <> fromString (packageNameString name) <>
     "\nFor more information, see:\n  - https://github.com/commercialhaskell/stack/issues/317\n  -https://github.com/commercialhaskell/stack/issues/895"
   display (DownloadInvalidSHA256 url Mismatch {..}) =
