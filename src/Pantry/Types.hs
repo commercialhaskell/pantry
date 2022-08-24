@@ -1053,7 +1053,7 @@ instance Display PantryException where
     "\nActual:   " <> display mismatchActual
   display (UnknownArchiveType loc) = "Unable to determine archive type of: " <> display loc
   display (InvalidTarFileType loc fp x) =
-    "Unsupported tar filetype in archive " <> display loc <> " at file " <> fromString fp <> ": " <> displayShow x
+    "Unsupported tar file type in archive " <> display loc <> " at file " <> fromString fp <> ": " <> displayShow x
   display (UnsupportedTarball loc e) =
     "Unsupported tarball from " <> display loc <> ": " <> display e
   display (NoHackageCryptographicHash ident) =
