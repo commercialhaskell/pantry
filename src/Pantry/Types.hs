@@ -38,7 +38,7 @@ module Pantry.Types
   , SafeFilePath
   , unSafeFilePath
   , mkSafeFilePath
-  , safeFilePathtoPath
+  , safeFilePathToPath
   , hpackSafeFilePath
   , TreeKey (..)
   , Tree (..)
@@ -1203,8 +1203,8 @@ instance PersistFieldSql SafeFilePath where
 unSafeFilePath :: SafeFilePath -> Text
 unSafeFilePath (SafeFilePath t) = t
 
-safeFilePathtoPath :: (MonadThrow m) => Path Abs Dir -> SafeFilePath -> m (Path Abs File)
-safeFilePathtoPath dir (SafeFilePath path) = do
+safeFilePathToPath :: (MonadThrow m) => Path Abs Dir -> SafeFilePath -> m (Path Abs File)
+safeFilePathToPath dir (SafeFilePath path) = do
   fpath <- parseRelFile (T.unpack path)
   return $ dir </> fpath
 
