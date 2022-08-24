@@ -1057,7 +1057,7 @@ instance Display PantryException where
   display (UnsupportedTarball loc e) =
     "Unsupported tarball from " <> display loc <> ": " <> display e
   display (NoHackageCryptographicHash ident) =
-    "Not cryptographic hash found for Hackage package " <> fromString (packageIdentifierString ident)
+    "No cryptographic hash found for Hackage package " <> fromString (packageIdentifierString ident)
   display (FailedToCloneRepo repo) = "Failed to clone repo " <> display repo
   display (TreeReferencesMissingBlob loc sfp key) =
     "The package " <> display loc <>
