@@ -1941,10 +1941,10 @@ parseRawSnapshotLocation :: Text -> Unresolved RawSnapshotLocation
 parseRawSnapshotLocation t0 = fromMaybe (parseRawSnapshotLocationPath t0) $
   (either (const Nothing) (Just . pure . RSLCompiler) (parseWantedCompiler t0)) <|>
   (pure <$> RSLSynonym <$> parseSnapName t0) <|>
-  parseGithub <|>
+  parseGitHub <|>
   parseUrl
   where
-    parseGithub = do
+    parseGitHub = do
       t1 <- T.stripPrefix "github:" t0
       let (user, t2) = T.break (== '/') t1
       t3 <- T.stripPrefix "/" t2

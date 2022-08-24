@@ -1723,7 +1723,7 @@ runPantryAppClean f = liftIO $ withSystemTempDirectory "pantry-clean" $ \dir -> 
           }
         f
 
--- | Load the global hints from Github.
+-- | Load the global hints from GitHub.
 --
 -- @since 0.1.0.0
 loadGlobalHints
