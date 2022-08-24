@@ -1883,7 +1883,7 @@ instance FromJSONKey WantedCompiler where
   fromJSONKey =
     FromJSONKeyTextParser $ \t ->
     case parseWantedCompiler t of
-      Left e -> fail $ "Invalid WantedComiler " ++ show t ++ ": " ++ show e
+      Left e -> fail $ "Invalid WantedCompiler " ++ show t ++ ": " ++ show e
       Right x -> pure x
 
 -- | Parse a 'Text' into a 'WantedCompiler' value.
