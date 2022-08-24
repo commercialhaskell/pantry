@@ -1071,8 +1071,8 @@ instance Display PantryException where
   display (CRC32Mismatch loc fp Mismatch {..}) =
     "CRC32 mismatch in ZIP file from " <> display loc <>
     " on internal file " <> fromString fp <>
-    "\n.Expected: " <> display mismatchExpected <>
-    "\n.Actual:   " <> display mismatchActual
+    "\nExpected: " <> display mismatchExpected <>
+    "\nActual:   " <> display mismatchActual
   display (UnknownHackagePackage pir fuzzy) =
     "Could not find " <> display pir <> " on Hackage" <>
     displayFuzzy fuzzy
