@@ -38,7 +38,7 @@ module Pantry.Types
   , SafeFilePath
   , unSafeFilePath
   , mkSafeFilePath
-  , safeFilePathtoPath
+  , safeFilePathToPath
   , hpackSafeFilePath
   , TreeKey (..)
   , Tree (..)
@@ -1028,7 +1028,7 @@ instance Display PantryException where
     "Couldn't parse snapshot from " <> display sl <> ": " <> fromString e
   display (WrongCabalFileName pl sfp name) =
     "Wrong cabal file name for package " <> display pl <>
-    "\nCabal file is named " <> display sfp <>
+    "\nThe cabal file is named " <> display sfp <>
     ", but package name is " <> fromString (packageNameString name) <>
     "\nFor more information, see:\n  - https://github.com/commercialhaskell/stack/issues/317\n  -https://github.com/commercialhaskell/stack/issues/895"
   display (DownloadInvalidSHA256 url Mismatch {..}) =
@@ -1053,11 +1053,11 @@ instance Display PantryException where
     "\nActual:   " <> display mismatchActual
   display (UnknownArchiveType loc) = "Unable to determine archive type of: " <> display loc
   display (InvalidTarFileType loc fp x) =
-    "Unsupported tar filetype in archive " <> display loc <> " at file " <> fromString fp <> ": " <> displayShow x
+    "Unsupported tar file type in archive " <> display loc <> " at file " <> fromString fp <> ": " <> displayShow x
   display (UnsupportedTarball loc e) =
     "Unsupported tarball from " <> display loc <> ": " <> display e
   display (NoHackageCryptographicHash ident) =
-    "Not cryptographic hash found for Hackage package " <> fromString (packageIdentifierString ident)
+    "No cryptographic hash found for Hackage package " <> fromString (packageIdentifierString ident)
   display (FailedToCloneRepo repo) = "Failed to clone repo " <> display repo
   display (TreeReferencesMissingBlob loc sfp key) =
     "The package " <> display loc <>
@@ -1071,8 +1071,8 @@ instance Display PantryException where
   display (CRC32Mismatch loc fp Mismatch {..}) =
     "CRC32 mismatch in ZIP file from " <> display loc <>
     " on internal file " <> fromString fp <>
-    "\n.Expected: " <> display mismatchExpected <>
-    "\n.Actual:   " <> display mismatchActual
+    "\nExpected: " <> display mismatchExpected <>
+    "\nActual:   " <> display mismatchActual
   display (UnknownHackagePackage pir fuzzy) =
     "Could not find " <> display pir <> " on Hackage" <>
     displayFuzzy fuzzy
@@ -1203,8 +1203,8 @@ instance PersistFieldSql SafeFilePath where
 unSafeFilePath :: SafeFilePath -> Text
 unSafeFilePath (SafeFilePath t) = t
 
-safeFilePathtoPath :: (MonadThrow m) => Path Abs Dir -> SafeFilePath -> m (Path Abs File)
-safeFilePathtoPath dir (SafeFilePath path) = do
+safeFilePathToPath :: (MonadThrow m) => Path Abs Dir -> SafeFilePath -> m (Path Abs File)
+safeFilePathToPath dir (SafeFilePath path) = do
   fpath <- parseRelFile (T.unpack path)
   return $ dir </> fpath
 
@@ -1511,7 +1511,7 @@ parsePackageMetadata o = do
   pure PackageMetadata {..}
 
 
--- | Conver package metadata to its "raw" equivalent.
+-- | Convert package metadata to its "raw" equivalent.
 --
 -- @since 0.1.0.0
 toRawPM :: PackageMetadata -> RawPackageMetadata
@@ -1883,7 +1883,7 @@ instance FromJSONKey WantedCompiler where
   fromJSONKey =
     FromJSONKeyTextParser $ \t ->
     case parseWantedCompiler t of
-      Left e -> fail $ "Invalid WantedComiler " ++ show t ++ ": " ++ show e
+      Left e -> fail $ "Invalid WantedCompiler " ++ show t ++ ": " ++ show e
       Right x -> pure x
 
 -- | Parse a 'Text' into a 'WantedCompiler' value.
@@ -1941,10 +1941,10 @@ parseRawSnapshotLocation :: Text -> Unresolved RawSnapshotLocation
 parseRawSnapshotLocation t0 = fromMaybe (parseRawSnapshotLocationPath t0) $
   (either (const Nothing) (Just . pure . RSLCompiler) (parseWantedCompiler t0)) <|>
   (pure <$> RSLSynonym <$> parseSnapName t0) <|>
-  parseGithub <|>
+  parseGitHub <|>
   parseUrl
   where
-    parseGithub = do
+    parseGitHub = do
       t1 <- T.stripPrefix "github:" t0
       let (user, t2) = T.break (== '/') t1
       t3 <- T.stripPrefix "/" t2

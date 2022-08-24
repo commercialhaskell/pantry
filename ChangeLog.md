@@ -50,7 +50,7 @@
 
 ## v0.5.1.1
 
-* Fix to allow mulitiple relative path of symlink.
+* Fix to allow multiple relative path of symlink.
 
 ## v0.5.1.0
 
