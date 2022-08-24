@@ -501,7 +501,7 @@ loadHackagePackageVersions
   -> ReaderT SqlBackend (RIO env) (Map P.Version (Map Revision BlobKey))
 loadHackagePackageVersions name = do
   nameid <- getPackageNameId name
-  -- would be better with esequeleto
+  -- would be better with esqueleto
   (Map.fromListWith Map.union . map go) <$> rawSql
     "SELECT hackage.revision, version.version, blob.sha, blob.size\n\
     \FROM hackage_cabal as hackage, version, blob\n\
@@ -520,7 +520,7 @@ loadHackagePackageVersion
 loadHackagePackageVersion name version = do
   nameid <- getPackageNameId name
   versionid <- getVersionId version
-  -- would be better with esequeleto
+  -- would be better with esqueleto
   (Map.fromList . map go) <$> rawSql
     "SELECT hackage.revision, blob.sha, blob.size, blob.id\n\
     \FROM hackage_cabal as hackage, version, blob\n\
