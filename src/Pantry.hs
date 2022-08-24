@@ -1260,21 +1260,21 @@ warnUnusedAddPackagesConfig source (AddPackagesConfig _drops flags hiddens optio
     flags' =
       map
         (\pn ->
-          "Setting flags for non-existent package: " <>
+          "Setting flags for nonexistent package: " <>
           fromString (packageNameString pn))
         (Map.keys flags)
 
     hiddens' =
       map
         (\pn ->
-          "Hiding non-existent package: " <>
+          "Hiding nonexistent package: " <>
           fromString (packageNameString pn))
         (Map.keys hiddens)
 
     options' =
       map
         (\pn ->
-          "Setting options for non-existent package: " <>
+          "Setting options for nonexistent package: " <>
           fromString (packageNameString pn))
         (Map.keys options)
 
