@@ -20,7 +20,7 @@ jobs:
         args:
         - --stack-yaml stack-ghc-86.yaml
         - --stack-yaml stack-ghc-88.yaml
-        - --stack-yaml stack-ghc-922.yaml
+        - --stack-yaml stack-ghc-924.yaml
         - --stack-yaml stack-persistent-211.yaml
         - --stack-yaml stack-persistent-213.yaml
         - --stack-yaml stack-cabal-3.4.yaml
