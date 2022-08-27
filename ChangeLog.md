@@ -1,8 +1,14 @@
 # Changelog for pantry
 
+## Unreleased
+
+* Expose `loadAndCompleteSnapshotRaw'` and `loadAndCompleteSnapshot'`, which
+  allow the toggling of the debug output of the raw snapshot layer.
+
 ## v0.5.6
 
-* Remove operational and mirror keys from bootstrap key set [#53](https://github.com/commercialhaskell/pantry/pull/53)
+* Remove operational and mirror keys from bootstrap key set
+  [#53](https://github.com/commercialhaskell/pantry/pull/53).
 
 ## v0.5.5
 
