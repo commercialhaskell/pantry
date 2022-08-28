@@ -103,7 +103,9 @@ module Pantry
   , loadSnapshotLayer
   , loadSnapshot
   , loadAndCompleteSnapshot
+  , loadAndCompleteSnapshot'
   , loadAndCompleteSnapshotRaw
+  , loadAndCompleteSnapshotRaw'
   , CompletedSL (..)
   , CompletedPLI (..)
   , addPackagesToSnapshot
@@ -1162,7 +1164,8 @@ data CompletedPLI = CompletedPLI !RawPackageLocationImmutable !PackageLocationIm
 data CompletedSL = CompletedSL !RawSnapshotLocation !SnapshotLocation
 
 -- | Parse a 'Snapshot' (all layers) from a 'SnapshotLocation' noting
--- any incomplete package locations
+-- any incomplete package locations. Debug output will include the raw snapshot
+-- layer.
 --
 -- @since 0.1.0.0
 loadAndCompleteSnapshot
@@ -1171,11 +1174,25 @@ loadAndCompleteSnapshot
   -> Map RawSnapshotLocation SnapshotLocation -- ^ Cached snapshot locations from lock file
   -> Map RawPackageLocationImmutable PackageLocationImmutable -- ^ Cached locations from lock file
   -> RIO env (Snapshot, [CompletedSL], [CompletedPLI])
-loadAndCompleteSnapshot loc cachedSL cachedPL =
-  loadAndCompleteSnapshotRaw (toRawSL loc) cachedSL cachedPL
+loadAndCompleteSnapshot = loadAndCompleteSnapshot' True
+
+-- | As for 'loadAndCompleteSnapshot' but allows toggling of the debug output of
+-- the raw snapshot layer.
+--
+-- @since 0.5.7
+loadAndCompleteSnapshot'
+  :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+  => Bool -- ^ Debug output includes the raw snapshot layer
+  -> SnapshotLocation
+  -> Map RawSnapshotLocation SnapshotLocation -- ^ Cached snapshot locations from lock file
+  -> Map RawPackageLocationImmutable PackageLocationImmutable -- ^ Cached locations from lock file
+  -> RIO env (Snapshot, [CompletedSL], [CompletedPLI])
+loadAndCompleteSnapshot' debugRSL loc cachedSL cachedPL =
+  loadAndCompleteSnapshotRaw' debugRSL (toRawSL loc) cachedSL cachedPL
 
 -- | Parse a 'Snapshot' (all layers) from a 'RawSnapshotLocation' completing
--- any incomplete package locations
+-- any incomplete package locations. Debug output will include the raw snapshot
+-- layer.
 --
 -- @since 0.1.0.0
 loadAndCompleteSnapshotRaw
@@ -1184,7 +1201,20 @@ loadAndCompleteSnapshotRaw
   -> Map RawSnapshotLocation SnapshotLocation -- ^ Cached snapshot locations from lock file
   -> Map RawPackageLocationImmutable PackageLocationImmutable -- ^ Cached locations from lock file
   -> RIO env (Snapshot, [CompletedSL], [CompletedPLI])
-loadAndCompleteSnapshotRaw rawLoc cacheSL cachePL = do
+loadAndCompleteSnapshotRaw = loadAndCompleteSnapshotRaw' True
+
+-- As for 'loadAndCompleteSnapshotRaw' but allows toggling of the debug output
+-- of the raw snapshot layer.
+--
+-- @since 0.5.7
+loadAndCompleteSnapshotRaw'
+  :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+  => Bool -- ^ Debug output includes the raw snapshot layer
+  -> RawSnapshotLocation
+  -> Map RawSnapshotLocation SnapshotLocation -- ^ Cached snapshot locations from lock file
+  -> Map RawPackageLocationImmutable PackageLocationImmutable -- ^ Cached locations from lock file
+  -> RIO env (Snapshot, [CompletedSL], [CompletedPLI])
+loadAndCompleteSnapshotRaw' debugRSL rawLoc cacheSL cachePL = do
   eres <- case Map.lookup rawLoc cacheSL of
     Just loc -> right (\rsl -> (rsl, (CompletedSL rawLoc loc))) <$> loadSnapshotLayer loc
     Nothing -> loadRawSnapshotLayer rawLoc
@@ -1197,8 +1227,8 @@ loadAndCompleteSnapshotRaw rawLoc cacheSL cachePL = do
             }
       in pure (snapshot, [CompletedSL (RSLCompiler wc) (SLCompiler wc)], [])
     Right (rsl, sloc) -> do
-      (snap0, slocs, completed0) <- loadAndCompleteSnapshotRaw (rslParent rsl) cacheSL cachePL
-      logDebug $ fromString $ show rsl
+      (snap0, slocs, completed0) <- loadAndCompleteSnapshotRaw' debugRSL (rslParent rsl) cacheSL cachePL
+      when debugRSL $ logDebug $ fromString $ show rsl
       (packages, completed, unused) <-
         addAndCompletePackagesToSnapshot
           rawLoc
