@@ -13,7 +13,7 @@ homepage:       https://github.com/commercialhaskell/pantry#readme
 bug-reports:    https://github.com/commercialhaskell/pantry/issues
 author:         Michael Snoyman
 maintainer:     michael@snoyman.com
-copyright:      2018-2020 FP Complete
+copyright:      2018-2022 FP Complete
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
