@@ -1,4 +1,8 @@
-resolver: lts-17.5
+# GHC 8.10.7
+resolver: lts-18.28
+
+extra-deps:
+- hpack-0.35.0
 
 ghc-options:
    "$locals": -fhide-source-paths

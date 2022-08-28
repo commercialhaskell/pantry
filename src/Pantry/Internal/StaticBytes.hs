@@ -1,8 +1,9 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 -- | This is an unstable API, exposed only for testing. Relying on
 -- this may break your code! Caveat emptor.

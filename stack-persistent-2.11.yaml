@@ -1,8 +1,9 @@
-resolver: lts-16.21
+# GHC 8.8.4
+resolver: lts-16.31
 
 extra-deps:
-- persistent-2.11.0.1@rev:0
-- persistent-sqlite-2.11.0.0@rev:0
+- persistent-2.11.0.4@rev:0
+- persistent-sqlite-2.11.1.0@rev:0
 - persistent-template-2.9.1.0@rev:0
 
 ghc-options:

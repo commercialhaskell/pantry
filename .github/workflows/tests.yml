@@ -1,10 +1,13 @@
 name: Tests
 
 on:
-    pull_request:
-    push:
-        branches:
-        - master
+  pull_request:
+  push:
+    branches:
+    - master
+
+# As of 28 August 2022, ubuntu-latest, windows-latest and macos-latest come with
+# Stack 2.7.5.
 
 jobs:
   build:
@@ -17,33 +20,38 @@ jobs:
         - ubuntu-latest
         - macos-latest
         - windows-latest
-        args:
-        - --stack-yaml stack-ghc-86.yaml
-        - --stack-yaml stack-ghc-88.yaml
-        - --stack-yaml stack-ghc-924.yaml
-        - --stack-yaml stack-persistent-211.yaml
-        - --stack-yaml stack-persistent-213.yaml
-        - --stack-yaml stack-cabal-3.4.yaml
-        - --stack-yaml stack-aeson2.yaml
-
+        stack-yaml:
+        - stack-ghc-8.6.5.yaml
+        - stack-ghc-8.8.4.yaml
+        - stack-ghc-9.2.4.yaml
+        - stack-ghc-9.4.2.yaml
+        - stack-persistent-2.11.yaml
+        - stack-cabal-3.4.yaml
+        exclude:
+        # Stack can't install the `linux64-tinfo6` variant of GHC 9.4.2. This
+        # may be an upstream issue with the GHC bindist published by the GHC
+        # developers.
+        - os: ubuntu-latest
+          stack-yaml: stack-ghc-9.4.2.yaml
     steps:
-      - name: Clone project
-        uses: actions/checkout@v2
-
-# Getting weird OS X errors...
-#      - name: Cache dependencies
-#        uses: actions/cache@v1
-#        with:
-#          path: ~/.stack
-#          key: ${{ runner.os }}-${{ matrix.resolver }}-${{ hashFiles('stack.yaml') }}
-#          restore-keys: |
-#            ${{ runner.os }}-${{ matrix.resolver }}-
-
-      - name: Build and run tests
-        shell: bash
-        run: |
-            set -ex
-            mkdir -p ../_newstack
-            stack upgrade --force-download --local-bin-path ../_newstack
-            ../_newstack/stack --version
-            ../_newstack/stack ${{ matrix.args }} test --bench --no-run-benchmarks --haddock --no-haddock-deps
+    - name: Clone project
+      uses: actions/checkout@v3
+    - name: Cache dependencies on Unix-like OS
+      if: startsWith(runner.os, 'Linux') || startsWith(runner.os, 'macOS')
+      uses: actions/cache@v3
+      with:
+        path: ~/.stack
+        key: ${{ runner.os }}-${{ matrix.stack-yaml }}
+    - name: Cache dependencies on Windows
+      if: startsWith(runner.os, 'Windows')
+      uses: actions/cache@v3
+      with:
+        path: |
+           ~\AppData\Roaming\stack
+           ~\AppData\Local\Programs\stack
+        key: ${{ runner.os }}-${{ matrix.stack-yaml }}
+    - name: Build and run tests
+      shell: bash
+      run: |
+        set -ex
+        stack test --stack-yaml ${{ matrix.stack-yaml }} --bench --no-run-benchmarks --haddock --no-haddock-deps
