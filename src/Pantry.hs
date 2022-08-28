@@ -1203,7 +1203,7 @@ loadAndCompleteSnapshotRaw
   -> RIO env (Snapshot, [CompletedSL], [CompletedPLI])
 loadAndCompleteSnapshotRaw = loadAndCompleteSnapshotRaw' True
 
--- As for 'loadAndCompleteSnapshotRaw' but allows toggling of the debug output
+-- | As for 'loadAndCompleteSnapshotRaw' but allows toggling of the debug output
 -- of the raw snapshot layer.
 --
 -- @since 0.5.7
