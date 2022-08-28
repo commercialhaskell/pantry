@@ -1,11 +1,11 @@
 name:        pantry
-version:     0.5.6
+version:     0.5.7
 synopsis:    Content addressable Haskell package management
 description: Please see the README on GitHub at <https://github.com/commercialhaskell/pantry#readme>
 category:    Development
 author:      Michael Snoyman
 maintainer:  michael@snoyman.com
-copyright:   2018-2019 FP Complete
+copyright:   2018-2022 FP Complete
 license:     BSD3
 github:      commercialhaskell/pantry
 
