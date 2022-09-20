@@ -666,7 +666,7 @@ loadCabalFilePath dir = do
 
     toPretty :: Path Abs File -> PWarning -> Utf8Builder
     toPretty src (PWarning _type pos msg) =
-      "Cabal file warning in" <>
+      "Cabal file warning in " <>
       fromString (toFilePath src) <> "@" <>
       fromString (showPos pos) <> ": " <>
       fromString msg
