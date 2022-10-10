@@ -10,7 +10,10 @@
 module Pantry
   ( -- * Running
     PantryConfig
+  , PackageIndexConfig (..)
   , HackageSecurityConfig (..)
+  , defaultPackageIndexConfig
+  , defaultDownloadPrefix
   , defaultHackageSecurityConfig
   , defaultCasaRepoPrefix
   , defaultCasaMaxPerRequest
@@ -177,6 +180,7 @@ module Pantry
   , getHackageTypoCorrections
   , loadGlobalHints
   , partitionReplacedDependencies
+
     -- * Snapshot cache
   , SnapshotCacheHash (..)
   , withSnapshotCache
@@ -232,9 +236,9 @@ withPantryConfig
   => Path Abs Dir
   -- ^ pantry root directory, where the SQLite database and Hackage
   -- downloads are kept.
-  -> HackageSecurityConfig
-  -- ^ Hackage configuration. You probably want
-  -- 'defaultHackageSecurityConfig'.
+  -> PackageIndexConfig
+  -- ^ Package index configuration. You probably want
+  -- 'defaultPackageIndexConfig'.
   -> HpackExecutable
   -- ^ When converting an hpack @package.yaml@ file to a cabal file,
   -- what version of hpack should we use?
@@ -249,7 +253,7 @@ withPantryConfig
   -> (PantryConfig -> RIO env a)
   -- ^ What to do with the config
   -> RIO env a
-withPantryConfig root hsc he count pullURL maxPerRequest snapLoc inner = do
+withPantryConfig root pic he count pullURL maxPerRequest snapLoc inner = do
   env <- ask
   pantryRelFile <- parseRelFile "pantry.sqlite3"
   -- Silence persistent's logging output, which is really noisy
@@ -258,7 +262,7 @@ withPantryConfig root hsc he count pullURL maxPerRequest snapLoc inner = do
     ref1 <- newIORef mempty
     ref2 <- newIORef mempty
     inner PantryConfig
-      { pcHackageSecurity = hsc
+      { pcPackageIndex = pic
       , pcHpackExecutable = he
       , pcRootDir = root
       , pcStorage = storage
@@ -283,22 +287,20 @@ defaultCasaRepoPrefix = $(thParserCasaRepo "https://casa.fpcomplete.com")
 defaultCasaMaxPerRequest :: Int
 defaultCasaMaxPerRequest = 1280
 
--- | Default 'HackageSecurityConfig' value using the official Hackage server.
+-- | Default 'PackageIndexConfig' value using the official Hackage server.
 --
--- @since 0.1.0.0
-defaultHackageSecurityConfig :: HackageSecurityConfig
-defaultHackageSecurityConfig = HackageSecurityConfig
-  { hscKeyIds =
-      [ "0a5c7ea47cd1b15f01f5f51a33adda7e655bc0f0b0615baa8e271f4c3351e21d"
-      , "1ea9ba32c526d1cc91ab5e5bd364ec5e9e8cb67179a471872f6e26f0ae773d42"
-      , "2c6c3627bd6c982990239487f1abd02e08a02e6cf16edb105a8012d444d870c3"
-      , "51f0161b906011b52c6613376b1ae937670da69322113a246a09f807c62f6921"
-      , "fe331502606802feac15e514d9b9ea83fee8b6ffef71335479a2e68d84adc6b0"
-      ]
-  , hscKeyThreshold = 3
-  , hscDownloadPrefix = "https://hackage.haskell.org/"
-  , hscIgnoreExpiry = False
+-- @since 0.6.0
+defaultPackageIndexConfig :: PackageIndexConfig
+defaultPackageIndexConfig = PackageIndexConfig
+  { picDownloadPrefix = defaultDownloadPrefix
+  , picHackageSecurityConfig = defaultHackageSecurityConfig
   }
+
+-- | The download prefix for the official Hackage server.
+--
+-- @since 0.6.0
+defaultDownloadPrefix :: Text
+defaultDownloadPrefix = "https://hackage.haskell.org/"
 
 -- | Returns the latest version of the given package available from
 -- Hackage.
@@ -1709,7 +1711,7 @@ runPantryAppWith maxConnCount casaRepoPrefix casaMaxPerRequest f = runSimpleApp 
   root <- parseAbsDir $ stack FilePath.</> "pantry"
   withPantryConfig
     root
-    defaultHackageSecurityConfig
+    defaultPackageIndexConfig
     HpackBundled
     maxConnCount
     casaRepoPrefix
@@ -1736,7 +1738,7 @@ runPantryAppClean f = liftIO $ withSystemTempDirectory "pantry-clean" $ \dir -> 
   root <- resolveDir' dir
   withPantryConfig
     root
-    defaultHackageSecurityConfig
+    defaultPackageIndexConfig
     HpackBundled
     8
     defaultCasaRepoPrefix

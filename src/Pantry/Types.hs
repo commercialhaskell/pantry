@@ -15,7 +15,9 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Pantry.Types
   ( PantryConfig (..)
+  , PackageIndexConfig (..)
   , HackageSecurityConfig (..)
+  , defaultHackageSecurityConfig
   , Storage (..)
   , HasPantryConfig (..)
   , BlobKey (..)
@@ -248,7 +250,7 @@ data Storage = Storage
 --
 -- @since 0.1.0.0
 data PantryConfig = PantryConfig
-  { pcHackageSecurity :: !HackageSecurityConfig
+  { pcPackageIndex :: !PackageIndexConfig
   , pcHpackExecutable :: !HpackExecutable
   , pcRootDir :: !(Path Abs Dir)
   , pcStorage :: !Storage
@@ -607,32 +609,70 @@ instance FromJSON GitHubRepo where
             [x, y] | not (T.null x || T.null y) -> return (GitHubRepo s)
             _ -> fail "expecting \"user/repo\""
 
--- | Configuration for Hackage Security to securely download package
--- metadata and contents from Hackage. For most purposes, you'll want
--- to use the default Hackage settings via
--- @defaultHackageSecurityConfig@.
+-- | Configuration to securely download package metadata and contents. For most
+-- purposes, you'll want to use the default Hackage settings via
+-- @defaultPackageIndexConfig@.
 --
 -- /NOTE/ It's highly recommended to only use the official Hackage
 -- server or a mirror. See
 -- <https://github.com/commercialhaskell/stack/issues/4137>.
 --
--- @since 0.1.0.0
+-- @since 0.6.0
+data PackageIndexConfig = PackageIndexConfig
+  { picDownloadPrefix :: !Text
+  , picHackageSecurityConfig :: !HackageSecurityConfig
+  }
+  deriving Show
+
+-- | If the @hackage-security@ key is absent from the JSON object, assigns
+-- default value 'defaultHackageSecurityConfig'.
+--
+-- @since 0.6.0
+instance FromJSON (WithJSONWarnings PackageIndexConfig) where
+  parseJSON = withObjectWarnings "PackageIndexConfig" $ \o -> do
+    picDownloadPrefix <- o ..: "download-prefix"
+    picHackageSecurityConfig <- jsonSubWarnings $
+      o ..:? "hackage-security" ..!= noJSONWarnings defaultHackageSecurityConfig
+    pure PackageIndexConfig {..}
+
+-- | Default 'HackageSecurityConfig' value using the official Hackage server.
+--
+-- @since 0.6.0
+defaultHackageSecurityConfig :: HackageSecurityConfig
+defaultHackageSecurityConfig = HackageSecurityConfig
+  { hscKeyIds =
+      [ "0a5c7ea47cd1b15f01f5f51a33adda7e655bc0f0b0615baa8e271f4c3351e21d"
+      , "1ea9ba32c526d1cc91ab5e5bd364ec5e9e8cb67179a471872f6e26f0ae773d42"
+      , "2c6c3627bd6c982990239487f1abd02e08a02e6cf16edb105a8012d444d870c3"
+      , "51f0161b906011b52c6613376b1ae937670da69322113a246a09f807c62f6921"
+      , "fe331502606802feac15e514d9b9ea83fee8b6ffef71335479a2e68d84adc6b0"
+      ]
+  , hscKeyThreshold = 3
+  , hscIgnoreExpiry = False
+  }
+
+-- | Configuration for Hackage Security to securely download package metadata
+-- and contents. For most purposes, you'll want to use the default Hackage
+-- settings via @defaultHackageSecurityConfig@.
+--
+-- /NOTE/ It's highly recommended to only use the official Hackage
+-- server or a mirror. See
+-- <https://github.com/commercialhaskell/stack/issues/4137>.
+--
+-- @since 0.6.0
 data HackageSecurityConfig = HackageSecurityConfig
   { hscKeyIds :: ![Text]
   , hscKeyThreshold :: !Int
-  , hscDownloadPrefix :: !Text
   , hscIgnoreExpiry :: !Bool
   }
   deriving Show
+
 instance FromJSON (WithJSONWarnings HackageSecurityConfig) where
-  parseJSON = withObjectWarnings "HackageSecurityConfig" $ \o' -> do
-    hscDownloadPrefix <- o' ..: "download-prefix"
-    Object o <- o' ..: "hackage-security"
+  parseJSON = withObjectWarnings "HackageSecurityConfig" $ \o -> do
     hscKeyIds <- o ..: "keyids"
     hscKeyThreshold <- o ..: "key-threshold"
     hscIgnoreExpiry <- o ..:? "ignore-expiry" ..!= True
     pure HackageSecurityConfig {..}
-
 
 -- | An environment which contains a 'PantryConfig'.
 --
