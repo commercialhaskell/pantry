@@ -125,7 +125,7 @@ updateHackageIndexInternal forceUpdate mreason = do
   gateUpdate $ withWriteLock_ storage $ do
     for_ mreason logInfo
     pc <- view pantryConfigL
-    let HackageSecurityConfig keyIds threshold url ignoreExpiry = pcHackageSecurity pc
+    let PackageIndexConfig url (HackageSecurityConfig keyIds threshold ignoreExpiry) = pcPackageIndex pc
     root <- view hackageDirL
     tarball <- view hackageIndexTarballL
     baseURI <-
@@ -606,7 +606,7 @@ getHackageTarball pir mtreeKey = do
             Nothing -> throwIO exc
             Just pair2 -> pure pair2
     pc <- view pantryConfigL
-    let urlPrefix = hscDownloadPrefix $ pcHackageSecurity pc
+    let urlPrefix = picDownloadPrefix $ pcPackageIndex pc
         url =
           mconcat
             [ urlPrefix

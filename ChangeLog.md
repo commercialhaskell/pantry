@@ -1,5 +1,19 @@
 # Changelog for pantry
 
+## v0.6.0
+
+* Rename `HackageSecurityConfig` as `PackageIndexConfig`,
+  `defaultHackageSecurityConfig` as `defaultPackageIndexConfig`, and
+  `pcHackageSecurity` field of `PantryConfig` as `pcPackageIndex`.
+* Expose new `HackageSecurityConfig` and `defaultHackageSecurityConfig`. The
+  former represents Hackage Security configurations (only - no download prefix).
+* Change the data constructor of `PackageIndexConfig` to have fields for a
+  download prefix (type `Text`) and of type `HackageSecurityConfig`.
+* The `WithJSONWarnings PackageIndexConfig` instance of `FromJSON` now assigns
+  default value `defaultHackageSecurityConfig` if the `hackage-security` key is
+  absent from the JSON object.
+* Expose `defaultDownloadPrefix`, for the official Hackage server.
+
 ## v0.5.7
 
 * Expose `loadAndCompleteSnapshotRaw'` and `loadAndCompleteSnapshot'`, which
