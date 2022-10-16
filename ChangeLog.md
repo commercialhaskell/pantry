@@ -1,5 +1,11 @@
 # Changelog for pantry
 
+## v0.7.0
+
+* Change `defaultHackageSecurityConfig` such that field
+  `hscIgnoreExpiry = True`, to be consistent with the defaults of the
+  `WithJSONWarnings HackageSecurityConfig` instance of `FromJSON`.
+
 ## v0.6.0
 
 * Rename `HackageSecurityConfig` as `PackageIndexConfig`,
