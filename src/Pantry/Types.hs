@@ -636,8 +636,9 @@ instance FromJSON (WithJSONWarnings PackageIndexConfig) where
     pure PackageIndexConfig {..}
 
 -- | Default 'HackageSecurityConfig' value using the official Hackage server.
+-- The value of the 'hscIgnoreExpiry' field is 'True'.
 --
--- @since 0.6.0
+-- @since 0.7.0
 defaultHackageSecurityConfig :: HackageSecurityConfig
 defaultHackageSecurityConfig = HackageSecurityConfig
   { hscKeyIds =
@@ -648,7 +649,7 @@ defaultHackageSecurityConfig = HackageSecurityConfig
       , "fe331502606802feac15e514d9b9ea83fee8b6ffef71335479a2e68d84adc6b0"
       ]
   , hscKeyThreshold = 3
-  , hscIgnoreExpiry = False
+  , hscIgnoreExpiry = True
   }
 
 -- | Configuration for Hackage Security to securely download package metadata
@@ -667,6 +668,10 @@ data HackageSecurityConfig = HackageSecurityConfig
   }
   deriving Show
 
+-- | If the @ignore-expiry@ key is absent from the JSON object, assigns default
+-- value 'True'.
+--
+-- @since 0.1.1.0
 instance FromJSON (WithJSONWarnings HackageSecurityConfig) where
   parseJSON = withObjectWarnings "HackageSecurityConfig" $ \o -> do
     hscKeyIds <- o ..: "keyids"
