@@ -288,7 +288,8 @@ foldArchive loc fp ATTar accum f =
   withSourceFile fp $ \src -> runConduit $ src .| foldTar loc accum f
 foldArchive loc fp ATZip accum0 f = withBinaryFile fp ReadMode $ \h -> do
   let go accum entry = do
-        let me = MetaEntry (Zip.eRelativePath entry) met
+        let normalizedRelPath = removeInitialDotSlash $ Zip.eRelativePath entry
+            me = MetaEntry normalizedRelPath met
             met = fromMaybe METNormal $ do
               let modes = shiftR (Zip.eExternalFileAttributes entry) 16
               guard $ Zip.eVersionMadeBy entry .&. 0xFF00 == 0x0300
@@ -345,7 +346,7 @@ foldTar loc accum0 f = do
         _ -> throwIO exc
     pure $
       (\met -> MetaEntry
-        { mePath = Tar.getFileInfoPath fi
+        { mePath = removeInitialDotSlash . Tar.getFileInfoPath $ fi
         , meType = met
         })
       <$> mmet
@@ -355,6 +356,10 @@ data SimpleEntry = SimpleEntry
   , seType :: !FileType
   }
   deriving Show
+
+removeInitialDotSlash :: FilePath -> FilePath
+removeInitialDotSlash filename =
+  fromMaybe filename $ List.stripPrefix "./" filename
 
 -- | Attempt to parse the contents of the given archive in the given subdir into
 -- a 'Tree'. This will not consult any caches. It will ensure that:
@@ -378,6 +383,7 @@ parseArchive rpli archive fp = do
       getFiles [] = throwIO $ UnknownArchiveType loc
       getFiles (at:ats) = do
         eres <- tryAny $
+          -- foldArchive normalises filepaths in archives that begin with ./
           foldArchive loc fp at id $ \m me -> pure $ m . (me:)
         case eres of
           Left e -> do
@@ -482,7 +488,7 @@ parseArchive rpli archive fp = do
                 else pure m
           tree :: CachedTree <-
             fmap (CachedTreeMap . Map.fromList) $ for safeFiles $ \(sfp, se) ->
-              case Map.lookup (seSource se) blobs of
+              case Map.lookup (removeInitialDotSlash . seSource $ se) blobs of
                 Nothing ->
                   error $ "Impossible: blob not found for: " ++ seSource se
                 Just (blobKey, blobId) ->
