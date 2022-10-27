@@ -333,8 +333,7 @@ data SimpleEntry = SimpleEntry
   deriving Show
 
 removeInitialDotSlash :: FilePath -> FilePath
-removeInitialDotSlash filename = fromString . T.unpack . fromMaybe filenameText .  T.stripPrefix "./" $ filenameText
-  where filenameText = T.pack filename
+removeInitialDotSlash filename = maybe filename T.unpack (T.stripPrefix "./" $ T.pack filename)
 
 -- | Attempt to parse the contents of the given archive in the given
 -- subdir into a 'Tree'. This will not consult any caches. It will
