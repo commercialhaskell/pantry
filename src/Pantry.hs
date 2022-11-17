@@ -1772,7 +1772,11 @@ loadGlobalHints wc =
       eres <- tryAny (inner2 dest)
       mres <-
         case eres of
-          Left e -> Nothing <$ logError ("Error when parsing global hints: " <> displayShow e)
+          Left e -> Nothing <$ logError
+                                 ( "Error: [S-912]\n"
+                                   <> "Error when parsing global hints: "
+                                   <> displayShow e
+                                 )
           Right x -> pure x
       case mres of
         Nothing | not alreadyDownloaded && not downloaded -> do
