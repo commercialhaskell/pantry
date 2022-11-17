@@ -307,10 +307,11 @@ populateCache fp offset = withBinaryFile (toFilePath fp) ReadMode $ \h -> do
     addJSON name version lbs =
       case eitherDecode' lbs of
         Left e -> lift $ logError $
-          "Error processing Hackage security metadata for " <>
-          fromString (Distribution.Text.display name) <> "-" <>
-          fromString (Distribution.Text.display version) <> ": " <>
-          fromString e
+          "Error: [S-563]\n"
+          <> "Error processing Hackage security metadata for "
+          <> fromString (Distribution.Text.display name) <> "-"
+          <> fromString (Distribution.Text.display version) <> ": "
+          <> fromString e
         Right (PackageDownload sha size) ->
           storeHackageTarballInfo name version sha $ FileSize size
 
