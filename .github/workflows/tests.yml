@@ -28,7 +28,7 @@ jobs:
         stack-yaml:
         - stack-ghc-8.6.5.yaml
         - stack-ghc-8.8.4.yaml
-        - stack-ghc-9.2.4.yaml
+        - stack-ghc-9.2.5.yaml
         - stack-ghc-9.4.2.yaml
         - stack-persistent-2.11.yaml
         - stack-cabal-3.4.yaml
