@@ -1265,17 +1265,13 @@ instance Display PantryException where
          pairs'
   display (MigrationFailure desc fp ex) =
     "Error: [S-536]\n"
-    <> "Encountered error while migrating "
+    <> "Encountered error while migrating database "
     <> display desc
-    <> " database:"
+    <> "\nlocated at "
+    <> fromString (toFilePath fp)
+    <> ":"
     <> "\n    "
     <> displayShow ex
-    <> "\nPlease report this on https://github.com/commercialhaskell/stack/issues"
-    <> "\nAs a workaround you may delete "
-    <> display desc
-    <> " database in "
-    <> fromString (toFilePath fp)
-    <> " triggering its recreation."
   display (ParseSnapNameException t) =
     "Error: [S-994]\n"
      <> "Invalid snapshot name: "
