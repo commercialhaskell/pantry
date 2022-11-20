@@ -970,6 +970,8 @@ data PantryException
   | MigrationFailure !Text !(Path Abs File) !SomeException
   | InvalidTreeFromCasa !BlobKey !ByteString
   | ParseSnapNameException !Text
+  | HpackLibraryException !(Path Abs File) !SomeException
+  | HpackExeException !FilePath !(Path Abs Dir) !SomeException
 
   deriving Typeable
 instance Exception PantryException where
@@ -1276,6 +1278,22 @@ instance Display PantryException where
     "Error: [S-994]\n"
      <> "Invalid snapshot name: "
      <> display t
+  display (HpackLibraryException file e) =
+    "Error: [S-305]\n"
+    <> "Failed to generate a Cabal file using the Hpack library on file:\n"
+    <> fromString (toFilePath file)
+    <> "\n\n"
+    <> "The exception encountered was:\n\n"
+    <> fromString (show e)
+  display (HpackExeException fp dir e) =
+    "Error: [S-720]\n"
+    <> "Failed to generate a Cabal file using the Hpack executable:\n"
+    <> fromString fp
+    <> "in directory: "
+    <> fromString (toFilePath dir)
+    <> "\n\n"
+    <> "The exception encountered was:\n\n"
+    <> fromString (show e)
 
 data FuzzyResults
   = FRNameNotFound ![PackageName]
