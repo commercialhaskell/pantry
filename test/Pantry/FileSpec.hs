@@ -10,7 +10,7 @@ spec :: Spec
 spec = describe "loadCabalFilePath" $ do
   it "sanity" $ do
     abs' <- resolveDir' "."
-    (f, name, cabalfp) <- runPantryApp $ loadCabalFilePath abs'
+    (f, name, cabalfp) <- runPantryApp $ loadCabalFilePath Nothing abs'
     suffix <- parseRelFile "pantry.cabal"
     cabalfp `shouldBe` abs' </> suffix
     name' <- parsePackageNameThrowing "pantry"
