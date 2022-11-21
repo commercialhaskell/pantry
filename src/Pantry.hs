@@ -742,11 +742,14 @@ hpack progName pkgDir = do
         he <- view $ pantryConfigL.to pcHpackExecutable
         case he of
             HpackBundled -> do
-                r <- liftIO
-                       $ Hpack.hpackResult
-                       $ mHpackProgName
-                       $ Hpack.setTarget
-                           (toFilePath hpackFile) Hpack.defaultOptions
+                r <- catchAny
+                       ( liftIO
+                           $ Hpack.hpackResult
+                           $ mHpackProgName
+                           $ Hpack.setTarget
+                               (toFilePath hpackFile) Hpack.defaultOptions
+                       )
+                       ( throwIO . HpackLibraryException hpackFile )
                 forM_ (Hpack.resultWarnings r) (logWarn . fromString)
                 let cabalFile = fromString . Hpack.resultCabalFile $ r
                 case Hpack.resultStatus r of
@@ -767,9 +770,11 @@ hpack progName pkgDir = do
                         fromString (toFilePath (filename hpackFile)) <>
                         " file instead of the Cabal file,\n" <>
                         "then please delete the Cabal file."
-            HpackCommand command ->
-                withWorkingDir (toFilePath pkgDir) $
-                proc command [] runProcess_
+            HpackCommand command -> catchAny
+                ( withWorkingDir (toFilePath pkgDir) $
+                  proc command [] runProcess_
+                )
+                ( throwIO . HpackExeException command pkgDir)
 
 -- | Get the 'PackageIdentifier' from a 'GenericPackageDescription'.
 --
