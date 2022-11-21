@@ -1,5 +1,12 @@
 # Changelog for pantry
 
+## v0.8.0
+
+* `findOrGenerateCabalFile`, `loadCabalFilePath`, `loadCabalFile` and
+  `loadCabalFileRaw` no longer assume that the program name used by Hpack (the
+  library) is "stack", and take a new initial argument of type `Maybe Text` to
+  specify the desired program name. The default is "hpack".
+
 ## v0.7.1
 
 * To support the Haskell Foundation's

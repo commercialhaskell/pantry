@@ -17,7 +17,7 @@ module Pantry.Repo
 
 import Pantry.Types
 import Pantry.Archive
-import Pantry.Storage
+import Pantry.Storage hiding (findOrGenerateCabalFile)
 import RIO
 import Path.IO (resolveFile')
 import RIO.FilePath ((</>))

@@ -14,7 +14,7 @@ module Pantry.Archive
 
 import RIO
 import qualified Pantry.SHA256 as SHA256
-import Pantry.Storage hiding (Tree, TreeEntry)
+import Pantry.Storage hiding (Tree, TreeEntry, findOrGenerateCabalFile)
 import Pantry.Tree
 import Pantry.Types
 import RIO.Process

@@ -217,6 +217,7 @@ import Network.HTTP.Download
 import RIO.PrettyPrint
 import RIO.PrettyPrint.StylesUpdate
 import RIO.Process
+import RIO.Text (unpack)
 import RIO.Directory (getAppUserDataDirectory)
 import qualified Data.Yaml as Yaml
 import Pantry.Internal.AesonExtended (WithJSONWarnings (..), Value)
@@ -595,54 +596,58 @@ loadCabalFileRawImmutable loc = withCache $ do
           x <- inner
           atomicModifyIORef' ref $ \m -> (Map.insert loc x m, x)
 
--- | Same as 'loadCabalFileRawImmutable', but takes a
--- 'RawPackageLocation'. Never prints warnings, see 'loadCabalFilePath'
--- for that.
+-- | Same as 'loadCabalFileRawImmutable', but takes a 'RawPackageLocation'.
+-- Never prints warnings, see 'loadCabalFilePath' for that.
 --
--- @since 0.1.0.0
+-- @since 0.8.0
 loadCabalFileRaw
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-  => RawPackageLocation
+  => Maybe Text -- ^ The program name used by Hpack (the library), defaults to
+                -- \"hpack\".
+  -> RawPackageLocation
   -> RIO env GenericPackageDescription
-loadCabalFileRaw (RPLImmutable loc) = loadCabalFileRawImmutable loc
-loadCabalFileRaw (RPLMutable rfp) = do
-  (gpdio, _, _) <- loadCabalFilePath (resolvedAbsolute rfp)
+loadCabalFileRaw _ (RPLImmutable loc) = loadCabalFileRawImmutable loc
+loadCabalFileRaw progName (RPLMutable rfp) = do
+  (gpdio, _, _) <- loadCabalFilePath progName (resolvedAbsolute rfp)
   liftIO $ gpdio NoPrintWarnings
 
--- | Same as 'loadCabalFileImmutable', but takes a
--- 'PackageLocation'. Never prints warnings, see 'loadCabalFilePath'
--- for that.
+-- | Same as 'loadCabalFileImmutable', but takes a 'PackageLocation'. Never
+-- prints warnings, see 'loadCabalFilePath' for that.
 --
--- @since 0.1.0.0
+-- @since 0.8.0
 loadCabalFile
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-  => PackageLocation
+  => Maybe Text -- ^ The program name used by Hpack (the library), defaults to
+                -- \"hpack\".
+  -> PackageLocation
   -> RIO env GenericPackageDescription
-loadCabalFile (PLImmutable loc) = loadCabalFileImmutable loc
-loadCabalFile (PLMutable rfp) = do
-  (gpdio, _, _) <- loadCabalFilePath (resolvedAbsolute rfp)
+loadCabalFile _ (PLImmutable loc) = loadCabalFileImmutable loc
+loadCabalFile progName (PLMutable rfp) = do
+  (gpdio, _, _) <- loadCabalFilePath progName (resolvedAbsolute rfp)
   liftIO $ gpdio NoPrintWarnings
 
--- | Parse the cabal file for the package inside the given
--- directory. Performs various sanity checks, such as the file name
--- being correct and having only a single cabal file.
+-- | Parse the Cabal file for the package inside the given directory. Performs
+-- various sanity checks, such as the file name being correct and having only a
+-- single Cabal file.
 --
--- @since 0.1.0.0
+-- @since 0.8.0
 loadCabalFilePath
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-  => Path Abs Dir -- ^ project directory, with a cabal file or hpack file
+  => Maybe Text -- ^ The program name used by Hpack (the library), defaults to
+                -- \"hpack\".
+  -> Path Abs Dir -- ^ project directory, with a cabal file or hpack file
   -> RIO env
        ( PrintWarnings -> IO GenericPackageDescription
        , PackageName
        , Path Abs File
        )
-loadCabalFilePath dir = do
+loadCabalFilePath progName dir = do
   ref <- view $ pantryConfigL.to pcParsedCabalFilesMutable
   mcached <- Map.lookup dir <$> readIORef ref
   case mcached of
     Just triple -> pure triple
     Nothing -> do
-      (name, cabalfp) <- findOrGenerateCabalFile dir
+      (name, cabalfp) <- findOrGenerateCabalFile progName dir
       gpdRef <- newIORef Nothing
       run <- askRunInIO
       let gpdio = run . getGPD cabalfp gpdRef
@@ -683,21 +688,24 @@ loadCabalFilePath dir = do
         when (expected /= toFilePath (filename cabalfp))
             $ throwM $ MismatchedCabalName cabalfp name
 
--- | Get the filename for the cabal file in the given directory.
+-- | Get the file name for the Cabal file in the given directory.
 --
--- If no .cabal file is present, or more than one is present, an exception is
+-- If no Cabal file is present, or more than one is present, an exception is
 -- thrown via 'throwM'.
 --
--- If the directory contains a file named package.yaml, hpack is used to
--- generate a .cabal file from it.
+-- If the directory contains a file named package.yaml, Hpack is used to
+-- generate a Cabal file from it.
 --
--- @since 0.1.0.0
+-- @since 0.8.0
 findOrGenerateCabalFile
     :: forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-    => Path Abs Dir -- ^ package directory
+    => Maybe Text -- ^ The program name used by Hpack (the library), defaults to
+                  -- \"hpack\".
+    -> Path Abs Dir -- ^ package directory
     -> RIO env (PackageName, Path Abs File)
-findOrGenerateCabalFile pkgDir = do
-    hpack pkgDir
+findOrGenerateCabalFile progName pkgDir = do
+    let hpackProgName = fromString . unpack <$> progName
+    hpack hpackProgName pkgDir
     files <- filter (flip hasExtension "cabal" . toFilePath) . snd
          <$> listDir pkgDir
     -- If there are multiple files, ignore files that start with
@@ -717,39 +725,48 @@ findOrGenerateCabalFile pkgDir = do
         _:_ -> throwIO $ MultipleCabalFilesFound pkgDir files
       where hasExtension fp x = FilePath.takeExtension fp == "." ++ x
 
--- | Generate .cabal file from package.yaml, if necessary.
+-- | Generate Cabal file from package.yaml, if necessary.
 hpack
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-  => Path Abs Dir
+  => Maybe Hpack.ProgramName -- ^ The program name used by Hpack (the library).
+  -> Path Abs Dir
   -> RIO env ()
-hpack pkgDir = do
+hpack progName pkgDir = do
     packageConfigRelFile <- parseRelFile Hpack.packageConfig
     let hpackFile = pkgDir </> packageConfigRelFile
+        mHpackProgName = maybe id Hpack.setProgramName progName
     exists <- liftIO $ doesFileExist hpackFile
     when exists $ do
-        logDebug $ "Running hpack on " <> fromString (toFilePath hpackFile)
+        logDebug $ "Running Hpack on " <> fromString (toFilePath hpackFile)
 
         he <- view $ pantryConfigL.to pcHpackExecutable
         case he of
             HpackBundled -> do
-                r <- liftIO $ Hpack.hpackResult $ Hpack.setProgramName "stack" $ Hpack.setTarget (toFilePath hpackFile) Hpack.defaultOptions
+                r <- liftIO
+                       $ Hpack.hpackResult
+                       $ mHpackProgName
+                       $ Hpack.setTarget
+                           (toFilePath hpackFile) Hpack.defaultOptions
                 forM_ (Hpack.resultWarnings r) (logWarn . fromString)
                 let cabalFile = fromString . Hpack.resultCabalFile $ r
                 case Hpack.resultStatus r of
-                    Hpack.Generated -> logDebug $ "hpack generated a modified version of " <> cabalFile
-                    Hpack.OutputUnchanged -> logDebug $ "hpack output unchanged in " <> cabalFile
+                    Hpack.Generated ->
+                      logDebug $ "Hpack generated a modified version of "
+                                 <> cabalFile
+                    Hpack.OutputUnchanged ->
+                      logDebug $ "Hpack output unchanged in " <> cabalFile
                     Hpack.AlreadyGeneratedByNewerHpack -> logWarn $
                         cabalFile <>
-                        " was generated with a newer version of hpack,\n" <>
+                        " was generated with a newer version of Hpack,\n" <>
                         "please upgrade and try again."
                     Hpack.ExistingCabalFileWasModifiedManually -> logWarn $
                         cabalFile <>
                         " was modified manually. Ignoring " <>
                         fromString (toFilePath hpackFile) <>
-                        " in favor of the cabal file.\nIf you want to use the " <>
+                        " in favor of the Cabal file.\nIf you want to use the " <>
                         fromString (toFilePath (filename hpackFile)) <>
-                        " file instead of the cabal file,\n" <>
-                        "then please delete the cabal file."
+                        " file instead of the Cabal file,\n" <>
+                        "then please delete the Cabal file."
             HpackCommand command ->
                 withWorkingDir (toFilePath pkgDir) $
                 proc command [] runProcess_
