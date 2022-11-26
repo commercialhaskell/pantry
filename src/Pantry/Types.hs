@@ -1037,13 +1037,14 @@ instance Display PantryException where
     <> fold (intersperse ", " (map display sfps))
   display (MismatchedCabalName fp name) =
     "Error: [S-910]\n"
-    <> "cabal file path "
+    <> "The Cabal file:\n"
     <> fromString (toFilePath fp)
-    <> " does not match the package name it defines.\n"
+    <> "\nis not named after the package that it defines.\n"
     <> "Please rename the file to: "
     <> fromString (packageNameString name)
     <> ".cabal\n"
-    <> "For more information, see: https://github.com/commercialhaskell/stack/issues/317"
+    <> "Hackage rejects packages where the first part of the Cabal file name "
+    <> "is not the package name."
   display (NoCabalFileFound dir) =
     "Error: [S-636]\n"
     <> "Stack looks for packages in the directories configured in\n"
