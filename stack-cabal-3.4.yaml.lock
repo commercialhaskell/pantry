@@ -11,6 +11,13 @@ packages:
       size: 45845
   original:
     hackage: Cabal-3.4.0.0
+- completed:
+    hackage: hpack-0.35.1@sha256:ef816234cbc7b52b0a6c55f7e904b6bc5292b8dd8f2d81ffcbcbc69ab80d75e5,4762
+    pantry-tree:
+      sha256: 514f0311eff442ab83ef3c2db456857f360ea173c17df133e575f50915e02da0
+      size: 3675
+  original:
+    hackage: hpack-0.35.1@sha256:ef816234cbc7b52b0a6c55f7e904b6bc5292b8dd8f2d81ffcbcbc69ab80d75e5,4762
 snapshots:
 - completed:
     sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68

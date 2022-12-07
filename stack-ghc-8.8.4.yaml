@@ -3,7 +3,7 @@ resolver: lts-16.31
 
 extra-deps:
 - Cabal-3.0.0.0
-- hpack-0.35.0
+- hpack-0.35.1@sha256:ef816234cbc7b52b0a6c55f7e904b6bc5292b8dd8f2d81ffcbcbc69ab80d75e5,4762
 
 ghc-options:
    "$locals": -fhide-source-paths

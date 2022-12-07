@@ -1,5 +1,5 @@
 name:        pantry
-version:     0.8.0
+version:     0.8.1
 synopsis:    Content addressable Haskell package management
 description: Please see the README on GitHub at <https://github.com/commercialhaskell/pantry#readme>
 category:    Development
@@ -53,7 +53,7 @@ dependencies:
 - tar-conduit
 - time
 - unix-compat
-- hpack >= 0.31.2
+- hpack >= 0.35.1
 - yaml
 - zip-archive
 - text-metrics

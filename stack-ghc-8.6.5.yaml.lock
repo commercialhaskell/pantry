@@ -12,12 +12,12 @@ packages:
   original:
     hackage: Cabal-3.0.0.0
 - completed:
-    hackage: hpack-0.35.0@sha256:8cd6146fae269390f41dc7237ebd2c479074d4163806d349a41f5a7751d6cea5,4726
+    hackage: hpack-0.35.1@sha256:ef816234cbc7b52b0a6c55f7e904b6bc5292b8dd8f2d81ffcbcbc69ab80d75e5,4762
     pantry-tree:
-      sha256: f143c1cb86d6ae954be5b3cc04629fb00631290c8eb9e3c795f65e10d6ccf220
-      size: 3615
+      sha256: 514f0311eff442ab83ef3c2db456857f360ea173c17df133e575f50915e02da0
+      size: 3675
   original:
-    hackage: hpack-0.35.0
+    hackage: hpack-0.35.1@sha256:ef816234cbc7b52b0a6c55f7e904b6bc5292b8dd8f2d81ffcbcbc69ab80d75e5,4762
 - completed:
     hackage: casa-client-0.0.1@sha256:7c254d0f21fa96c1e64fff027a479ba2e93b2d53bb1938b62dc63dc6018f12a1,892
     pantry-tree:
