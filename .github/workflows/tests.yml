@@ -23,8 +23,6 @@ jobs:
         # built on Fedora 33, whuch comes with glibc version 2.32. Hence use
         # ubuntu-22.04.
         - ubuntu-22.04
-        - macos-latest
-        - windows-latest
         stack-yaml:
         - stack-ghc-8.6.5.yaml
         - stack-ghc-8.8.4.yaml
@@ -32,6 +30,11 @@ jobs:
         - stack-ghc-9.4.2.yaml
         - stack-persistent-2.11.yaml
         - stack-cabal-3.4.yaml
+        include:
+        - os: macos-latest
+          stack-yaml: stack.yaml
+        - os: windows-latest
+          stack-yaml: stack.yaml
     steps:
     - name: Clone project
       uses: actions/checkout@v3
