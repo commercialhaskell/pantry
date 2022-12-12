@@ -1,0 +1,14 @@
+# GHC 9.4.3
+resolver: nightly-2022-12-09
+
+extra-deps:
+- hackage-security-0.6.2.3
+
+flags:
+  mintty:
+    win32-2-13-1: false
+  hackage-security:
+    cabal-syntax: true
+
+ghc-options:
+   "$locals": -fhide-source-paths
