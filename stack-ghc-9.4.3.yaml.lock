@@ -11,16 +11,9 @@ packages:
       size: 4034
   original:
     hackage: hackage-security-0.6.2.3@sha256:64fc60f3f4d02047c54956b6976c0e4fc72722891c6875ab10d95359bc00355a,12649
-- completed:
-    hackage: hpack-0.35.1@sha256:ef816234cbc7b52b0a6c55f7e904b6bc5292b8dd8f2d81ffcbcbc69ab80d75e5,4762
-    pantry-tree:
-      sha256: 514f0311eff442ab83ef3c2db456857f360ea173c17df133e575f50915e02da0
-      size: 3675
-  original:
-    hackage: hpack-0.35.1@sha256:ef816234cbc7b52b0a6c55f7e904b6bc5292b8dd8f2d81ffcbcbc69ab80d75e5,4762
 snapshots:
 - completed:
-    sha256: b77e2c2b7988ed34cd317c01eb1958a8b8c234c3cc17e44077616c212959bed0
-    size: 558756
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2022/12/9.yaml
-  original: nightly-2022-12-09
+    sha256: b0358d7286d5b53549f2345588a78a261128421ec42d1e3e6f37e8d98614b6ca
+    size: 558754
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2022/12/12.yaml
+  original: nightly-2022-12-12
