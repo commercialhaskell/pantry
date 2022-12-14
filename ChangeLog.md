@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.8.1
+
+* Support `hpack-0.35.1`, and prettier `HpackLibraryException` error messages.
+
 ## v0.8.0
 
 * `findOrGenerateCabalFile`, `loadCabalFilePath`, `loadCabalFile` and
