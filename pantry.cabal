@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           pantry
-version:        0.8.0
+version:        0.8.1
 synopsis:       Content addressable Haskell package management
 description:    Please see the README on GitHub at <https://github.com/commercialhaskell/pantry#readme>
 category:       Development
@@ -69,7 +69,7 @@ library
     , filelock
     , generic-deriving
     , hackage-security
-    , hpack >=0.31.2
+    , hpack >=0.35.1
     , http-client
     , http-client-tls
     , http-conduit
@@ -150,7 +150,7 @@ test-suite spec
     , generic-deriving
     , hackage-security
     , hedgehog
-    , hpack >=0.31.2
+    , hpack >=0.35.1
     , hspec
     , http-client
     , http-client-tls

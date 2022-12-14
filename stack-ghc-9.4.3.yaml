@@ -2,7 +2,8 @@
 resolver: nightly-2022-12-09
 
 extra-deps:
-- hackage-security-0.6.2.3
+- hackage-security-0.6.2.3@sha256:64fc60f3f4d02047c54956b6976c0e4fc72722891c6875ab10d95359bc00355a,12649
+- hpack-0.35.1@sha256:ef816234cbc7b52b0a6c55f7e904b6bc5292b8dd8f2d81ffcbcbc69ab80d75e5,4762
 
 flags:
   mintty:

@@ -970,7 +970,7 @@ data PantryException
   | MigrationFailure !Text !(Path Abs File) !SomeException
   | InvalidTreeFromCasa !BlobKey !ByteString
   | ParseSnapNameException !Text
-  | HpackLibraryException !(Path Abs File) !SomeException
+  | HpackLibraryException !(Path Abs File) !String
   | HpackExeException !FilePath !(Path Abs Dir) !SomeException
 
   deriving Typeable
@@ -1084,12 +1084,12 @@ instance Display PantryException where
     <> "Specified snapshot as file path with "
     <> displayShow t
     <> ", but not reading from a local file"
-  display (InvalidSnapshot loc e) =
+  display (InvalidSnapshot loc err) =
     "Error: [S-775]\n"
     <> "Exception while reading snapshot from "
     <> display loc
     <> ":\n"
-    <> displayShow e
+    <> displayShow err
   display (MismatchedPackageMetadata loc pm mtreeKey foundIdent) =
     "Error: [S-427]\n"
     <> "Mismatched package metadata for "
@@ -1112,12 +1112,12 @@ instance Display PantryException where
     <> display mismatchExpected
     <> ", actual: "
     <> display mismatchActual
-  display (Couldn'tParseSnapshot sl e) =
+  display (Couldn'tParseSnapshot sl err) =
     "Error: [S-645]\n"
     <> "Couldn't parse snapshot from "
     <> display sl
     <> ": "
-    <> fromString e
+    <> fromString err
   display (WrongCabalFileName pl sfp name) =
     "Error: [S-575]\n"
     <> "Wrong cabal file name for package "
@@ -1180,12 +1180,12 @@ instance Display PantryException where
     <> fromString fp
     <> ": "
     <> displayShow x
-  display (UnsupportedTarball loc e) =
+  display (UnsupportedTarball loc err) =
     "Error: [S-760]\n"
     <> "Unsupported tarball from "
     <> display loc
     <> ": "
-    <> display e
+    <> display err
   display (NoHackageCryptographicHash ident) =
     "Error: [S-922]\n"
     <> "No cryptographic hash found for Hackage package "
@@ -1266,7 +1266,7 @@ instance Display PantryException where
              <> foldMap (\loc -> "- " <> display loc <> "\n") locs
          )
          pairs'
-  display (MigrationFailure desc fp ex) =
+  display (MigrationFailure desc fp err) =
     "Error: [S-536]\n"
     <> "Encountered error while migrating database "
     <> display desc
@@ -1274,27 +1274,27 @@ instance Display PantryException where
     <> fromString (toFilePath fp)
     <> ":"
     <> "\n    "
-    <> displayShow ex
+    <> displayShow err
   display (ParseSnapNameException t) =
     "Error: [S-994]\n"
      <> "Invalid snapshot name: "
      <> display t
-  display (HpackLibraryException file e) =
+  display (HpackLibraryException file err) =
     "Error: [S-305]\n"
     <> "Failed to generate a Cabal file using the Hpack library on file:\n"
     <> fromString (toFilePath file)
     <> "\n\n"
-    <> "The exception encountered was:\n\n"
-    <> fromString (show e)
-  display (HpackExeException fp dir e) =
+    <> "The error encountered was:\n\n"
+    <> fromString err
+  display (HpackExeException fp dir err) =
     "Error: [S-720]\n"
     <> "Failed to generate a Cabal file using the Hpack executable:\n"
     <> fromString fp
     <> "in directory: "
     <> fromString (toFilePath dir)
     <> "\n\n"
-    <> "The exception encountered was:\n\n"
-    <> fromString (show e)
+    <> "The error encountered was:\n\n"
+    <> fromString (show err)
 
 data FuzzyResults
   = FRNameNotFound ![PackageName]

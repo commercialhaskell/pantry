@@ -5,6 +5,13 @@
 
 packages:
 - completed:
+    hackage: hpack-0.35.1@sha256:ef816234cbc7b52b0a6c55f7e904b6bc5292b8dd8f2d81ffcbcbc69ab80d75e5,4762
+    pantry-tree:
+      sha256: 514f0311eff442ab83ef3c2db456857f360ea173c17df133e575f50915e02da0
+      size: 3675
+  original:
+    hackage: hpack-0.35.1@sha256:ef816234cbc7b52b0a6c55f7e904b6bc5292b8dd8f2d81ffcbcbc69ab80d75e5,4762
+- completed:
     hackage: persistent-2.11.0.4@sha256:a55a9a30d663407d77e2ea0e65b1e29e3aa2ecf531d7d758ded31c415875e216,4735
     pantry-tree:
       sha256: 0523f5ccae1ad92f3717e6fc8de7dae6907da00b08da3313a7afbc5c47b376e6

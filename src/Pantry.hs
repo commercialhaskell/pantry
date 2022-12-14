@@ -1,7 +1,9 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase #-}
 -- | Content addressable Haskell package management, providing for
 -- secure, reproducible acquisition of Haskell package contents and
 -- metadata.
@@ -188,6 +190,9 @@ module Pantry
 
 import Database.Persist (entityKey)
 import RIO
+#if !MIN_VERSION_rio(0,1,17)
+import Data.Bifunctor (bimap)
+#endif
 import Conduit
 import Control.Arrow (right)
 import Control.Monad.State.Strict (State, execState, get, modify')
@@ -226,6 +231,23 @@ import Data.Monoid (Endo (..))
 import Pantry.HTTP
 import Data.Char (isHexDigit)
 import Data.Time (getCurrentTime, diffUTCTime)
+
+import Data.Yaml.Include (decodeFileWithWarnings)
+import Hpack.Yaml (formatWarning)
+import Hpack.Error (formatHpackError)
+
+decodeYaml :: FilePath -> IO (Either String ([String], Value))
+decodeYaml file = do
+  bimap displayException (first formatWarnings) <$> decodeFileWithWarnings file
+  where
+    formatWarnings = map (formatWarning file)
+
+formatYamlParseError :: FilePath -> Yaml.ParseException -> String
+formatYamlParseError file e =
+  "In respect of an Hpack defaults file:\n"
+  <> file
+  <> ":\n\n"
+  <> displayException e
 
 -- | Create a new 'PantryConfig' with the given settings.
 --
@@ -741,15 +763,18 @@ hpack progName pkgDir = do
 
         he <- view $ pantryConfigL.to pcHpackExecutable
         case he of
-            HpackBundled -> do
-                r <- catchAny
-                       ( liftIO
-                           $ Hpack.hpackResult
+            HpackBundled ->
+                        liftIO
+                           ( Hpack.hpackResultWithError
                            $ mHpackProgName
+                           $ Hpack.setDecode decodeYaml
+                           $ Hpack.setFormatYamlParseError formatYamlParseError
                            $ Hpack.setTarget
                                (toFilePath hpackFile) Hpack.defaultOptions
-                       )
-                       ( throwIO . HpackLibraryException hpackFile )
+                           )
+                         >>= \ case
+              Left err -> throwIO (HpackLibraryException hpackFile $ formatHpackError (fromMaybe "hpack" progName) err)
+              Right r -> do
                 forM_ (Hpack.resultWarnings r) (logWarn . fromString)
                 let cabalFile = fromString . Hpack.resultCabalFile $ r
                 case Hpack.resultStatus r of
