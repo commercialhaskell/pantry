@@ -1,5 +1,5 @@
 # GHC 9.4.3
-resolver: nightly-2022-12-12
+resolver: nightly-2022-12-17
 
 extra-deps:
 - hackage-security-0.6.2.3@sha256:64fc60f3f4d02047c54956b6976c0e4fc72722891c6875ab10d95359bc00355a,12649

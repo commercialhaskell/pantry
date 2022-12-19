@@ -6,7 +6,7 @@ on:
     branches:
     - master
 
-# As of 11 December 2022, ubuntu-22.04, windows-latest and macos-latest come
+# As of 19 December 2022, ubuntu-latest, windows-latest and macos-latest come
 # with Stack 2.9.1.
 
 jobs:
@@ -17,15 +17,11 @@ jobs:
       fail-fast: false
       matrix:
         os:
-        # As of 11 December 2022, ubuntu-lastest corresponds to ubuntu-20.04.
-        # However, ubuntu-20.04 has package 'libc6 (2.31-0ubuntu9.7 and others)'
-        # and, from GHC 9.4.1, ghc-9.4.1-x86_64-fedora33-linux.tar.xz etc is
-        # built on Fedora 33, whuch comes with glibc version 2.32. Hence use
-        # ubuntu-22.04.
-        - ubuntu-22.04
+        - ubuntu-latest
         stack-yaml:
         - stack-ghc-8.6.5.yaml
         - stack-ghc-8.8.4.yaml
+        - stack.yaml # GHC 8.10.7
         - stack-ghc-9.2.5.yaml
         - stack-ghc-9.4.3.yaml
         - stack-persistent-2.11.yaml
