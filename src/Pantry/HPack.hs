@@ -57,16 +57,22 @@ hpack pkgDir = do
                     Hpack.OutputUnchanged -> logDebug $ "hpack output unchanged in " <> cabalFile
                     Hpack.AlreadyGeneratedByNewerHpack -> logWarn $
                         cabalFile <>
-                        " was generated with a newer version of hpack,\n" <>
-                        "please upgrade and try again."
+                        " was generated with a newer version of hpack. Ignoring " <>
+                        fromString (toFilePath hpackFile) <>
+                        " in favor of the Cabal file.\n" <>
+                        "Either please upgrade and try again or, if you want to use the " <>
+                        fromString (toFilePath (filename hpackFile)) <>
+                        " file instead of the Cabal file,\n" <>
+                        "then please delete the Cabal file."
                     Hpack.ExistingCabalFileWasModifiedManually -> logWarn $
                         cabalFile <>
                         " was modified manually. Ignoring " <>
                         fromString (toFilePath hpackFile) <>
-                        " in favor of the cabal file.\nIf you want to use the " <>
+                        " in favor of the Cabal file.\n" <>
+                        "If you want to use the " <>
                         fromString (toFilePath (filename hpackFile)) <>
-                        " file instead of the cabal file,\n" <>
-                        "then please delete the cabal file."
+                        " file instead of the Cabal file,\n" <>
+                        "then please delete the Cabal file."
             HpackCommand command ->
                 withWorkingDir (toFilePath pkgDir) $
                 proc command [] runProcess_
