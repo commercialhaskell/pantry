@@ -785,13 +785,19 @@ hpack progName pkgDir = do
                       logDebug $ "Hpack output unchanged in " <> cabalFile
                     Hpack.AlreadyGeneratedByNewerHpack -> logWarn $
                         cabalFile <>
-                        " was generated with a newer version of Hpack,\n" <>
-                        "please upgrade and try again."
+                        " was generated with a newer version of Hpack. Ignoring " <>
+                        fromString (toFilePath hpackFile) <>
+                        " in favor of the Cabal file.\n" <>
+                        "Either please upgrade and try again or, if you want to use the " <>
+                        fromString (toFilePath (filename hpackFile)) <>
+                        " file instead of the Cabal file,\n" <>
+                        "then please delete the Cabal file."
                     Hpack.ExistingCabalFileWasModifiedManually -> logWarn $
                         cabalFile <>
                         " was modified manually. Ignoring " <>
                         fromString (toFilePath hpackFile) <>
-                        " in favor of the Cabal file.\nIf you want to use the " <>
+                        " in favor of the Cabal file.\n" <>
+                        "If you want to use the " <>
                         fromString (toFilePath (filename hpackFile)) <>
                         " file instead of the Cabal file,\n" <>
                         "then please delete the Cabal file."
