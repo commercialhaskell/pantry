@@ -6,8 +6,8 @@ on:
     branches:
     - master
 
-# As of 19 December 2022, ubuntu-latest, windows-latest and macos-latest come
-# with Stack 2.9.1.
+# As of 21 March 2023, ubuntu-latest, windows-latest and macos-latest come
+# with Stack 2.9.3.
 
 jobs:
   build:
@@ -21,11 +21,10 @@ jobs:
         stack-yaml:
         - stack-ghc-8.6.5.yaml
         - stack-ghc-8.8.4.yaml
-        - stack.yaml # GHC 8.10.7
-        - stack-ghc-9.2.5.yaml
-        - stack-ghc-9.4.3.yaml
-        - stack-persistent-2.11.yaml
-        - stack-cabal-3.4.yaml
+        - stack-ghc-8.10.7.yaml
+        - stack.yaml # GHC 9.2.7
+        - stack-ghc-9.4.4.yaml
+        - stack-cabal-3.10.yaml
         include:
         - os: macos-latest
           stack-yaml: stack.yaml

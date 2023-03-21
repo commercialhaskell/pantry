@@ -2,8 +2,8 @@
 resolver: lts-14.27
 
 extra-deps:
-- Cabal-3.0.0.0
-- hpack-0.35.1@sha256:ef816234cbc7b52b0a6c55f7e904b6bc5292b8dd8f2d81ffcbcbc69ab80d75e5,4762
+- Cabal-3.0.0.0@sha256:f0862eca5ef06da6e6a592c452a747a953e52adce6f66246d3c7a0aa458dfe35,26783
+- hpack-0.35.2@sha256:f8fea65f195c455b809c992d643c5db1b69615eda385fcb5ea6fa59773037fa7,5024
 - casa-client-0.0.1
 - casa-types-0.0.1
 
