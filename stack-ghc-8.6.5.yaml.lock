@@ -10,14 +10,7 @@ packages:
       sha256: 121717f151bf20c2e1ca5a7733c4bdad4d864f1d4d96fdb9346a1012ea81e425
       size: 71616
   original:
-    hackage: Cabal-3.0.0.0
-- completed:
-    hackage: hpack-0.35.1@sha256:ef816234cbc7b52b0a6c55f7e904b6bc5292b8dd8f2d81ffcbcbc69ab80d75e5,4762
-    pantry-tree:
-      sha256: 514f0311eff442ab83ef3c2db456857f360ea173c17df133e575f50915e02da0
-      size: 3675
-  original:
-    hackage: hpack-0.35.1@sha256:ef816234cbc7b52b0a6c55f7e904b6bc5292b8dd8f2d81ffcbcbc69ab80d75e5,4762
+    hackage: Cabal-3.0.0.0@sha256:f0862eca5ef06da6e6a592c452a747a953e52adce6f66246d3c7a0aa458dfe35,26783
 - completed:
     hackage: casa-client-0.0.1@sha256:7c254d0f21fa96c1e64fff027a479ba2e93b2d53bb1938b62dc63dc6018f12a1,892
     pantry-tree:
@@ -32,6 +25,20 @@ packages:
       size: 165
   original:
     hackage: casa-types-0.0.1
+- completed:
+    hackage: hpack-0.35.2@sha256:f8fea65f195c455b809c992d643c5db1b69615eda385fcb5ea6fa59773037fa7,5024
+    pantry-tree:
+      sha256: b1376940842ac0468aee17e289d35e5759758d7ba800569b9364e3b2522d7651
+      size: 3742
+  original:
+    hackage: hpack-0.35.2@sha256:f8fea65f195c455b809c992d643c5db1b69615eda385fcb5ea6fa59773037fa7,5024
+- completed:
+    hackage: rio-prettyprint-0.1.4.0@sha256:1f8eb3ead0ef33d3736d53e1de5e9b2c91a0c207cdca23321bd74c401e85f23a,1301
+    pantry-tree:
+      sha256: 05bb2585e2d93899c62e0b6e1da02d040286b4524d0d363be1c5d99e49ac95bd
+      size: 628
+  original:
+    hackage: rio-prettyprint-0.1.4.0@sha256:1f8eb3ead0ef33d3736d53e1de5e9b2c91a0c207cdca23321bd74c401e85f23a,1301
 snapshots:
 - completed:
     sha256: 7ea31a280c56bf36ff591a7397cc384d0dff622e7f9e4225b47d8980f019a0f0

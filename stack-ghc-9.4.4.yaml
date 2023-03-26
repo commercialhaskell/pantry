@@ -1,11 +1,13 @@
 # GHC 9.4.4
-resolver: nightly-2023-03-20
+resolver: nightly-2023-03-26
 
 flags:
-  mintty:
+  ansi-terminal:
     win32-2-13-1: false
   hackage-security:
     cabal-syntax: true
+  mintty:
+    win32-2-13-1: false
 
 ghc-options:
    "$locals": -fhide-source-paths
