@@ -10,7 +10,14 @@ packages:
       sha256: b1376940842ac0468aee17e289d35e5759758d7ba800569b9364e3b2522d7651
       size: 3742
   original:
-    hackage: hpack-0.35.2
+    hackage: hpack-0.35.2@sha256:f8fea65f195c455b809c992d643c5db1b69615eda385fcb5ea6fa59773037fa7,5024
+- completed:
+    hackage: rio-prettyprint-0.1.4.0@sha256:1f8eb3ead0ef33d3736d53e1de5e9b2c91a0c207cdca23321bd74c401e85f23a,1301
+    pantry-tree:
+      sha256: 05bb2585e2d93899c62e0b6e1da02d040286b4524d0d363be1c5d99e49ac95bd
+      size: 628
+  original:
+    hackage: rio-prettyprint-0.1.4.0@sha256:1f8eb3ead0ef33d3736d53e1de5e9b2c91a0c207cdca23321bd74c401e85f23a,1301
 snapshots:
 - completed:
     sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68

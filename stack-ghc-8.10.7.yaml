@@ -3,6 +3,7 @@ resolver: lts-18.28
 
 extra-deps:
 - hpack-0.35.2@sha256:f8fea65f195c455b809c992d643c5db1b69615eda385fcb5ea6fa59773037fa7,5024
+- rio-prettyprint-0.1.4.0@sha256:1f8eb3ead0ef33d3736d53e1de5e9b2c91a0c207cdca23321bd74c401e85f23a,1301
 
 ghc-options:
    "$locals": -fhide-source-paths
