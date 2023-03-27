@@ -137,6 +137,12 @@ import qualified Data.Map.Strict as Map (mapKeysMonotonic)
 import qualified RIO.Set as Set
 import Data.Aeson.Types (toJSONKeyText, Parser)
 import Pantry.Internal.AesonExtended
+         ( FromJSON (..), FromJSONKey (..), FromJSONKeyFunction (..), Object
+         , ToJSON (..), ToJSONKey (..), ToJSONKeyFunction (..), Value (..)
+         , WarningParser, WithJSONWarnings, (..:), (..:?), (..!=), (.=), (.:)
+         , (...:?), jsonSubWarnings, jsonSubWarningsT, noJSONWarnings, object
+         , tellJSONField, withObject, withObjectWarnings, withText
+         )
 import Data.Aeson.Encoding.Internal (unsafeToEncoding)
 import Data.ByteString.Builder (toLazyByteString, byteString, wordDec)
 import Database.Persist
@@ -1360,28 +1366,30 @@ instance Pretty PantryException where
     <> bulletedList
          ( map (\(PError pos msg) -> fillSep
              [ fromString (showPos pos) <> ":"
-             , fromString msg <> "."
+             , fromString msg
              ])
              errs
          )
-    <> line
     <> bulletedList
          ( map (\(PWarning _ pos msg) -> fillSep
              [ fromString (showPos pos) <> ":"
-             , fromString msg <> "."
+             , fromString msg
              ])
              warnings
          )
     <> ( case mversion of
            Just version | version > cabalSpecLatestVersion ->
-                blankLine
+                line
              <> fillSep
                   [ flow "The Cabal file uses the Cabal specification version"
-                  , fromString (versionString version) <> ","
+                  , style Current (fromString $ versionString version) <> ","
                   , flow "but we only support up to version"
                   , fromString (versionString cabalSpecLatestVersion) <> "."
                   , flow "Recommended action: upgrade your build tool"
-                  , parens ("e.g." <> style Shell "stack upgrade") <> "."
+                  , parens (fillSep
+                      [ "e.g."
+                      , style Shell (flow "stack upgrade")
+                      ]) <> "."
                   ]
            _ -> mempty
        )
@@ -1403,7 +1411,7 @@ instance Pretty PantryException where
     "[S-910]"
     <> line
     <> fillSep
-         [ flow "The Cabal file:"
+         [ flow "The Cabal file"
          , pretty fp
          , flow "is not named after the package that it defines. Please rename"
          , flow "the file to"
@@ -1704,8 +1712,8 @@ instance Pretty PantryException where
     <> line
     <> fillSep
          [ flow "Could not find"
-         , fromString . T.unpack $ textDisplay pir
-         , flow "on Hackage"
+         , style Error (fromString . T.unpack $ textDisplay pir)
+         , flow "on Hackage."
          ]
     <> prettyFuzzy fuzzy
   pretty (CannotCompleteRepoNonSHA1 repo) =
@@ -1729,7 +1737,7 @@ instance Pretty PantryException where
     <> fillSep
          [ flow "When processing Cabal file for Hackage package"
          , fromString . T.unpack $ textDisplay pir <> ","
-         , flow "Mismatched package identifier."
+         , flow "mismatched package identifier."
          ]
     <> blankLine
     <> hang 10 (fillSep
