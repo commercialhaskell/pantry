@@ -1,5 +1,10 @@
 # Changelog for pantry
 
+## Unreleased
+
+* Module `Pantry` now exports `Mismatch`, used in data constructors of
+  `PantryException`.
+
 ## v0.8.1
 
 * Support `hpack-0.35.1`, and prettier `HpackLibraryException` error messages.
