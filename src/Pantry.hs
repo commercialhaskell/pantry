@@ -49,6 +49,8 @@ module Pantry
   , RelFilePath (..)
   , ResolvedPath (..)
   , Unresolved
+  , SafeFilePath
+  , mkSafeFilePath
 
     -- ** Cryptography
   , SHA256

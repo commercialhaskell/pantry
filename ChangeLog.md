@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-* Module `Pantry` now exports `FuzzyResults` and `Mismatch`, used in data
-  constructors of `PantryException`.
+* Module `Pantry` now exports `FuzzyResults`, `Mismatch` and `SafeFilePath` (and
+  `mkSafeFilePath`), used in data constructors of `PantryException`.
 
 ## v0.8.1
 
