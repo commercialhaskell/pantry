@@ -1395,12 +1395,14 @@ instance Pretty PantryException where
        )
   pretty (TreeWithoutCabalFile loc) =
     "[S-654]"
+    <> line
     <> fillSep
          [ flow "No Cabal file found for"
          , pretty loc <> "."
          ]
   pretty (TreeWithMultipleCabalFiles loc sfps) =
     "[S-500]"
+    <> line
     <> fillSep
          ( flow "Multiple Cabal files found for"
          : (pretty loc <> ":")
@@ -1527,6 +1529,7 @@ instance Pretty PantryException where
          ]
   pretty (Couldn'tParseSnapshot sl err) =
     "[S-645]"
+    <> line
     <> fillSep
          [ flow "Couldn't parse snapshot from"
          , pretty sl <> ":"
