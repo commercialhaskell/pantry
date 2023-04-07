@@ -36,6 +36,7 @@ module Pantry
     -- ** Exceptions
   , PantryException (..)
   , Mismatch (..)
+  , FuzzyResults (..)
 
     -- ** Cabal types
   , PackageName
