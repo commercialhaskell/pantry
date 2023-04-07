@@ -1502,7 +1502,7 @@ instance Pretty PantryException where
          ])
     <> line
     <> hang 10 (fillSep
-         [ "Found:"
+         [ "Found:   "
          , fromString $ packageIdentifierString foundIdent
          , case mtreeKey of
              Nothing -> mempty
@@ -1565,7 +1565,7 @@ instance Pretty PantryException where
          ])
     <> line
     <> hang 10 (fillSep
-         [ "Actual:"
+         [ "Actual:  "
          , fromString . T.unpack $ textDisplay mismatchActual <> "."
          ])
   pretty (DownloadInvalidSize url Mismatch {..}) =
@@ -1582,7 +1582,7 @@ instance Pretty PantryException where
          ])
     <> line
     <> hang 10 (fillSep
-         [ "Actual:"
+         [ "Actual:  "
          , fromString . T.unpack $ textDisplay mismatchActual <> "."
          ])
   pretty (DownloadTooLarge url Mismatch {..}) =
@@ -1610,7 +1610,7 @@ instance Pretty PantryException where
          ])
     <> line
     <> hang 10 (fillSep
-         [ "Actual:"
+         [ "Actual:  "
          , fromString . T.unpack $ textDisplay mismatchActual <> "."
          ])
   pretty (LocalInvalidSize path Mismatch {..}) =
@@ -1627,7 +1627,7 @@ instance Pretty PantryException where
          ])
     <> line
     <> hang 10 (fillSep
-         [ "Actual:"
+         [ "Actual:  "
          , fromString . T.unpack $ textDisplay mismatchActual <> "."
          ])
   pretty (UnknownArchiveType loc) =
@@ -1707,7 +1707,7 @@ instance Pretty PantryException where
          ])
     <> line
     <> hang 10 (fillSep
-         [ "Actual:"
+         [ "Actual:  "
          , fromString . T.unpack $ textDisplay mismatchActual <> "."
          ])
   pretty (UnknownHackagePackage pir fuzzy) =
@@ -1749,7 +1749,7 @@ instance Pretty PantryException where
          ])
     <> line
     <> hang 10 (fillSep
-         [ "Actual:"
+         [ "Actual:  "
          , fromString (packageIdentifierString mismatchActual) <> "."
          ])
   pretty (PackageNameParseFail t) =
