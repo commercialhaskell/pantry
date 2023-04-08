@@ -28,6 +28,11 @@ source-repository head
   type: git
   location: https://github.com/commercialhaskell/pantry
 
+flag test-pretty-exceptions
+  description: Build an executable to test pretty exceptions
+  manual: False
+  default: False
+
 library
   exposed-modules:
       Pantry
@@ -110,6 +115,81 @@ library
         System.IsWindows
     hs-source-dirs:
         src/unix/
+
+executable test-pretty-exceptions
+  main-is: Main.hs
+  other-modules:
+      Paths_pantry
+  hs-source-dirs:
+      app/test-pretty-exceptions
+  ghc-options: -Wall
+  build-depends:
+      Cabal >=3 && <3.11
+    , aeson
+    , ansi-terminal
+    , base >=4.10 && <5
+    , bytestring
+    , casa-client
+    , casa-types
+    , conduit
+    , conduit-extra
+    , containers
+    , cryptonite
+    , cryptonite-conduit
+    , digest
+    , filelock
+    , generic-deriving
+    , hackage-security
+    , hpack >=0.35.1
+    , http-client
+    , http-client-tls
+    , http-conduit
+    , http-download
+    , http-types
+    , memory
+    , mtl
+    , network-uri
+    , optparse-applicative
+    , pantry
+    , path
+    , path-io
+    , persistent
+    , persistent-sqlite >=2.9.3
+    , persistent-template
+    , primitive
+    , resourcet
+    , rio
+    , rio-orphans
+    , rio-prettyprint
+    , tar-conduit
+    , text
+    , text-metrics
+    , time
+    , transformers
+    , unix-compat
+    , unliftio
+    , unordered-containers
+    , vector
+    , yaml
+    , zip-archive
+  default-language: Haskell2010
+  if !flag(test-pretty-exceptions)
+    buildable: False
+  if os(windows)
+    other-modules:
+        PathAbsExamples
+        System.Terminal
+    hs-source-dirs:
+        app/test-pretty-exceptions/windows/
+    build-depends:
+        Win32
+      , process
+  else
+    other-modules:
+        PathAbsExamples
+        System.Terminal
+    hs-source-dirs:
+        app/test-pretty-exceptions/unix/
 
 test-suite spec
   type: exitcode-stdio-1.0

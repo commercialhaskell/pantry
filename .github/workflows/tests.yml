@@ -52,3 +52,36 @@ jobs:
       run: |
         set -ex
         stack test --stack-yaml ${{ matrix.stack-yaml }} --bench --no-run-benchmarks --haddock --no-haddock-deps
+  test-pretty-exceptions:
+    name: Test build of test-pretty-exceptions
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-latest
+        - windows-latest
+        stack-yaml:
+        - stack.yaml # GHC 9.2.7
+    steps:
+    - name: Clone project
+      uses: actions/checkout@v3
+    - name: Cache dependencies on Unix-like OS
+      if: startsWith(runner.os, 'Linux') || startsWith(runner.os, 'macOS')
+      uses: actions/cache@v3
+      with:
+        path: ~/.stack
+        key: ${{ runner.os }}-${{ matrix.stack-yaml }}-pretty
+    - name: Cache dependencies on Windows
+      if: startsWith(runner.os, 'Windows')
+      uses: actions/cache@v3
+      with:
+        path: |
+           ~\AppData\Roaming\stack
+           ~\AppData\Local\Programs\stack
+        key: ${{ runner.os }}-${{ matrix.stack-yaml }}-pretty
+    - name: Build test-pretty-exceptions
+      shell: bash
+      run: |
+        set -ex
+        stack --stack-yaml ${{ matrix.stack-yaml }} build --flag pantry:test-pretty-exceptions

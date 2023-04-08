@@ -16,53 +16,59 @@ extra-source-files:
 - attic/package-0.1.2.3.tar.gz
 - attic/symlink-to-dir.tar.gz
 
+flags:
+  test-pretty-exceptions:
+    description: Build an executable to test pretty exceptions
+    default: false
+    manual: false
+
 dependencies:
 - base >=4.10 && < 5
-- ansi-terminal
-- digest
-- rio
 - aeson
-- text
-- unordered-containers
-- containers
-- path
-- transformers
-- generic-deriving
-- unliftio
-- http-conduit
-- http-client-tls
-- http-download
-- http-types
-- http-client
-- conduit
+- ansi-terminal
 - bytestring
-- network-uri
-- hackage-security
-- primitive
-- vector
-- memory
+- Cabal >= 3 && < 3.11
+- casa-client
+- casa-types
+- conduit
+- conduit-extra
+- containers
 - cryptonite
 - cryptonite-conduit
+- digest
+- filelock
+- generic-deriving
+- hackage-security
+- hpack >= 0.35.1
+- http-client
+- http-client-tls
+- http-conduit
+- http-download
+- http-types
+- memory
+- mtl
+- network-uri
+- path
+- path-io
 - persistent
 - persistent-sqlite >= 2.9.3
 - persistent-template
-- Cabal >= 3 && < 3.11
-- path-io
+- primitive
+- resourcet
+- rio
 - rio-orphans
-- conduit-extra
+- rio-prettyprint
 - tar-conduit
+- text
+- text-metrics
 - time
+- transformers
 - unix-compat
-- hpack >= 0.35.1
+- unliftio
+- unordered-containers
+- vector
 - yaml
 - zip-archive
-- text-metrics
-- resourcet
-- rio-prettyprint
-- mtl
-- filelock
-- casa-client
-- casa-types
 
 ghc-options:
   - -Wall
@@ -104,14 +110,33 @@ library:
   - Pantry.Tree
   - Pantry.Types
 
+executables:
+  test-pretty-exceptions:
+    when:
+    - condition: "!flag(test-pretty-exceptions)"
+      buildable: false
+    - condition: 'os(windows)'
+      then:
+        source-dirs: app/test-pretty-exceptions/windows/
+        dependencies:
+        - process
+        - Win32
+      else:
+        source-dirs: app/test-pretty-exceptions/unix/
+    main: Main.hs
+    source-dirs: app/test-pretty-exceptions
+    dependencies:
+    - pantry
+    - optparse-applicative
+
 tests:
   spec:
     source-dirs: test
     main: Spec.hs
     dependencies:
     - pantry
-    - hspec
     - exceptions
     - hedgehog
+    - hspec
     - QuickCheck
     - raw-strings-qq
