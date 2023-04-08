@@ -1370,6 +1370,7 @@ instance Pretty PantryException where
              ])
              errs
          )
+    <> line
     <> bulletedList
          ( map (\(PWarning _ pos msg) -> fillSep
              [ fromString (showPos pos) <> ":"
@@ -1406,7 +1407,7 @@ instance Pretty PantryException where
     <> fillSep
          ( flow "Multiple Cabal files found for"
          : (pretty loc <> ":")
-         : mkNarrativeList Nothing False
+         : mkNarrativeList (Just File) False
              (map (fromString . T.unpack . textDisplay) sfps :: [StyleDoc])
          )
   pretty (MismatchedCabalName fp name) =
@@ -1498,12 +1499,17 @@ instance Pretty PantryException where
     <> blankLine
     <> hang 10 (fillSep
          [ "Expected:"
-         , fromString . T.unpack $ textDisplay pm <> "."
+         , let t = textDisplay pm
+           in  if T.null t
+                 then "nothing."
+                 else fromString $ T.unpack t <> "."
          ])
     <> line
     <> hang 10 (fillSep
          [ "Found:   "
-         , fromString $ packageIdentifierString foundIdent
+         , fromString $ packageIdentifierString foundIdent <> case mtreeKey of
+             Nothing -> "."
+             _ -> mempty
          , case mtreeKey of
              Nothing -> mempty
              Just treeKey -> fillSep
