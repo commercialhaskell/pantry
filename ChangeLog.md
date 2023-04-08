@@ -1,7 +1,10 @@
 # Changelog for pantry
 
-## Unreleased
+## v0.8.2
 
+* `PantryException` is now an instance of the
+  `Text.PrettyPrint.Leijen.Extended.Pretty` class (provided by the
+  `rio-prettyprint` package).
 * Module `Pantry` now exports `FuzzyResults`, `Mismatch` and `SafeFilePath` (and
   `mkSafeFilePath`), used in data constructors of `PantryException`.
 
