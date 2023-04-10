@@ -33,6 +33,17 @@ import System.IsWindows (osIsWindows)
 
 data TarType = Gnu | Bsd
 
+getGitTarType :: (HasProcessContext env, HasLogFunc env) => RIO env TarType
+getGitTarType = if osIsWindows
+  then do
+    (_, stdoutBS, _) <- proc "git" ["--version"] readProcess
+    let bs = toStrict stdoutBS
+    -- If using Git for Windows, then assume that the tar type within
+    -- `git submodule foreach <command>` is the Git-supplied\MSYS2-supplied
+    -- GNU tar
+    if "windows" `isInfixOf` bs then pure Gnu else getTarType
+  else getTarType
+
 getTarType :: (HasProcessContext env, HasLogFunc env) => RIO env TarType
 getTarType = do
   (_, stdoutBS, _) <- proc "tar" ["--version"] readProcess
@@ -200,7 +211,7 @@ runGitCommand args =
 -- done in GNU tar with -A option.
 archiveSubmodules :: (HasLogFunc env, HasProcessContext env) => FilePath -> RIO env ()
 archiveSubmodules tarball = do
-  tarType <- getTarType
+  tarType <- getGitTarType
   let forceLocal =
           if osIsWindows
           then " --force-local "
