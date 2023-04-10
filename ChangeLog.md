@@ -1,5 +1,10 @@
 # Changelog for pantry
 
+## v0.8.2.1
+
+* On Windows, avoid fatal `tar: Cannot connect to C: resolve failed` bug when
+  archiving repository submodules.
+
 ## v0.8.2
 
 * `PantryException` is now an instance of the
