@@ -4,7 +4,7 @@ resolver: nightly-2023-05-01
 extra-deps:
 # See https://github.com/haskell/network/pull/552. Snapshot nightly-05-01 has
 # network-3.1.2.8.
-- network-3.1.2.9
+- network-3.1.2.9@sha256:eacdb7f78719cc5125b25856a9114984c5c03b484995f3074b3d756553ededee,5008
 
 flags:
   ansi-terminal:

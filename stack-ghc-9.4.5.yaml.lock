@@ -10,10 +10,10 @@ packages:
       sha256: 51165c889117723710b3d1dd70d9ce0c2ffc023a04ba3fc53f71ed20b6909349
       size: 3914
   original:
-    hackage: network-3.1.2.9
+    hackage: network-3.1.2.9@sha256:eacdb7f78719cc5125b25856a9114984c5c03b484995f3074b3d756553ededee,5008
 snapshots:
 - completed:
-    sha256: c110d42fae0aff8f393c87e2f52e70c50653554c4a6b942e401f464ea4c08a80
-    size: 609034
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2023/4/25.yaml
-  original: nightly-2023-04-25
+    sha256: f0fabba5d552487306aa7ceb46dd66ed6030ce459739b094eee1116facde5c84
+    size: 626061
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2023/5/1.yaml
+  original: nightly-2023-05-01
