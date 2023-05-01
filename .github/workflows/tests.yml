@@ -23,7 +23,7 @@ jobs:
         - stack-ghc-8.8.4.yaml
         - stack-ghc-8.10.7.yaml
         - stack.yaml # GHC 9.2.7
-        - stack-ghc-9.4.4.yaml
+        - stack-ghc-9.4.5.yaml
         - stack-cabal-3.10.yaml
         include:
         - os: macos-latest

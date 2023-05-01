@@ -1,0 +1,18 @@
+# GHC 9.4.5
+resolver: nightly-2023-05-01
+
+extra-deps:
+# See https://github.com/haskell/network/pull/552. Snapshot nightly-05-01 has
+# network-3.1.2.8.
+- network-3.1.2.9
+
+flags:
+  ansi-terminal:
+    win32-2-13-1: false
+  hackage-security:
+    cabal-syntax: true
+  mintty:
+    win32-2-13-1: false
+
+ghc-options:
+   "$locals": -fhide-source-paths
