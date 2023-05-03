@@ -579,12 +579,12 @@ packages:
   original:
     hackage: mtl-compat-0.2.2
 - completed:
-    hackage: network-3.1.2.8@sha256:29b28d2e19ae9f5ff92cea4ab8d2e185408ee5de73b4127f7b485a904c9a8b15,4888
+    hackage: network-3.1.2.9@sha256:eacdb7f78719cc5125b25856a9114984c5c03b484995f3074b3d756553ededee,5008
     pantry-tree:
-      sha256: 3781923e8d4339a64793c349688fcdec7e348e213a1ee2a55f6e0ec43f860844
-      size: 3971
+      sha256: 51165c889117723710b3d1dd70d9ce0c2ffc023a04ba3fc53f71ed20b6909349
+      size: 3914
   original:
-    hackage: network-3.1.2.8
+    hackage: network-3.1.2.9
 - completed:
     hackage: network-uri-2.6.4.2@sha256:1fde59abf5d82a9666b4415bc2b2e9e33f6c1309074fda12d50410c7dbd95f3b,3163
     pantry-tree:
