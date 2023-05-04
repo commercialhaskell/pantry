@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.8.2.2
+
+* Add error S-395 (`NoLocalPackageDirFound`).
+
 ## v0.8.2.1
 
 * On Windows, avoid fatal `tar: Cannot connect to C: resolve failed` bug when
