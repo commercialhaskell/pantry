@@ -966,6 +966,7 @@ data PantryException
   | TreeWithoutCabalFile !RawPackageLocationImmutable
   | TreeWithMultipleCabalFiles !RawPackageLocationImmutable ![SafeFilePath]
   | MismatchedCabalName !(Path Abs File) !PackageName
+  | NoLocalPackageDirFound !(Path Abs Dir)
   | NoCabalFileFound !(Path Abs Dir)
   | MultipleCabalFilesFound !(Path Abs Dir) ![Path Abs File]
   | InvalidWantedCompiler !Text
@@ -1086,6 +1087,15 @@ instance Display PantryException where
     <> ".cabal\n"
     <> "Hackage rejects packages where the first part of the Cabal file name "
     <> "is not the package name."
+  display (NoLocalPackageDirFound dir) =
+    "Error: [S-395]\n"
+    <> "Stack looks for packages in the directories configured in\n"
+    <> "the 'packages' and 'extra-deps' fields defined in your stack.yaml\n"
+    <> "The current entry points to "
+    <> fromString (toFilePath dir)
+    <> ",\nbut no such directory could be found. If, alternatively, a package\n"
+    <> "in the package index was intended, its name and version must be\n"
+    <> "specified as an extra-dep."
   display (NoCabalFileFound dir) =
     "Error: [S-636]\n"
     <> "Stack looks for packages in the directories configured in\n"
@@ -1421,6 +1431,22 @@ instance Pretty PantryException where
          , style File (fromString $ packageNameString name <> ".cabal") <> "."
          , flow "Hackage rejects packages where the first part of the Cabal"
          , flow "file name is not the package name."
+         ]
+  pretty (NoLocalPackageDirFound dir) =
+    "[S-395]"
+    <> line
+    <> fillSep
+         [ flow "Stack looks for packages in the directories configured in the"
+         , style Shell "packages"
+         , "and"
+         , style Shell "extra-deps"
+         , flow "fields defined in your"
+         , style File "stack.yaml" <> "."
+         , flow "The current entry points to"
+         , pretty dir
+         , flow "but no such directory could be found. If, alternatively, a"
+         , flow "package in the package index was intended, its name and"
+         , flow "version must be specified as an extra-dep."
          ]
   pretty (NoCabalFileFound dir) =
     "[S-636]"

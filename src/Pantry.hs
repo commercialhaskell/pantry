@@ -239,6 +239,7 @@ import Data.Time (getCurrentTime, diffUTCTime)
 import Data.Yaml.Include (decodeFileWithWarnings)
 import Hpack.Yaml (formatWarning)
 import Hpack.Error (formatHpackError)
+import System.IO.Error (isDoesNotExistError)
 
 decodeYaml :: FilePath -> IO (Either String ([String], Value))
 decodeYaml file = do
@@ -732,8 +733,10 @@ findOrGenerateCabalFile
 findOrGenerateCabalFile progName pkgDir = do
     let hpackProgName = fromString . unpack <$> progName
     hpack hpackProgName pkgDir
-    files <- filter (flip hasExtension "cabal" . toFilePath) . snd
-         <$> listDir pkgDir
+    (_, allFiles) <- listDir pkgDir `catchIO` \e -> if isDoesNotExistError e
+      then throwIO $ NoLocalPackageDirFound pkgDir
+      else throwIO e
+    let files = filter (flip hasExtension "cabal" . toFilePath) allFiles
     -- If there are multiple files, ignore files that start with
     -- ".". On unixlike environments these are hidden, and this
     -- character is not valid in package names. The main goal is
