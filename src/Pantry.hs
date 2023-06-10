@@ -1827,7 +1827,7 @@ loadGlobalHints wc =
   where
     inner alreadyDownloaded = do
       dest <- getGlobalHintsFile
-      req <- parseRequest "https://raw.githubusercontent.com/fpco/stackage-content/master/stack/global-hints.yaml"
+      req <- parseRequest "https://raw.githubusercontent.com/commercialhaskell/stackage-content/master/stack/global-hints.yaml"
       downloaded <- download req dest
       eres <- tryAny (inner2 dest)
       mres <-
