@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Pantry.CasaSpec (spec) where
 
 import Distribution.Types.Version (mkVersion)

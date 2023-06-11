@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 -- | Exposed for testing, do not use!
 module Pantry.Internal
   ( parseTree

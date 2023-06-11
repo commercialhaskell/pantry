@@ -1,5 +1,6 @@
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE RankNTypes        #-}
+
 -- | Companion threads, such as for printing messages saying we're
 -- still busy. Ultimately this could be put into its own package. This
 -- is a non-standard API for use by Pantry and Stack, please /DO NOT

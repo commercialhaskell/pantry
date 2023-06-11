@@ -1,6 +1,7 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
+
 module Pantry.GlobalHintsSpec (spec) where
 
 import Distribution.Types.PackageName (mkPackageName)
