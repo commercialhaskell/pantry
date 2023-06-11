@@ -106,7 +106,7 @@ withPeekForeign (fptr, off, len) inner =
 
 instance DynamicBytes B.ByteString where
   lengthD = B.length
-  fromWordsD = fromWordsForeign (\fptr len -> B.fromForeignPtr fptr 0 len)
+  fromWordsD = fromWordsForeign (`B.fromForeignPtr` 0)
   withPeekD = withPeekForeign . B.toForeignPtr
 
 instance word8 ~ Word8 => DynamicBytes (VS.Vector word8) where

@@ -1,5 +1,4 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 module Pantry.Tree
   ( unpackTree
@@ -14,11 +13,10 @@ import Pantry.Storage hiding (Tree, TreeEntry, findOrGenerateCabalFile)
 import Pantry.Types
 import RIO.FilePath ((</>), takeDirectory)
 import RIO.Directory (createDirectoryIfMissing, setPermissions, getPermissions, setOwnerExecutable)
-import Path (Path, Abs, Dir, toFilePath)
+import Path (Abs, Dir, File, Path, toFilePath)
 import Distribution.Parsec (PWarning (..))
 import Distribution.PackageDescription (GenericPackageDescription)
 import Distribution.PackageDescription.Parsec
-import Path (File)
 
 unpackTree
   :: (HasPantryConfig env, HasLogFunc env)

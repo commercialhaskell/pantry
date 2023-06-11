@@ -93,7 +93,7 @@ wp ..!= d =
             fmap (, a) (fmap fst p .!= d)
 
 presentCount :: Object -> [Text] -> Int
-presentCount o ss = length . filter (\x -> HashMap.member (textToKey x) o) $ ss
+presentCount o = length . filter (\x -> HashMap.member (textToKey x) o)
 
 -- | Synonym version of @..:@.
 (...:) :: FromJSON a => Object -> [Text] -> WarningParser a

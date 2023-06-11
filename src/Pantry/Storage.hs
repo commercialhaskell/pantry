@@ -380,7 +380,7 @@ allBlobsSource ::
   -> ConduitT () (BlobId, ByteString) (ReaderT SqlBackend (RIO env)) ()
 allBlobsSource mblobId =
   selectSource [BlobId >. blobId | Just blobId <- [mblobId]] [Asc BlobId] .|
-  mapC ((entityKey &&& blobContents . entityVal))
+  mapC (entityKey &&& blobContents . entityVal)
 
 -- | Pull all hackage cabal entries from the database as
 -- 'RawPackageLocationImmutable'. We do a manual join rather than
@@ -415,8 +415,8 @@ allHackageCabalRawPackageLocations mhackageId = do
                           mblobKey <-
                             maybe
                               (pure Nothing)
-                              (fmap Just . getBlobKey)
-                              (fmap (treeKey . entityVal) mtree)
+                              ((fmap Just . getBlobKey) . treeKey . entityVal)
+                              mtree
                           pure
                             (P.RPLIHackage
                                (P.PackageIdentifierRevision
@@ -503,7 +503,7 @@ loadHackagePackageVersions
 loadHackagePackageVersions name = do
   nameid <- getPackageNameId name
   -- would be better with esqueleto
-  (Map.fromListWith Map.union . map go) <$> rawSql
+  Map.fromListWith Map.union . map go <$> rawSql
     "SELECT hackage.revision, version.version, blob.sha, blob.size\n\
     \FROM hackage_cabal as hackage, version, blob\n\
     \WHERE hackage.name=?\n\
@@ -522,7 +522,7 @@ loadHackagePackageVersion name version = do
   nameid <- getPackageNameId name
   versionid <- getVersionId version
   -- would be better with esqueleto
-  (Map.fromList . map go) <$> rawSql
+  Map.fromList . map go <$> rawSql
     "SELECT hackage.revision, blob.sha, blob.size, blob.id\n\
     \FROM hackage_cabal as hackage, version, blob\n\
     \WHERE hackage.name=?\n\
@@ -592,10 +592,8 @@ loadFilePath ::
 loadFilePath path = do
     fp <- getBy $ UniqueSfp path
     case fp of
-        Nothing ->
-            error $
-            "loadFilePath: No row found for " <>
-            (T.unpack $ P.unSafeFilePath path)
+        Nothing -> error $
+          "loadFilePath: No row found for " <> T.unpack (P.unSafeFilePath path)
         Just record -> return record
 
 loadHPackTreeEntity :: TreeId -> ReaderT SqlBackend (RIO env) (Entity TreeEntry)
@@ -710,7 +708,7 @@ storeTree rpli (P.PackageIdentifier name version) tree@(CachedTreeMap m) buildFi
                                buildid <-
                                    case buildTypeid of
                                      Just buildId -> pure buildId
-                                     Nothing -> error $ "storeTree: " ++ (show buildFile) ++ " BlobKey not found: " ++ show (tree, btypeSha)
+                                     Nothing -> error $ "storeTree: " ++ show buildFile ++ " BlobKey not found: " ++ show (tree, btypeSha)
                                return (Just buildid, ftype)
   nameid <- getPackageNameId name
   versionid <- getVersionId version
@@ -735,7 +733,7 @@ storeTree rpli (P.PackageIdentifier name version) tree@(CachedTreeMap m) buildFi
           }
       pure (tid, P.TreeKey blobKey)
   case buildFile of
-    P.BFHpack _ -> storeHPack rpli tid >> return ()
+    P.BFHpack _ -> void $ storeHPack rpli tid
     P.BFCabal _ _ -> return ()
   return (tid, pTreeKey)
 
@@ -1069,7 +1067,7 @@ findOrGenerateCabalFile pkgDir = do
         [] -> throwIO $ P.NoCabalFileFound pkgDir
         [x] -> maybe
           (throwIO $ P.InvalidCabalFilePath x)
-          (\pn -> pure $ (pn, x)) $
+          (\pn -> pure (pn, x)) $
             List.stripSuffix ".cabal" (toFilePath (filename x)) >>=
             P.parsePackageName
         _:_ -> throwIO $ P.MultipleCabalFilesFound pkgDir files
@@ -1088,7 +1086,7 @@ hpackToCabalS rpli tree = do
   (packageName, cfile) <- lift $ findOrGenerateCabalFile tmpDir
   !bs <- lift $ B.readFile (fromAbsFile cfile)
   lift $ removeDirRecur tmpDir
-  return $ (packageName, bs)
+  return (packageName, bs)
 
 hpackToCabal :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
            => P.RawPackageLocationImmutable -- ^ for exceptions
@@ -1186,7 +1184,7 @@ loadExposedModulePackages cacheId mName =
   where
     go (Single (P.PackageNameP m)) = m
 
-data LoadCachedTreeException = MissingBlob !BlobKey
+newtype LoadCachedTreeException = MissingBlob BlobKey
   deriving (Show, Typeable)
 instance Exception LoadCachedTreeException
 
