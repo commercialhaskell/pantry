@@ -197,8 +197,13 @@ module Pantry
 
 import           Casa.Client ( CasaRepoPrefix, thParserCasaRepo )
 import           Conduit
+import           Control.Applicative ( empty )
 import           Control.Arrow ( right )
 import           Control.Monad.State.Strict ( State, execState, get, modify' )
+import           Control.Monad.Trans.Maybe ( MaybeT (..) )
+#if MIN_VERSION_transformers(0,6,0)
+import           Control.Monad.Trans.Maybe ( hoistMaybe )
+#endif
 import           Data.Aeson.Types ( Value, parseEither )
 import           Data.Aeson.WarningParser ( WithJSONWarnings (..) )
 #if !MIN_VERSION_rio(0,1,17)
@@ -247,6 +252,12 @@ import qualified RIO.Set as Set
 import           RIO.Text ( unpack )
 import qualified RIO.Text as T
 import           System.IO.Error ( isDoesNotExistError )
+
+#if !MIN_VERSION_transformers(0,6,0)
+-- | Convert a 'Maybe' computation to 'MaybeT'.
+hoistMaybe :: (Applicative m) => Maybe b -> MaybeT m b
+hoistMaybe = MaybeT . pure
+#endif
 
 decodeYaml :: FilePath -> IO (Either String ([String], Value))
 decodeYaml file = do
@@ -956,23 +967,18 @@ tryLoadPackageRawViaDbOrCasa ::
   => RawPackageLocationImmutable
   -> TreeKey
   -> RIO env (Maybe Package)
-tryLoadPackageRawViaDbOrCasa rpli treeKey' = do
-  mviaDb <- tryLoadPackageRawViaLocalDb rpli treeKey'
-  case mviaDb of
-    Just package -> do
-      logDebug ("Loaded package from Pantry: " <> display rpli)
-      pure (Just package)
-    Nothing -> do
-      mCasaConfig <- view $ pantryConfigL . to pcCasaConfig
-      case mCasaConfig of
-        Nothing -> pure Nothing
-        Just _ -> do
-          mviaCasa <- tryLoadPackageRawViaCasa rpli treeKey'
-          case mviaCasa of
-            Just package -> do
-              logDebug ("Loaded package from Casa: " <> display rpli)
-              pure (Just package)
-            Nothing -> pure Nothing
+tryLoadPackageRawViaDbOrCasa rpli treeKey' = runMaybeT $
+  tryViaLocalDb <|> tryCasa
+ where
+  tryViaLocalDb = do
+    package <- MaybeT $ tryLoadPackageRawViaLocalDb rpli treeKey'
+    lift $ logDebug ("Loaded package from Pantry: " <> display rpli)
+    pure package
+  tryCasa = do
+    void $ MaybeT $ view $ pantryConfigL . to pcCasaConfig
+    package <- MaybeT $ tryLoadPackageRawViaCasa rpli treeKey'
+    lift $ logDebug ("Loaded package from Casa: " <> display rpli)
+    pure package
 
 -- | Maybe load the package from Casa.
 tryLoadPackageRawViaCasa ::
@@ -980,23 +986,20 @@ tryLoadPackageRawViaCasa ::
   => RawPackageLocationImmutable
   -> TreeKey
   -> RIO env (Maybe Package)
-tryLoadPackageRawViaCasa rlpi treeKey' = do
-  mtreePair <- casaLookupTree treeKey'
-  case mtreePair of
-    Nothing -> pure Nothing
-    Just (treeKey'', _tree) -> do
-      fetchTreeKeys [rlpi]
-      mdb <- tryLoadPackageRawViaLocalDb rlpi treeKey''
-      case mdb of
-        Nothing -> do
-          logWarn
-            ("Did not find tree key in DB after pulling it from Casa: " <>
-             display treeKey'' <>
-             " (for " <>
-             display rlpi <>
-             ")")
-          pure Nothing
-        Just package -> pure (Just package)
+tryLoadPackageRawViaCasa rlpi treeKey' = runMaybeT $ do
+  (treeKey'', _) <- MaybeT $ casaLookupTree treeKey'
+  lift $ fetchTreeKeys [rlpi]
+  tryViaLocalDb treeKey'' <|> warn treeKey''
+ where
+  tryViaLocalDb = MaybeT . (tryLoadPackageRawViaLocalDb rlpi)
+  warn treeKey'' = do
+    lift $ logWarn $
+         "Did not find tree key in DB after pulling it from Casa: "
+      <> display treeKey''
+      <> " (for "
+      <> display rlpi
+      <> ")"
+    empty
 
 -- | Maybe load the package from the local database.
 tryLoadPackageRawViaLocalDb ::
@@ -1004,12 +1007,9 @@ tryLoadPackageRawViaLocalDb ::
   => RawPackageLocationImmutable
   -> TreeKey
   -> RIO env (Maybe Package)
-tryLoadPackageRawViaLocalDb rlpi treeKey' = do
-  mtreeEntity <- withStorage (getTreeForKey treeKey')
-  case mtreeEntity of
-    Nothing -> pure Nothing
-    Just treeId ->
-      fmap Just (withStorage (loadPackageById rlpi (entityKey treeId)))
+tryLoadPackageRawViaLocalDb rlpi treeKey' = runMaybeT $ do
+  treeId <- MaybeT $ withStorage (getTreeForKey treeKey')
+  lift $ withStorage (loadPackageById rlpi (entityKey treeId))
 
 -- | Complete package location, plus whether the package has a cabal file. This
 -- is relevant to reproducibility, see
@@ -1483,13 +1483,13 @@ cachedSnapshotCompletePackageLocation ::
   => Map RawPackageLocationImmutable PackageLocationImmutable
   -> RawPackageLocationImmutable
   -> RIO env (Maybe PackageLocationImmutable)
-cachedSnapshotCompletePackageLocation cachePackages rpli = do
-  let xs = Map.lookup rpli cachePackages
-  case xs of
-    Nothing -> do
-      cpl <- completePackageLocation rpli
-      pure $ if cplHasCabalFile cpl then Just (cplComplete cpl) else Nothing
-    Just x -> pure $ Just x
+cachedSnapshotCompletePackageLocation cachePackages rpli = runMaybeT $
+  tryCache <|> tryCpl
+ where
+  tryCache = hoistMaybe $ Map.lookup rpli cachePackages
+  tryCpl = do
+    cpl <- lift $ completePackageLocation rpli
+    if cplHasCabalFile cpl then pure (cplComplete cpl) else empty
 
 -- | Add more packages to a snapshot completing their locations if needed
 --
