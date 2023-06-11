@@ -178,7 +178,7 @@ updateHackageIndexInternal forceUpdate mreason = do
     -- (by the tar spec) 1024 null bytes at the end, which will be
     -- mutated in the future by other updates.
     getTarballSize :: MonadIO m => Handle -> m Word
-    getTarballSize h = (fromIntegral . max 0 . subtract 1024) <$> hFileSize h
+    getTarballSize h = fromIntegral . max 0 . subtract 1024 <$> hFileSize h
 
     -- Check if the size of the tarball on the disk matches the value
     -- in CacheUpdate. If not, we need to perform a cache update, even
@@ -286,7 +286,7 @@ populateCache fp offset = withBinaryFile (toFilePath fp) ReadMode $ \h -> do
             | filename == "package.json" ->
                 sinkLazy >>= lift . addJSON name version
             | filename == unSafeFilePath (cabalFileName name) -> do
-                (BL.toStrict <$> sinkLazy) >>= lift . addCabal name version
+                sinkLazy >>= (lift . addCabal name version) . BL.toStrict
 
                 count <- readIORef counter
                 let count' = count + 1
@@ -392,8 +392,8 @@ resolveCabalFileInfo pir@(PackageIdentifierRevision name ver cfi) = do
     inner =
       case cfi of
         CFIHash sha msize -> loadOrDownloadBlobBySHA pir sha msize
-        CFIRevision rev -> (fmap fst . Map.lookup rev) <$> withStorage (loadHackagePackageVersion name ver)
-        CFILatest -> (fmap (fst . fst) . Map.maxView) <$> withStorage (loadHackagePackageVersion name ver)
+        CFIRevision rev -> fmap fst . Map.lookup rev <$> withStorage (loadHackagePackageVersion name ver)
+        CFILatest -> fmap (fst . fst) . Map.maxView <$> withStorage (loadHackagePackageVersion name ver)
 
 -- | Load or download a blob by its SHA.
 loadOrDownloadBlobBySHA ::
@@ -513,7 +513,7 @@ initializeIndex NoRequireHackageIndex = pure ()
 initializeIndex YesRequireHackageIndex = do
   cabalCount <- withStorage countHackageCabals
   when (cabalCount == 0) $ void $
-    updateHackageIndex $ Just $ "No information from Hackage index, updating"
+    updateHackageIndex $ Just "No information from Hackage index, updating"
 
 -- | Returns the versions of the package available on Hackage.
 --

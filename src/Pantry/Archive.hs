@@ -298,7 +298,7 @@ foldTar
   -> ConduitT ByteString o (RIO env) a
 foldTar loc accum0 f = do
   ref <- newIORef accum0
-  Tar.untar $ \fi -> toME fi >>= traverse_ (\me -> do
+  Tar.untar $ toME >=> traverse_ (\me -> do
     accum <- readIORef ref
     accum' <- f accum me
     writeIORef ref $! accum')
@@ -493,22 +493,22 @@ findCabalOrHpackFile loc (TreeMap m) = do
          in not ("/" `T.isInfixOf` txt) && (".cabal" `T.isSuffixOf` txt)
       isHpackFile (sfp, _) =
         let txt = unSafeFilePath sfp
-         in T.pack (Hpack.packageConfig) == txt
+         in T.pack Hpack.packageConfig == txt
       isBFCabal (BFCabal _ _) = True
       isBFCabal _ = False
       sfpBuildFile (BFCabal sfp _) = sfp
       sfpBuildFile (BFHpack _) = hpackSafeFilePath
-      toBuildFile xs@(sfp, te) = let cbFile = if (isCabalFile xs)
-                                              then Just $ BFCabal sfp te
-                                              else Nothing
-                                     hpFile = if (isHpackFile xs)
-                                              then Just $ BFHpack te
-                                              else Nothing
-                                 in cbFile <|> hpFile
+      toBuildFile xs@(sfp, te) = let cbFile = if isCabalFile xs
+                                                then Just $ BFCabal sfp te
+                                                else Nothing
+                                     hpFile = if isHpackFile xs
+                                                then Just $ BFHpack te
+                                                else Nothing
+                                 in  cbFile <|> hpFile
   case mapMaybe toBuildFile $ Map.toList m of
     [] -> throwM $ TreeWithoutCabalFile loc
     [bfile] -> pure bfile
-    xs -> case (filter isBFCabal xs) of
+    xs -> case filter isBFCabal xs of
             [] -> throwM $ TreeWithoutCabalFile loc
             [bfile] -> pure bfile
             xs' -> throwM $ TreeWithMultipleCabalFiles loc $ map sfpBuildFile xs'

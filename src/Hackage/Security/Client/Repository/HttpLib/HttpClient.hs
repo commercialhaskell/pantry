@@ -3,7 +3,6 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings   #-}
 
 -- Adapted from `hackage-security-http-client` to use our own
 -- `Pantry.HTTP` implementation
@@ -76,7 +75,7 @@ getRange reqHeaders uri (from, to) callback = wrapCustomEx $ do
 -- but it is currently disabled <https://github.com/snoyberg/http-client/issues/116>
 wrapCustomEx :: (Throws HTTP.HttpException => IO a)
              -> (Throws SomeRemoteError => IO a)
-wrapCustomEx act = handleChecked (\(ex :: HTTP.HttpException) -> go ex) act
+wrapCustomEx = handleChecked (\(ex :: HTTP.HttpException) -> go ex)
   where
     go ex = throwChecked (SomeRemoteError ex)
 
@@ -142,10 +141,7 @@ setRequestHeaders opts =
 
 -- | Extract the response headers
 getResponseHeaders :: HTTP.Response a -> [HttpResponseHeader]
-getResponseHeaders response = concat [
-      [ HttpResponseAcceptRangesBytes
-      | (hAcceptRanges, "bytes") `elem` headers
-      ]
-    ]
-  where
-    headers = HTTP.getResponseHeaders response
+getResponseHeaders response =
+  [ HttpResponseAcceptRangesBytes | (hAcceptRanges, "bytes") `elem` headers ]
+ where
+  headers = HTTP.getResponseHeaders response

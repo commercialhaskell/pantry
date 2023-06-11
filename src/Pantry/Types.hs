@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
@@ -12,7 +13,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE NamedFieldPuns #-}
 module Pantry.Types
   ( PantryConfig (..)
   , PackageIndexConfig (..)
@@ -1999,7 +1999,7 @@ mkSafeFilePath t = do
   (c, _) <- T.uncons t
   guard $ c /= '/'
 
-  guard $ all (not . T.all (== '.')) $ T.split (== '/') t
+  guard $ (not . any (T.all (== '.'))) $ T.split (== '/') t
 
   Just $ SafeFilePath t
 
@@ -2008,7 +2008,7 @@ hpackSafeFilePath :: SafeFilePath
 hpackSafeFilePath =
     let fpath = mkSafeFilePath (T.pack Hpack.packageConfig)
     in case fpath of
-         Nothing -> error $ "hpackSafeFilePath: Not able to encode " <> (Hpack.packageConfig)
+         Nothing -> error $ "hpackSafeFilePath: Not able to encode " <> Hpack.packageConfig
          Just sfp -> sfp
 
 -- | The hash of the binary representation of a 'Tree'.
@@ -2276,7 +2276,7 @@ data PackageMetadata = PackageMetadata
 instance NFData PackageMetadata
 
 instance Display PackageMetadata where
-  display pm = fold $ intersperse ", " $
+  display pm = fold $ intersperse ", "
     [ "ident == " <> fromString (packageIdentifierString $ pmIdent pm)
     , "tree == " <> display (pmTreeKey pm)
     ]
@@ -2357,9 +2357,8 @@ validateUrl t =
 
 validateFilePath :: Text -> Either Text (Unresolved ArchiveLocation)
 validateFilePath t =
-  if any (\ext -> ext `T.isSuffixOf` t) (T.words ".zip .tar .tar.gz")
-    then pure $ Unresolved $ \mdir ->
-           case mdir of
+  if any (`T.isSuffixOf` t) (T.words ".zip .tar .tar.gz")
+    then pure $ Unresolved $ \case
              Nothing -> throwIO $ InvalidFilePathSnapshot t
              Just dir -> do
                abs' <- resolveFile dir $ T.unpack t
@@ -2371,8 +2370,8 @@ instance ToJSON RawPackageLocation where
   toJSON (RPLMutable resolved) = toJSON (resolvedRelative resolved)
 instance FromJSON (WithJSONWarnings (Unresolved (NonEmpty RawPackageLocation))) where
   parseJSON v =
-    ((fmap.fmap.fmap.fmap) RPLImmutable (parseJSON v)) <|>
-    ((noJSONWarnings . mkMutable) <$> parseJSON v)
+    (fmap . fmap . fmap . fmap) RPLImmutable (parseJSON v) <|>
+    (noJSONWarnings . mkMutable <$> parseJSON v)
     where
       mkMutable :: Text -> Unresolved (NonEmpty RawPackageLocation)
       mkMutable t = Unresolved $ \mdir -> do
@@ -2383,24 +2382,22 @@ instance FromJSON (WithJSONWarnings (Unresolved (NonEmpty RawPackageLocation))) 
             pure $ pure $ RPLMutable $ ResolvedPath (RelFilePath t) abs'
 
 instance ToJSON RawPackageLocationImmutable where
-  toJSON (RPLIHackage pir mtree) = object $ concat
-    [ ["hackage" .= pir]
-    , maybe [] (\tree -> ["pantry-tree" .= tree]) mtree
-    ]
+  toJSON (RPLIHackage pir mtree) = object $
+    ("hackage" .= pir) : maybe [] (\tree -> ["pantry-tree" .= tree]) mtree
   toJSON (RPLIArchive (RawArchive loc msha msize subdir) rpm) = object $ concat
     [ case loc of
         ALUrl url -> ["url" .= url]
         ALFilePath resolved -> ["filepath" .= resolvedRelative resolved]
     , maybe [] (\sha -> ["sha256" .= sha]) msha
     , maybe [] (\size' -> ["size" .= size']) msize
-    , if T.null subdir then [] else ["subdir" .= subdir]
+    , [ "subdir" .= subdir | not (T.null subdir) ]
     , rpmToPairs rpm
     ]
   toJSON (RPLIRepo (Repo url commit typ subdir) rpm) = object $ concat
     [ [ urlKey .= url
       , "commit" .= commit
       ]
-    , if T.null subdir then [] else ["subdir" .= subdir]
+    , ["subdir" .= subdir | not (T.null subdir) ]
     , rpmToPairs rpm
     ]
     where
@@ -2450,7 +2447,7 @@ instance FromJSON (WithJSONWarnings (Unresolved PackageLocationImmutable)) where
                         Right (pkgIdentifier, blobKey) ->
                           pure $ pure $ PLIHackage pkgIdentifier blobKey (TreeKey treeKey)
 
-          github value =
+          github =
             withObjectWarnings "UnresolvedPackagelocationimmutable.PLIArchive:github" (\o -> do
               pm <- parsePackageMetadata o
               GitHubRepo ghRepo <- o ..: "github"
@@ -2465,7 +2462,7 @@ instance FromJSON (WithJSONWarnings (Unresolved PackageLocationImmutable)) where
               archiveHash <- o ..: "sha256"
               archiveSize <- o ..: "size"
               archiveSubdir <- o ..:? "subdir" ..!= ""
-              pure $ pure $ PLIArchive Archive {..} pm) value
+              pure $ pure $ PLIArchive Archive {..} pm)
 
 instance FromJSON (WithJSONWarnings (Unresolved (NonEmpty RawPackageLocationImmutable))) where
   parseJSON v
@@ -2494,7 +2491,7 @@ instance FromJSON (WithJSONWarnings (Unresolved (NonEmpty RawPackageLocationImmu
           Left e -> fail $ show e
           Right pir -> pure $ noJSONWarnings $ pure $ pure $ RPLIHackage pir Nothing
 
-      hackageObject = withObjectWarnings "UnresolvedPackageLocationImmutable.UPLIHackage" $ \o -> (pure.pure) <$> (RPLIHackage
+      hackageObject = withObjectWarnings "UnresolvedPackageLocationImmutable.UPLIHackage" $ \o -> pure . pure <$> (RPLIHackage
         <$> o ..: "hackage"
         <*> o ..:? "pantry-tree")
 
@@ -2701,7 +2698,7 @@ instance FromJSON (WithJSONWarnings (Unresolved RawSnapshotLocation)) where
 
       obj :: Value -> Parser (WithJSONWarnings (Unresolved RawSnapshotLocation))
       obj = withObjectWarnings "UnresolvedSnapshotLocation (Object)" $ \o ->
-        ((pure . RSLCompiler) <$> o ..: "compiler") <|>
+        (pure . RSLCompiler <$> o ..: "compiler") <|>
         ((\x y -> pure $ RSLUrl x y) <$> o ..: "url" <*> blobKey o) <|>
         (parseRawSnapshotLocationPath <$> o ..: "filepath")
 
@@ -2724,8 +2721,8 @@ instance Display SnapshotLocation where
 -- @since 0.1.0.0
 parseRawSnapshotLocation :: Text -> Unresolved RawSnapshotLocation
 parseRawSnapshotLocation t0 = fromMaybe (parseRawSnapshotLocationPath t0) $
-  (either (const Nothing) (Just . pure . RSLCompiler) (parseWantedCompiler t0)) <|>
-  (pure <$> RSLSynonym <$> parseSnapName t0) <|>
+  either (const Nothing) (Just . pure . RSLCompiler) (parseWantedCompiler t0) <|>
+  (pure . RSLSynonym <$> parseSnapName t0) <|>
   parseGitHub <|>
   parseUrl
   where
@@ -2741,8 +2738,7 @@ parseRawSnapshotLocation t0 = fromMaybe (parseRawSnapshotLocationPath t0) $
 
 parseRawSnapshotLocationPath :: Text -> Unresolved RawSnapshotLocation
 parseRawSnapshotLocationPath t =
-  Unresolved $ \mdir ->
-  case mdir of
+  Unresolved $ \case
     Nothing -> throwIO $ InvalidFilePathSnapshot t
     Just dir -> do
       abs' <- resolveFile dir (T.unpack t) `catchAny` \_ -> throwIO (InvalidSnapshotLocation dir t)
@@ -2918,8 +2914,7 @@ instance FromJSON (WithJSONWarnings (Unresolved SnapshotLocation)) where
       where
         file = withObjectWarnings "SLFilepath" $ \o -> do
            ufp <- o ..: "filepath"
-           pure $ Unresolved $ \mdir ->
-             case mdir of
+           pure $ Unresolved $ \case
                Nothing -> throwIO $ InvalidFilePathSnapshot ufp
                Just dir -> do
                  absolute <- resolveFile dir (T.unpack ufp)
@@ -3051,18 +3046,18 @@ instance ToJSON RawSnapshotLayer where
     [ ["resolver" .= rslParent rsnap]
     , maybe [] (\compiler -> ["compiler" .= compiler]) (rslCompiler rsnap)
     , ["packages" .= rslLocations rsnap]
-    , if Set.null (rslDropPackages rsnap)
-        then []
-        else ["drop-packages" .= Set.map CabalString (rslDropPackages rsnap)]
-    , if Map.null (rslFlags rsnap)
-        then []
-        else ["flags" .= fmap toCabalStringMap (toCabalStringMap (rslFlags rsnap))]
-    , if Map.null (rslHidden rsnap)
-        then []
-        else ["hidden" .= toCabalStringMap (rslHidden rsnap)]
-    , if Map.null (rslGhcOptions rsnap)
-        then []
-        else ["ghc-options" .= toCabalStringMap (rslGhcOptions rsnap)]
+    , [ "drop-packages" .= Set.map CabalString (rslDropPackages rsnap)
+      | not (Set.null (rslDropPackages rsnap))
+      ]
+    , [ "flags" .= fmap toCabalStringMap (toCabalStringMap (rslFlags rsnap))
+      | not(Map.null (rslFlags rsnap))
+      ]
+    , [ "hidden" .= toCabalStringMap (rslHidden rsnap)
+      | not (Map.null (rslHidden rsnap))
+      ]
+    , [ "ghc-options" .= toCabalStringMap (rslGhcOptions rsnap)
+      | not (Map.null (rslGhcOptions rsnap))
+      ]
     , maybe [] (\time -> ["publish-time" .= time]) (rslPublishTime rsnap)
     ]
 
@@ -3083,12 +3078,12 @@ instance FromJSON (WithJSONWarnings (Unresolved RawSnapshotLayer)) where
 
     unresolvedLocs <- jsonSubWarningsT (o ..:? "packages" ..!= [])
     rslDropPackages <- Set.map unCabalString <$> (o ..:? "drop-packages" ..!= Set.empty)
-    rslFlags <- (unCabalStringMap . fmap unCabalStringMap) <$> (o ..:? "flags" ..!= Map.empty)
+    rslFlags <- unCabalStringMap . fmap unCabalStringMap <$> (o ..:? "flags" ..!= Map.empty)
     rslHidden <- unCabalStringMap <$> (o ..:? "hidden" ..!= Map.empty)
     rslGhcOptions <- unCabalStringMap <$> (o ..:? "ghc-options" ..!= Map.empty)
     rslPublishTime <- o ..:? "publish-time"
     pure $ (\rslLocations (rslParent, rslCompiler) -> RawSnapshotLayer {..})
-      <$> ((concat . map NE.toList) <$> sequenceA unresolvedLocs)
+      <$> (concatMap NE.toList <$> sequenceA unresolvedLocs)
       <*> unresolvedSnapshotParent
 
 -- | A single layer of a snapshot, i.e. a specific YAML configuration file.
@@ -3144,10 +3139,18 @@ instance ToJSON SnapshotLayer where
     [ ["resolver" .= slParent snap]
     , maybe [] (\compiler -> ["compiler" .= compiler]) (slCompiler snap)
     , ["packages" .= slLocations snap]
-    , if Set.null (slDropPackages snap) then [] else ["drop-packages" .= Set.map CabalString (slDropPackages snap)]
-    , if Map.null (slFlags snap) then [] else ["flags" .= fmap toCabalStringMap (toCabalStringMap (slFlags snap))]
-    , if Map.null (slHidden snap) then [] else ["hidden" .= toCabalStringMap (slHidden snap)]
-    , if Map.null (slGhcOptions snap) then [] else ["ghc-options" .= toCabalStringMap (slGhcOptions snap)]
+    , [ "drop-packages" .= Set.map CabalString (slDropPackages snap)
+      | not (Set.null (slDropPackages snap))
+      ]
+    , [ "flags" .= fmap toCabalStringMap (toCabalStringMap (slFlags snap))
+      | not (Map.null (slFlags snap))
+      ]
+    , [ "hidden" .= toCabalStringMap (slHidden snap)
+      | not (Map.null (slHidden snap))
+      ]
+    , [ "ghc-options" .= toCabalStringMap (slGhcOptions snap)
+      | not (Map.null (slGhcOptions snap))
+      ]
     , maybe [] (\time -> ["publish-time" .= time]) (slPublishTime snap)
     ]
 

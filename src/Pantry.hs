@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
@@ -382,7 +383,7 @@ getLatestHackageRevision
   -> RIO env (Maybe (Revision, BlobKey, TreeKey))
 getLatestHackageRevision req name version = do
   revisions <- getHackagePackageVersionRevisions req name version
-  case fmap fst $ Map.maxViewWithKey revisions of
+  case fst <$> Map.maxViewWithKey revisions of
     Nothing -> pure Nothing
     Just (revision, cfKey@(BlobKey sha size)) -> do
       let cfi = CFIHash sha (Just size)
@@ -395,7 +396,6 @@ fetchTreeKeys ::
   => [RawPackageLocationImmutable]
   -> RIO env ()
 fetchTreeKeys treeKeys = do
-  pure ()
   -- Find all tree keys that are missing from the database.
   packageLocationsMissing :: [RawPackageLocationImmutable] <-
     withStorage
@@ -748,7 +748,7 @@ findOrGenerateCabalFile progName pkgDir = do
         [] -> throwIO $ NoCabalFileFound pkgDir
         [x] -> maybe
           (throwIO $ InvalidCabalFilePath x)
-          (\pn -> pure $ (pn, x)) $
+          (\pn -> pure (pn, x)) $
             List.stripSuffix ".cabal" (toFilePath (filename x)) >>=
             parsePackageName
         _:_ -> throwIO $ MultipleCabalFilesFound pkgDir files
@@ -845,7 +845,7 @@ loadCabalFileBytes (PLIHackage pident cfHash _mtree) = getHackageCabalFile (pirF
 loadCabalFileBytes pl = do
   package <- loadPackage pl
   let sfp = cabalFileName $ pkgName $ packageIdent package
-  cabalBlobKey <- case (packageCabalEntry package) of
+  cabalBlobKey <- case packageCabalEntry package of
                        PCHpack pcHpack -> pure $ teBlob . phGenerated $ pcHpack
                        PCCabalFile (TreeEntry blobKey _) -> pure blobKey
   mbs <- withStorage $ loadBlob cabalBlobKey
@@ -900,9 +900,7 @@ loadPackageRaw rpli = do
   case getRawTreeKey rpli of
     Just treeKey' -> do
       mpackage <- tryLoadPackageRawViaDbOrCasa rpli treeKey'
-      case mpackage of
-        Nothing -> loadPackageRawViaThirdParty
-        Just package -> pure package
+      maybe loadPackageRawViaThirdParty pure mpackage
     Nothing -> loadPackageRawViaThirdParty
   where
     loadPackageRawViaThirdParty = do
@@ -1249,8 +1247,8 @@ loadAndCompleteSnapshot'
   -> Map RawSnapshotLocation SnapshotLocation -- ^ Cached snapshot locations from lock file
   -> Map RawPackageLocationImmutable PackageLocationImmutable -- ^ Cached locations from lock file
   -> RIO env (Snapshot, [CompletedSL], [CompletedPLI])
-loadAndCompleteSnapshot' debugRSL loc cachedSL cachedPL =
-  loadAndCompleteSnapshotRaw' debugRSL (toRawSL loc) cachedSL cachedPL
+loadAndCompleteSnapshot' debugRSL loc =
+  loadAndCompleteSnapshotRaw' debugRSL (toRawSL loc)
 
 -- | Parse a 'Snapshot' (all layers) from a 'RawSnapshotLocation' completing
 -- any incomplete package locations. Debug output will include the raw snapshot
@@ -1278,7 +1276,7 @@ loadAndCompleteSnapshotRaw'
   -> RIO env (Snapshot, [CompletedSL], [CompletedPLI])
 loadAndCompleteSnapshotRaw' debugRSL rawLoc cacheSL cachePL = do
   eres <- case Map.lookup rawLoc cacheSL of
-    Just loc -> right (\rsl -> (rsl, (CompletedSL rawLoc loc))) <$> loadSnapshotLayer loc
+    Just loc -> right (, CompletedSL rawLoc loc) <$> loadSnapshotLayer loc
     Nothing -> loadRawSnapshotLayer rawLoc
   case eres of
     Left wc ->
@@ -1323,7 +1321,7 @@ instance Semigroup (SingleOrNot a) where
 
 sonToEither :: (k, SingleOrNot a) -> Either (k, a) (k, [a])
 sonToEither (k, Single a) = Left (k, a)
-sonToEither (k, Multiple a b c) = Right (k, (a : b : c []))
+sonToEither (k, Multiple a b c) = Right (k, a : b : c [])
 
 -- | Package settings to be passed to 'addPackagesToSnapshot'.
 --
@@ -1404,7 +1402,7 @@ addPackagesToSnapshot source newPackages (AddPackagesConfig drops flags hiddens 
         $ Map.toList
         $ Map.fromListWith (<>)
         $ map (second Single) new'
-  unless (null $ newMultiples) $ throwIO $
+  unless (null newMultiples) $ throwIO $
     DuplicatePackageNames source $ map (second (map rspLocation)) newMultiples
   let new = Map.fromList newSingles
       allPackages0 = new `Map.union` (old `Map.difference` Map.fromSet (const ()) drops)
@@ -1487,7 +1485,7 @@ addAndCompletePackagesToSnapshot loc cachedPL newPackages (AddPackagesConfig dro
         $ Map.toList
         $ Map.fromListWith (<>)
         $ map (second Single) (reverse revNew)
-  unless (null $ newMultiples) $ throwIO $
+  unless (null newMultiples) $ throwIO $
     DuplicatePackageNames source $ map (second (map (toRawPLI . spLocation))) newMultiples
   let new = Map.fromList newSingles
       allPackages0 = new `Map.union` (old `Map.difference` Map.fromSet (const ()) drops)
@@ -1523,7 +1521,7 @@ loadRawSnapshotLayer rsl@(RSLUrl url blob) =
     bs <- loadFromURL url blob
     value <- Yaml.decodeThrow bs
     snapshot <- warningsParserHelperRaw rsl value Nothing
-    pure $ Right (snapshot, (CompletedSL rsl (SLUrl url (bsToBlobKey bs))))
+    pure $ Right (snapshot, CompletedSL rsl (SLUrl url (bsToBlobKey bs)))
 loadRawSnapshotLayer rsl@(RSLFilePath fp) =
   handleAny (throwIO . InvalidSnapshot rsl) $ do
     value <- Yaml.decodeFileThrow $ toFilePath $ resolvedAbsolute fp

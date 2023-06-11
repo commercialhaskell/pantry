@@ -8,9 +8,10 @@ module Pantry.HTTP
   ) where
 
 import           Conduit
-import           Network.HTTP.Client          as Export (parseRequest)
-import           Network.HTTP.Client          as Export (parseUrlThrow)
-import           Network.HTTP.Client          as Export (BodyReader, HttpExceptionContent (StatusCodeException))
+import           Network.HTTP.Client          as Export (BodyReader,
+                                                         HttpExceptionContent (StatusCodeException),
+                                                         parseRequest,
+                                                         parseUrlThrow)
 import qualified Network.HTTP.Client          as HTTP (withResponse)
 import           Network.HTTP.Client.Internal as Export (setUri)
 import           Network.HTTP.Client.TLS      (getGlobalManager)
@@ -51,7 +52,7 @@ httpSink
   => Request
   -> (Response () -> ConduitT ByteString Void m a)
   -> m a
-httpSink req inner = HTTP.httpSink (setUserAgent req) inner
+httpSink req = HTTP.httpSink (setUserAgent req)
 
 httpSinkChecked
   :: MonadUnliftIO m
