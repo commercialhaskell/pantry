@@ -2,14 +2,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 
-module Pantry.ArchiveSpec (spec) where
+module Pantry.ArchiveSpec
+  ( spec
+  ) where
 
-import Test.Hspec
-import Data.Maybe (fromJust)
-import RIO
-import RIO.Text as T
-import Pantry
-import Path.IO (resolveFile')
+import           Data.Maybe ( fromJust )
+import           Pantry
+import           Path.IO ( resolveFile' )
+import           RIO
+import           RIO.Text as T
+import           Test.Hspec
 
 data TestLocation
   = TLFilePath String

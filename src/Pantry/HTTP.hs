@@ -9,32 +9,28 @@ module Pantry.HTTP
   ) where
 
 import           Conduit
-import           Network.HTTP.Client          as Export (BodyReader,
-                                                         HttpExceptionContent (StatusCodeException),
-                                                         parseRequest,
-                                                         parseUrlThrow)
-import qualified Network.HTTP.Client          as HTTP (withResponse)
-import           Network.HTTP.Client.Internal as Export (setUri)
-import           Network.HTTP.Client.TLS      (getGlobalManager)
-import           Network.HTTP.Simple          as Export (HttpException (..),
-                                                         Request, Response,
-                                                         addRequestHeader,
-                                                         defaultRequest,
-                                                         getResponseBody,
-                                                         getResponseHeaders,
-                                                         getResponseStatus,
-                                                         setRequestHeader)
-import qualified Network.HTTP.Simple          as HTTP hiding (withResponse)
-import           Network.HTTP.Types           as Export (Header, HeaderName,
-                                                         Status, hCacheControl,
-                                                         hRange, ok200,
-                                                         partialContent206,
-                                                         statusCode)
-import qualified Pantry.SHA256                as SHA256
+import           Network.HTTP.Client as Export
+                   ( BodyReader, HttpExceptionContent (StatusCodeException)
+                   , parseRequest, parseUrlThrow
+                   )
+import qualified Network.HTTP.Client as HTTP ( withResponse )
+import           Network.HTTP.Client.Internal as Export ( setUri )
+import           Network.HTTP.Client.TLS ( getGlobalManager )
+import           Network.HTTP.Simple as Export
+                   ( HttpException (..), Request, Response, addRequestHeader
+                   , defaultRequest, getResponseBody, getResponseHeaders
+                   , getResponseStatus, setRequestHeader
+                   )
+import qualified Network.HTTP.Simple as HTTP hiding ( withResponse )
+import           Network.HTTP.Types as Export
+                   ( Header, HeaderName, Status, hCacheControl, hRange, ok200
+                   , partialContent206, statusCode
+                   )
+import qualified Pantry.SHA256 as SHA256
 import           Pantry.Types
 import           RIO
-import qualified RIO.ByteString               as B
-import qualified RIO.Text                     as T
+import qualified RIO.ByteString as B
+import qualified RIO.Text as T
 
 setUserAgent :: Request -> Request
 setUserAgent = setRequestHeader "User-Agent" ["Haskell pantry package"]

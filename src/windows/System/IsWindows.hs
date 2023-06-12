@@ -4,7 +4,7 @@ module System.IsWindows
   ( osIsWindows
   ) where
 
-import RIO (Bool (..))
+import           RIO ( Bool (..) )
 
 -- | True if using Windows OS.
 osIsWindows :: Bool

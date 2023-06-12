@@ -2,20 +2,22 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Pantry.Internal.StaticBytesSpec (spec) where
+module Pantry.Internal.StaticBytesSpec
+  ( spec
+  ) where
 
-import RIO
-import Pantry.Internal.StaticBytes
-import Control.Monad (replicateM)
+import           Control.Monad ( replicateM )
 import qualified Data.ByteString as B
-import qualified Data.Vector.Unboxed as VU
-import qualified Data.Vector.Primitive as VP
-import qualified Data.Vector.Storable as VS
-import Test.Hspec
-import Test.Hspec.QuickCheck
-import Test.QuickCheck
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
+import qualified Data.Vector.Primitive as VP
+import qualified Data.Vector.Storable as VS
+import qualified Data.Vector.Unboxed as VU
+import           Pantry.Internal.StaticBytes
+import           RIO
+import           Test.Hspec
+import           Test.Hspec.QuickCheck
+import           Test.QuickCheck
 
 spec :: Spec
 spec = do

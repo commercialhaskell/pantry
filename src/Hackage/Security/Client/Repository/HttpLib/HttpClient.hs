@@ -6,21 +6,20 @@
 
 -- Adapted from `hackage-security-http-client` to use our own
 -- `Pantry.HTTP` implementation
-module Hackage.Security.Client.Repository.HttpLib.HttpClient (
-    httpLib
+module Hackage.Security.Client.Repository.HttpLib.HttpClient
+  ( httpLib
   ) where
 
-import Control.Exception
-import Control.Monad (void)
-import Data.ByteString (ByteString)
-import Network.URI
-import qualified Data.ByteString              as BS
-import qualified Data.ByteString.Char8        as BS.C8
+import           Control.Exception
+import           Control.Monad ( void )
+import           Data.ByteString ( ByteString )
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as BS.C8
+import           Hackage.Security.Client hiding ( Header )
+import           Hackage.Security.Client.Repository.HttpLib
+import           Hackage.Security.Util.Checked
+import           Network.URI
 import qualified Pantry.HTTP as HTTP
-
-import Hackage.Security.Client hiding (Header)
-import Hackage.Security.Client.Repository.HttpLib
-import Hackage.Security.Util.Checked
 
 {-------------------------------------------------------------------------------
   Top-level API

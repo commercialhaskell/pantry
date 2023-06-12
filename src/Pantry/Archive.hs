@@ -13,31 +13,31 @@ module Pantry.Archive
   , findCabalOrHpackFile
   ) where
 
-import RIO
+import qualified Codec.Archive.Zip as Zip
+import           Conduit
+import           Data.Bits ( (.&.), shiftR )
+import qualified Data.Conduit.Tar as Tar
+import           Data.Conduit.Zlib ( ungzip )
+import qualified Data.Digest.CRC32 as CRC32
+import           Distribution.PackageDescription ( package, packageDescription )
+import qualified Hpack.Config as Hpack
+import           Pantry.HPack ( hpackVersion )
+import           Pantry.HTTP
+import           Pantry.Internal ( makeTarRelative, normalizeParents )
 import qualified Pantry.SHA256 as SHA256
-import Pantry.Storage hiding (Tree, TreeEntry, findOrGenerateCabalFile)
-import Pantry.Tree
-import Pantry.Types
-import RIO.Process
-import Pantry.Internal (normalizeParents, makeTarRelative)
+import           Pantry.Storage hiding
+                   ( Tree, TreeEntry, findOrGenerateCabalFile )
+import           Pantry.Tree
+import           Pantry.Types
+import           Path ( toFilePath )
+import           RIO
+import qualified RIO.ByteString.Lazy as BL
+import qualified RIO.List as List
+import qualified RIO.Map as Map
+import           RIO.Process
+import qualified RIO.Set as Set
 import qualified RIO.Text as T
 import qualified RIO.Text.Partial as T
-import qualified RIO.List as List
-import qualified RIO.ByteString.Lazy as BL
-import qualified RIO.Map as Map
-import qualified RIO.Set as Set
-import qualified Hpack.Config as Hpack
-import Pantry.HPack (hpackVersion)
-import Data.Bits ((.&.), shiftR)
-import Path (toFilePath)
-import qualified Codec.Archive.Zip as Zip
-import qualified Data.Digest.CRC32 as CRC32
-import Distribution.PackageDescription (packageDescription, package)
-
-import Conduit
-import Data.Conduit.Zlib (ungzip)
-import qualified Data.Conduit.Tar as Tar
-import Pantry.HTTP
 
 fetchArchivesRaw
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)

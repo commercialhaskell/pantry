@@ -2,16 +2,18 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Pantry.GlobalHintsSpec (spec) where
+module Pantry.GlobalHintsSpec
+  ( spec
+  ) where
 
-import Distribution.Types.PackageName (mkPackageName)
-import Distribution.Version (mkVersion)
-import RIO
-import Pantry (loadGlobalHints, WantedCompiler (..), runPantryAppClean)
+import Distribution.Types.PackageName ( mkPackageName )
+import Distribution.Version ( mkVersion )
+import Pantry ( WantedCompiler (..), loadGlobalHints, runPantryAppClean )
 import Pantry.Internal
-import Test.Hspec
+import Path ( toFilePath )
+import RIO
 import qualified RIO.Map as Map
-import Path (toFilePath)
+import Test.Hspec
 
 spec :: Spec
 spec = do

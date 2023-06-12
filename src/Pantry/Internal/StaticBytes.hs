@@ -27,20 +27,20 @@ module Pantry.Internal.StaticBytes
   , fromStatic
   ) where
 
-import RIO hiding (words)
+import           Data.Bits
+import           Data.ByteArray
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
+import qualified Data.Primitive.ByteArray as BA
 import qualified Data.Vector.Primitive as VP
+import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector.Unboxed.Base as VU
-import qualified Data.Vector.Storable as VS
-import System.IO.Unsafe (unsafePerformIO)
-import Foreign.Ptr
-import Foreign.ForeignPtr
-import Foreign.Storable
-import Data.Bits
-import qualified Data.Primitive.ByteArray as BA
-import Data.ByteArray
+import           Foreign.ForeignPtr
+import           Foreign.Ptr
+import           Foreign.Storable
+import           RIO hiding ( words )
+import           System.IO.Unsafe ( unsafePerformIO )
 
 newtype Bytes8 = Bytes8 Word64
   deriving (Eq, Ord, Generic, NFData, Hashable, Data)

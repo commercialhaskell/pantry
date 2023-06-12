@@ -21,45 +21,47 @@ module Pantry.Hackage
   , HackageTarballResult(..)
   ) where
 
-import RIO
-import RIO.Process
-import Pantry.Casa
-import Data.Aeson
-import Conduit
-import Data.Conduit.Tar
-import qualified RIO.Text as T
-import qualified RIO.Map as Map
-import Data.Text.Unsafe (unsafeTail)
+import           Conduit
+import           Data.Aeson
+import           Data.Conduit.Tar
+import qualified Data.List.NonEmpty as NE
+import           Data.Text.Metrics (damerauLevenshtein)
+import           Data.Text.Unsafe ( unsafeTail )
+import           Data.Time ( getCurrentTime )
+import           Distribution.PackageDescription ( GenericPackageDescription )
+import qualified Distribution.PackageDescription as Cabal
+import qualified Distribution.Text
+import           Distribution.Types.Version (versionNumbers)
+import           Distribution.Types.VersionRange (withinRange)
+import qualified Hackage.Security.Client as HS
+import qualified Hackage.Security.Client.Repository.Cache as HS
+import qualified Hackage.Security.Client.Repository.HttpLib.HttpClient as HS
+import qualified Hackage.Security.Client.Repository.Remote as HS
+import qualified Hackage.Security.Util.Path as HS
+import qualified Hackage.Security.Util.Pretty as HS
+import           Network.URI ( parseURI )
+import           Pantry.Archive
+import           Pantry.Casa
+import qualified Pantry.SHA256 as SHA256
+import           Pantry.Storage hiding
+                   ( PackageName, TreeEntry, Version, findOrGenerateCabalFile )
+import           Pantry.Tree
+import           Pantry.Types hiding ( FileType (..) )
+import           Path
+                   ( Abs, Dir, File, Path, Rel, (</>), parseRelDir, parseRelFile
+                   , toFilePath
+                   )
+import           RIO
 import qualified RIO.ByteString as B
 import qualified RIO.ByteString.Lazy as BL
-import Pantry.Archive
-import Pantry.Types hiding (FileType (..))
-import Pantry.Storage
-         hiding (TreeEntry, PackageName, Version, findOrGenerateCabalFile)
-import Pantry.Tree
-import qualified Pantry.SHA256 as SHA256
-import Network.URI (parseURI)
-import Data.Time (getCurrentTime)
-import Path ((</>), Path, Abs, Rel, Dir, File, toFilePath, parseRelDir, parseRelFile)
-import qualified Distribution.Text
-import qualified Distribution.PackageDescription as Cabal
-import qualified Data.List.NonEmpty as NE
-import Data.Text.Metrics (damerauLevenshtein)
+import qualified RIO.Map as Map
+import           RIO.Process
+import qualified RIO.Text as T
 #if !MIN_VERSION_rio(0,1,16)
 -- Now provided by RIO from the rio package. Resolvers before lts-15.16
 -- (GHC 8.8.3) had rio < 0.1.16.
-import System.IO (SeekMode (..))
+import           System.IO ( SeekMode (..) )
 #endif
-import Distribution.PackageDescription (GenericPackageDescription)
-import Distribution.Types.Version (versionNumbers)
-import Distribution.Types.VersionRange (withinRange)
-
-import qualified Hackage.Security.Client as HS
-import qualified Hackage.Security.Client.Repository.Cache as HS
-import qualified Hackage.Security.Client.Repository.Remote as HS
-import qualified Hackage.Security.Client.Repository.HttpLib.HttpClient as HS
-import qualified Hackage.Security.Util.Path as HS
-import qualified Hackage.Security.Util.Pretty as HS
 
 hackageRelDir :: Path Rel Dir
 hackageRelDir = either impureThrow id $ parseRelDir "hackage"

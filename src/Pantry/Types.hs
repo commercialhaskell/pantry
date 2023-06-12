@@ -124,61 +124,73 @@ module Pantry.Types
   , connRDBMS
   ) where
 
-import RIO
-import qualified Data.Conduit.Tar as Tar
-import qualified RIO.Text as T
-import qualified RIO.ByteString as B
-import qualified RIO.ByteString.Lazy as BL
-import RIO.List (intersperse, groupBy)
-import RIO.Time (toGregorian, Day, UTCTime)
-import qualified RIO.Map as Map
-import RIO.PrettyPrint (bulletedList, fillSep, flow, hang, line, mkNarrativeList, parens, string, style)
-import RIO.PrettyPrint.Types (Style (..))
-import qualified Data.Map.Strict as Map (mapKeysMonotonic)
-import qualified RIO.Set as Set
-import Data.Aeson.Types (toJSONKeyText, Parser)
-import Pantry.Internal.AesonExtended
-         ( FromJSON (..), FromJSONKey (..), FromJSONKeyFunction (..), Object
-         , ToJSON (..), ToJSONKey (..), ToJSONKeyFunction (..), Value (..)
-         , WarningParser, WithJSONWarnings, (..:), (..:?), (..!=), (.=), (.:)
-         , (...:?), jsonSubWarnings, jsonSubWarningsT, noJSONWarnings, object
-         , tellJSONField, withObject, withObjectWarnings, withText
-         )
-import Data.Aeson.Encoding.Internal (unsafeToEncoding)
-import Data.ByteString.Builder (toLazyByteString, byteString, wordDec)
-import Database.Persist
-import Database.Persist.Sql
-import Pantry.SHA256 (SHA256)
-import qualified Pantry.SHA256 as SHA256
-import qualified Distribution.Compat.CharParsing as Parse
-import Distribution.CabalSpecVersion (cabalSpecLatest)
+import           Casa.Client ( CasaRepoPrefix )
+import           Data.Aeson.Encoding.Internal ( unsafeToEncoding )
+import           Data.Aeson.Types ( Parser, toJSONKeyText )
+import           Data.ByteString.Builder
+                   ( byteString, toLazyByteString, wordDec )
+import qualified Data.List.NonEmpty as NE
+import           Data.Text.Read ( decimal )
+import           Distribution.CabalSpecVersion ( cabalSpecLatest )
 #if MIN_VERSION_Cabal(3,4,0)
-import Distribution.CabalSpecVersion (cabalSpecToVersionDigits)
+import           Distribution.CabalSpecVersion ( cabalSpecToVersionDigits )
 #else
-import Distribution.CabalSpecVersion (CabalSpecVersion (..))
+import           Distribution.CabalSpecVersion ( CabalSpecVersion (..) )
 #endif
-import Distribution.Parsec (PError (..), PWarning (..), showPos, parsec, explicitEitherParsec, ParsecParser)
-import Distribution.Types.PackageName (PackageName, unPackageName, mkPackageName)
-import Distribution.Types.VersionRange (VersionRange)
-import Distribution.PackageDescription (FlagName, unFlagName, GenericPackageDescription)
-import Distribution.Types.PackageId (PackageIdentifier (..))
+import           Distribution.ModuleName ( ModuleName )
+import           Distribution.PackageDescription
+                   ( FlagName, GenericPackageDescription, unFlagName )
+import           Distribution.Parsec
+                   ( PError (..), PWarning (..), ParsecParser
+                   , explicitEitherParsec, parsec, showPos
+                   )
 import qualified Distribution.Pretty
 import qualified Distribution.Text
-import qualified Hpack.Config as Hpack
-import Distribution.ModuleName (ModuleName)
-import Distribution.Types.Version (Version, mkVersion, nullVersion)
-import Network.HTTP.Client (parseRequest)
-import Network.HTTP.Types (Status, statusCode)
-import Text.PrettyPrint.Leijen.Extended (Pretty (..), StyleDoc)
-import Data.Text.Read (decimal)
-import Path (Path, Abs, Dir, File, toFilePath, filename, (</>), parseRelFile)
-import Path.IO (resolveFile, resolveDir)
-import qualified Data.List.NonEmpty as NE
-import Casa.Client (CasaRepoPrefix)
-
+import           Distribution.Types.PackageId ( PackageIdentifier (..) )
+import           Distribution.Types.PackageName
+                   ( PackageName, mkPackageName, unPackageName )
+import           Distribution.Types.Version ( Version, mkVersion, nullVersion )
+import           Distribution.Types.VersionRange ( VersionRange )
+import qualified Data.Conduit.Tar as Tar
+import qualified Data.Map.Strict as Map ( mapKeysMonotonic )
+import           Database.Persist
+import           Database.Persist.Sql
 #if MIN_VERSION_persistent(2, 13, 0)
-import Database.Persist.SqlBackend.Internal (connRDBMS)
+import           Database.Persist.SqlBackend.Internal ( connRDBMS )
 #endif
+import qualified Distribution.Compat.CharParsing as Parse
+import qualified Hpack.Config as Hpack
+import           Network.HTTP.Client ( parseRequest )
+import           Network.HTTP.Types ( Status, statusCode )
+import           Pantry.Internal.AesonExtended
+                   ( FromJSON (..), FromJSONKey (..), FromJSONKeyFunction (..)
+                   , Object, ToJSON (..), ToJSONKey (..), ToJSONKeyFunction (..)
+                   , Value (..), WarningParser, WithJSONWarnings, (..:), (..:?)
+                   , (..!=), (.=), (.:), (...:?), jsonSubWarnings
+                   , jsonSubWarningsT, noJSONWarnings, object, tellJSONField
+                   , withObject, withObjectWarnings, withText
+                   )
+import           Pantry.SHA256 ( SHA256 )
+import qualified Pantry.SHA256 as SHA256
+import           Path
+                   ( Abs, Dir, File, Path, (</>), filename, parseRelFile
+                   , toFilePath
+                   )
+import           Path.IO ( resolveDir, resolveFile )
+import qualified RIO.Set as Set
+import           RIO
+import qualified RIO.ByteString as B
+import qualified RIO.ByteString.Lazy as BL
+import           RIO.List ( groupBy, intersperse )
+import qualified RIO.Text as T
+import           RIO.Time ( Day, UTCTime, toGregorian )
+import qualified RIO.Map as Map
+import           RIO.PrettyPrint
+                   ( bulletedList, fillSep, flow, hang, line, mkNarrativeList
+                   , parens, string, style
+                   )
+import           RIO.PrettyPrint.Types ( Style (..) )
+import           Text.PrettyPrint.Leijen.Extended ( Pretty (..), StyleDoc )
 
 #if MIN_VERSION_aeson(2, 0, 0)
 import qualified Data.Aeson.KeyMap as HM

@@ -18,12 +18,12 @@ module Pantry.Internal
   , withStorage_
   ) where
 
-import Control.Exception (assert)
-import Pantry.Types
-import Pantry.SQLite (initStorage)
-import Pantry.HPack (hpackVersion)
+import           Control.Exception ( assert )
+import           Data.Maybe ( fromMaybe )
 import qualified Data.Text as T
-import Data.Maybe (fromMaybe)
+import           Pantry.HPack ( hpackVersion )
+import           Pantry.SQLite ( initStorage )
+import           Pantry.Types
 
 -- | Like @System.FilePath.normalise@, however:
 --

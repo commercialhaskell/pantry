@@ -4,21 +4,20 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Pantry.HPack
-    (
-     hpack
-    , hpackVersion
-    ) where
+  ( hpack
+  , hpackVersion
+  ) where
 
-import RIO
-import RIO.Process
-import Pantry.Types
 import qualified Data.ByteString.Lazy.Char8 as BL
+import           Data.Char ( isDigit, isSpace )
 import qualified Hpack
 import qualified Hpack.Config as Hpack
-import Data.Char (isSpace, isDigit)
-import Path (Path, Abs, toFilePath, Dir, (</>), filename, parseRelFile)
-import Path.IO (doesFileExist)
-
+import           Pantry.Types
+import           Path
+                   ( Abs, Dir, Path, (</>), filename, parseRelFile, toFilePath )
+import           Path.IO ( doesFileExist )
+import           RIO
+import           RIO.Process
 
 hpackVersion
   :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)

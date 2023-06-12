@@ -1,11 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Pantry.CasaSpec (spec) where
+module Pantry.CasaSpec
+  ( spec
+  ) where
 
-import Distribution.Types.Version (mkVersion)
-import Pantry
-import Pantry.SHA256
-import Test.Hspec
+import           Distribution.Types.Version ( mkVersion )
+import           Pantry
+import           Pantry.SHA256
+import           Test.Hspec
 
 spec :: Spec
 spec = do

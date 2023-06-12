@@ -8,12 +8,12 @@
 -- | Extensions to Aeson parsing of objects. This module is intended
 -- for internal use by Pantry and Stack only. The intention is to
 -- fully remove this module in the future. /DO NOT RELY ON IT/.
-module Pantry.Internal.AesonExtended (
-    module Export
-  -- * Extended failure messages
+module Pantry.Internal.AesonExtended
+  ( module Export
+    -- * Extended failure messages
   , (.:)
   , (.:?)
-  -- * JSON Parser that emits warnings
+    -- * JSON Parser that emits warnings
   , JSONWarning (..)
   , WarningParser
   , WithJSONWarnings (..)
@@ -32,16 +32,17 @@ module Pantry.Internal.AesonExtended (
   , (..!=)
   ) where
 
-import Control.Monad.Trans.Writer.Strict (WriterT, mapWriterT, runWriterT, tell)
-import Data.Aeson as Export hiding ((.:), (.:?))
+import           Control.Monad.Trans.Writer.Strict
+                   ( WriterT, mapWriterT, runWriterT, tell )
+import           Data.Aeson as Export hiding ( (.:), (.:?) )
 import qualified Data.Aeson as A
-import Data.Aeson.Types hiding ((.:), (.:?))
+import           Data.Aeson.Types hiding ( (.:), (.:?) )
 import qualified Data.Set as Set
-import Data.Text (unpack)
+import           Data.Text ( unpack )
 import qualified Data.Text as T
-import Generics.Deriving.Monoid (mappenddefault, memptydefault)
-import RIO
-import RIO.PrettyPrint.StylesUpdate (StylesUpdate)
+import           Generics.Deriving.Monoid ( mappenddefault, memptydefault )
+import           RIO
+import           RIO.PrettyPrint.StylesUpdate ( StylesUpdate )
 
 #if MIN_VERSION_aeson(2, 0, 0)
 import qualified Data.Aeson.Key

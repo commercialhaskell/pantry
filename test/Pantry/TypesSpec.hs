@@ -10,28 +10,25 @@ module Pantry.TypesSpec
     ( spec
     ) where
 
-import Pantry.Internal.AesonExtended
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Yaml as Yaml
-import Distribution.Types.PackageName (mkPackageName)
-import Distribution.Types.Version (mkVersion)
-import Hedgehog
+import           Distribution.Types.PackageName ( mkPackageName )
+import           Distribution.Types.Version ( mkVersion )
+import           Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-import Pantry
-import Pantry.Internal
-    ( Tree(..)
-    , TreeEntry(..)
-    , mkSafeFilePath
-    , parseTree
-    , renderTree
-    )
+import           Pantry
+import           Pantry.Internal
+                   ( Tree (..), TreeEntry (..), mkSafeFilePath, parseTree
+                   , renderTree
+                   )
+import           Pantry.Internal.AesonExtended
 import qualified Pantry.SHA256 as SHA256
-import RIO
+import           RIO
 import qualified RIO.Text as T
-import Test.Hspec
-import Text.RawString.QQ
-import RIO.Time (Day (..))
+import           RIO.Time ( Day (..) )
+import           Test.Hspec
+import           Text.RawString.QQ
 
 hh :: HasCallStack => String -> Property -> Spec
 hh name p = it name $ do

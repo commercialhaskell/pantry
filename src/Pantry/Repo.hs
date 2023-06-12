@@ -15,22 +15,21 @@ module Pantry.Repo
   , withRepo
   ) where
 
-
-import Pantry.Types
-import Pantry.Archive
-import Pantry.Storage hiding (findOrGenerateCabalFile)
-import RIO
-import Path.IO (resolveFile')
-import RIO.FilePath ((</>))
-import RIO.Directory (doesDirectoryExist)
-import RIO.ByteString (isInfixOf)
-import RIO.ByteString.Lazy (toStrict)
+import           Database.Persist ( Entity (..) )
+import           Pantry.Archive
+import           Pantry.Storage hiding ( findOrGenerateCabalFile )
+import           Pantry.Types
+import           Path.IO ( resolveFile' )
+import           RIO
+import           RIO.ByteString ( isInfixOf )
+import           RIO.ByteString.Lazy ( toStrict )
+import           RIO.Directory ( doesDirectoryExist )
+import           RIO.FilePath ( (</>) )
 import qualified RIO.Map as Map
-import RIO.Process
-import Database.Persist (Entity (..))
+import           RIO.Process
 import qualified RIO.Text as T
-import System.Console.ANSI (hSupportsANSIWithoutEmulation)
-import System.IsWindows (osIsWindows)
+import           System.Console.ANSI ( hSupportsANSIWithoutEmulation )
+import           System.IsWindows ( osIsWindows )
 
 data TarType = Gnu | Bsd
 

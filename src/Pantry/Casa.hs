@@ -9,7 +9,7 @@ import qualified Casa.Types as Casa
 import           Conduit
 import qualified Data.HashMap.Strict as HM
 import qualified Pantry.SHA256 as SHA256
-import           Pantry.Storage hiding (findOrGenerateCabalFile)
+import           Pantry.Storage hiding ( findOrGenerateCabalFile )
 import           Pantry.Types as P
 import           RIO
 import qualified RIO.ByteString as B

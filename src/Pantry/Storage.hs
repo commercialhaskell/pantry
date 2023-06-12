@@ -102,29 +102,40 @@ module Pantry.Storage
   , unCachedTree
   ) where
 
-import RIO hiding (FilePath)
-import RIO.Process
-import qualified RIO.ByteString as B
-import qualified Pantry.Types as P
-import qualified RIO.List as List
-import qualified RIO.FilePath as FilePath
-import RIO.FilePath ((</>), takeDirectory)
-import RIO.Directory (createDirectoryIfMissing, setPermissions, getPermissions, setOwnerExecutable)
-import Database.Persist
-import Database.Persist.Sqlite
-import Database.Persist.TH
-import RIO.Orphans (HasResourceMap)
+import           Conduit
+import           Data.Acquire ( with )
+import           Database.Persist
+import           Database.Persist.Sqlite
+import           Database.Persist.TH
+import           Pantry.HPack ( hpack, hpackVersion )
 import qualified Pantry.SHA256 as SHA256
-import qualified RIO.Map as Map
-import qualified RIO.Text as T
-import RIO.Time (UTCTime, getCurrentTime)
-import Path (Path, Abs, File, Dir, toFilePath, filename, parseAbsDir, fromAbsFile, fromRelFile)
-import Path.IO (listDir, createTempDir, getTempDir, removeDirRecur)
-import Pantry.HPack (hpackVersion, hpack)
-import Conduit
-import Data.Acquire (with)
-import Pantry.Types (PackageNameP (..), VersionP (..), SHA256, FileSize (..), FileType (..), HasPantryConfig, BlobKey, Repo (..), TreeKey, SafeFilePath, Revision (..), Package (..), SnapshotCacheHash (..), connRDBMS)
 import qualified Pantry.SQLite as SQLite
+import           Pantry.Types
+                   ( BlobKey, FileSize (..), FileType (..), HasPantryConfig
+                   , Package (..), PackageNameP (..), Repo (..), Revision (..)
+                   , SHA256, SafeFilePath, SnapshotCacheHash (..), TreeKey
+                   , VersionP (..), connRDBMS
+                   )
+import qualified Pantry.Types as P
+import           Path
+                   ( Abs, Dir, File, Path, filename, fromAbsFile, fromRelFile
+                   , parseAbsDir, toFilePath
+                   )
+import           Path.IO ( createTempDir, getTempDir, listDir, removeDirRecur )
+import           RIO hiding ( FilePath )
+import qualified RIO.ByteString as B
+import           RIO.Directory
+                   ( createDirectoryIfMissing, getPermissions
+                   , setOwnerExecutable, setPermissions
+                   )
+import           RIO.FilePath ( (</>), takeDirectory )
+import qualified RIO.FilePath as FilePath
+import qualified RIO.List as List
+import qualified RIO.Map as Map
+import           RIO.Orphans ( HasResourceMap )
+import           RIO.Process
+import qualified RIO.Text as T
+import           RIO.Time ( UTCTime, getCurrentTime )
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 -- Raw blobs

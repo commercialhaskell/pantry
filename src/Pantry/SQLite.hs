@@ -8,14 +8,16 @@ module Pantry.SQLite
   , initStorage
   ) where
 
-import RIO hiding (FilePath)
-import Database.Persist.Sqlite
-import RIO.Orphans ()
-import Path (Path, Abs, File, toFilePath, parent)
-import Path.IO (ensureDir)
-import Pantry.Types (PantryException (MigrationFailure), Storage (..))
-import System.FileLock (withFileLock, withTryFileLock, SharedExclusive (..))
-import Pantry.Internal.Companion
+import           Database.Persist.Sqlite
+import           Pantry.Internal.Companion
+import           Pantry.Types
+                   ( PantryException (MigrationFailure), Storage (..) )
+import           Path ( Abs, File, Path, parent, toFilePath )
+import           Path.IO ( ensureDir )
+import           RIO hiding ( FilePath )
+import           RIO.Orphans ()
+import           System.FileLock
+                   ( SharedExclusive (..), withFileLock, withTryFileLock )
 
 initStorage
   :: HasLogFunc env

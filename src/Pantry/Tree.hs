@@ -6,18 +6,22 @@ module Pantry.Tree
   , rawParseGPD
   ) where
 
-import RIO
+import           Distribution.PackageDescription ( GenericPackageDescription )
+import           Distribution.PackageDescription.Parsec
+import           Distribution.Parsec ( PWarning (..) )
+import           Pantry.Storage hiding
+                   ( Tree, TreeEntry, findOrGenerateCabalFile )
+import           Pantry.Types
+import           Path ( Abs, Dir, File, Path, toFilePath )
+import           RIO
+import qualified RIO.ByteString as B
+import           RIO.Directory
+                   ( createDirectoryIfMissing, getPermissions
+                   , setOwnerExecutable, setPermissions
+                   )
+import           RIO.FilePath ((</>), takeDirectory)
 import qualified RIO.Map as Map
 import qualified RIO.Text as T
-import qualified RIO.ByteString as B
-import Pantry.Storage hiding (Tree, TreeEntry, findOrGenerateCabalFile)
-import Pantry.Types
-import RIO.FilePath ((</>), takeDirectory)
-import RIO.Directory (createDirectoryIfMissing, setPermissions, getPermissions, setOwnerExecutable)
-import Path (Abs, Dir, File, Path, toFilePath)
-import Distribution.Parsec (PWarning (..))
-import Distribution.PackageDescription (GenericPackageDescription)
-import Distribution.PackageDescription.Parsec
 
 unpackTree
   :: (HasPantryConfig env, HasLogFunc env)

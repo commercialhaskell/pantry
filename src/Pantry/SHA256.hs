@@ -38,17 +38,16 @@ module Pantry.SHA256
   , toRaw
   ) where
 
-import RIO
-import Data.Aeson
-import Database.Persist.Sql
-import Pantry.Internal.StaticBytes
-import Conduit
-import qualified RIO.Text as T
-
-import qualified Crypto.Hash.Conduit as Hash (hashFile, sinkHash)
-import qualified Crypto.Hash as Hash (hash, hashlazy, Digest, SHA256)
+import           Conduit
+import qualified Crypto.Hash as Hash ( Digest, SHA256, hash, hashlazy )
+import qualified Crypto.Hash.Conduit as Hash ( hashFile, sinkHash )
+import           Data.Aeson
 import qualified Data.ByteArray
 import qualified Data.ByteArray.Encoding as Mem
+import           Database.Persist.Sql
+import           Pantry.Internal.StaticBytes
+import           RIO
+import qualified RIO.Text as T
 
 -- | A SHA256 hash, stored in a static size for more efficient
 -- memory representation.

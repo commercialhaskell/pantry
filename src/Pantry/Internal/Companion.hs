@@ -13,7 +13,7 @@ module Pantry.Internal.Companion
   , StopCompanion
   ) where
 
-import RIO
+import           RIO
 
 -- | A companion thread which can perform arbitrary actions as well as delay
 type Companion m = Delay -> m ()

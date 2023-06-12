@@ -194,54 +194,58 @@ module Pantry
   , withSnapshotCache
   ) where
 
-import Database.Persist (entityKey)
-import RIO
+import           Casa.Client ( CasaRepoPrefix, thParserCasaRepo )
+import           Conduit
+import           Control.Arrow ( right )
+import           Control.Monad.State.Strict ( State, execState, get, modify' )
+import           Data.Aeson.Types ( parseEither )
 #if !MIN_VERSION_rio(0,1,17)
-import Data.Bifunctor (bimap)
+import           Data.Bifunctor ( bimap )
 #endif
-import Conduit
-import Control.Arrow (right)
-import Control.Monad.State.Strict (State, execState, get, modify')
-import qualified RIO.Map as Map
-import qualified RIO.Set as Set
-import qualified RIO.ByteString as B
-import qualified RIO.Text as T
-import qualified RIO.List as List
-import qualified RIO.FilePath as FilePath
-import Pantry.Archive
-import Pantry.Casa
-import Casa.Client (thParserCasaRepo, CasaRepoPrefix)
-import Pantry.Repo
-import qualified Pantry.SHA256 as SHA256
-import Pantry.Storage hiding (TreeEntry, PackageName, Version, findOrGenerateCabalFile)
-import Pantry.Tree
-import Pantry.Types as P
-import Pantry.Hackage
-import Path (Path, Abs, File, toFilePath, Dir, (</>), filename, parseAbsDir, parent, parseRelFile)
-import Path.IO (doesFileExist, resolveDir', listDir)
-import Distribution.PackageDescription (GenericPackageDescription, FlagName)
+import           Data.Char ( isHexDigit )
+import           Data.Monoid ( Endo (..) )
+import           Data.Time ( diffUTCTime, getCurrentTime )
+import qualified Data.Yaml as Yaml
+import           Data.Yaml.Include ( decodeFileWithWarnings )
+import           Database.Persist ( entityKey )
+import           Distribution.PackageDescription
+                   ( FlagName, GenericPackageDescription )
 import qualified Distribution.PackageDescription as D
-import Distribution.Parsec (PWarning (..), showPos)
+import           Distribution.Parsec ( PWarning (..), showPos )
 import qualified Hpack
 import qualified Hpack.Config as Hpack
-import Network.HTTP.Download
-import RIO.PrettyPrint
-import RIO.PrettyPrint.StylesUpdate
-import RIO.Process
-import RIO.Text (unpack)
-import RIO.Directory (getAppUserDataDirectory)
-import qualified Data.Yaml as Yaml
-import Pantry.Internal.AesonExtended (WithJSONWarnings (..), Value)
-import Data.Aeson.Types (parseEither)
-import Data.Monoid (Endo (..))
-import Pantry.HTTP
-import Data.Char (isHexDigit)
-import Data.Time (getCurrentTime, diffUTCTime)
-
-import Data.Yaml.Include (decodeFileWithWarnings)
-import Hpack.Yaml (formatWarning)
-import Hpack.Error (formatHpackError)
-import System.IO.Error (isDoesNotExistError)
+import           Hpack.Error ( formatHpackError )
+import           Hpack.Yaml ( formatWarning )
+import           Network.HTTP.Download
+import           Pantry.Archive
+import           Pantry.Casa
+import           Pantry.HTTP
+import           Pantry.Hackage
+import           Pantry.Internal.AesonExtended ( Value, WithJSONWarnings (..) )
+import           Pantry.Repo
+import qualified Pantry.SHA256 as SHA256
+import           Pantry.Storage hiding
+                   ( TreeEntry, PackageName, Version, findOrGenerateCabalFile )
+import           Pantry.Tree
+import           Pantry.Types as P
+import           Path
+                   ( Abs, Dir, File, Path, (</>), filename, parent, parseAbsDir
+                   , parseRelFile, toFilePath
+                   )
+import           Path.IO ( doesFileExist, listDir, resolveDir' )
+import           RIO
+import qualified RIO.ByteString as B
+import           RIO.Directory ( getAppUserDataDirectory )
+import qualified RIO.FilePath as FilePath
+import qualified RIO.List as List
+import qualified RIO.Map as Map
+import           RIO.PrettyPrint
+import           RIO.PrettyPrint.StylesUpdate
+import           RIO.Process
+import qualified RIO.Set as Set
+import           RIO.Text ( unpack )
+import qualified RIO.Text as T
+import           System.IO.Error ( isDoesNotExistError )
 
 decodeYaml :: FilePath -> IO (Either String ([String], Value))
 decodeYaml file = do
