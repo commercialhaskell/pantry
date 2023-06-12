@@ -44,14 +44,19 @@ import           System.IO.Unsafe ( unsafePerformIO )
 
 newtype Bytes8 = Bytes8 Word64
   deriving (Eq, Ord, Generic, NFData, Hashable, Data)
+
 instance Show Bytes8 where
   show (Bytes8 w) = show (fromWordsD 8 [w] :: B.ByteString)
+
 data Bytes16 = Bytes16 !Bytes8 !Bytes8
   deriving (Show, Eq, Ord, Generic, NFData, Hashable, Data)
+
 data Bytes32 = Bytes32 !Bytes16 !Bytes16
   deriving (Show, Eq, Ord, Generic, NFData, Hashable, Data)
+
 data Bytes64 = Bytes64 !Bytes32 !Bytes32
   deriving (Show, Eq, Ord, Generic, NFData, Hashable, Data)
+
 data Bytes128 = Bytes128 !Bytes64 !Bytes64
   deriving (Show, Eq, Ord, Generic, NFData, Hashable, Data)
 
@@ -59,20 +64,20 @@ data StaticBytesException
   = NotEnoughBytes
   | TooManyBytes
   deriving (Show, Eq, Typeable)
+
 instance Exception StaticBytesException
 
 -- All lengths below are given in bytes
 
 class DynamicBytes dbytes where
   lengthD :: dbytes -> Int
-  -- | Yeah, it looks terrible to use a list here, but fusion should
-  -- kick in
+  -- | Yeah, it looks terrible to use a list here, but fusion should kick in
   withPeekD :: dbytes -> ((Int -> IO Word64) -> IO a) -> IO a
   -- | May throw a runtime exception if invariants are violated!
   fromWordsD :: Int -> [Word64] -> dbytes
 
-fromWordsForeign
-  :: (ForeignPtr a -> Int -> b)
+fromWordsForeign ::
+     (ForeignPtr a -> Int -> b)
   -> Int
   -> [Word64]
   -> b
@@ -86,8 +91,8 @@ fromWordsForeign wrapper len words0 = unsafePerformIO $ do
     loop 0 words0
   return $ wrapper fptr len
 
-withPeekForeign
-  :: (ForeignPtr a, Int, Int)
+withPeekForeign ::
+     (ForeignPtr a, Int, Int)
   -> ((Int -> IO Word64) -> IO b)
   -> IO b
 withPeekForeign (fptr, off, len) inner =
@@ -178,15 +183,19 @@ instance StaticBytes Bytes128 where
 instance ByteArrayAccess Bytes8 where
   length _ = 8
   withByteArray = withByteArrayS
+
 instance ByteArrayAccess Bytes16 where
   length _ = 16
   withByteArray = withByteArrayS
+
 instance ByteArrayAccess Bytes32 where
   length _ = 32
   withByteArray = withByteArrayS
+
 instance ByteArrayAccess Bytes64 where
   length _ = 64
   withByteArray = withByteArrayS
+
 instance ByteArrayAccess Bytes128 where
   length _ = 128
   withByteArray = withByteArrayS
@@ -194,9 +203,8 @@ instance ByteArrayAccess Bytes128 where
 withByteArrayS :: StaticBytes sbytes => sbytes -> (Ptr p -> IO a) -> IO a
 withByteArrayS sbytes = withByteArray (fromStatic sbytes :: ByteString)
 
-toStaticExact
-  :: forall dbytes sbytes.
-     (DynamicBytes dbytes, StaticBytes sbytes)
+toStaticExact ::
+     forall dbytes sbytes. (DynamicBytes dbytes, StaticBytes sbytes)
   => dbytes
   -> Either StaticBytesException sbytes
 toStaticExact dbytes =
@@ -205,9 +213,8 @@ toStaticExact dbytes =
     GT -> Left TooManyBytes
     EQ -> Right (toStaticPadTruncate dbytes)
 
-toStaticPad
-  :: forall dbytes sbytes.
-     (DynamicBytes dbytes, StaticBytes sbytes)
+toStaticPad ::
+     forall dbytes sbytes. (DynamicBytes dbytes, StaticBytes sbytes)
   => dbytes
   -> Either StaticBytesException sbytes
 toStaticPad dbytes =
@@ -215,9 +222,8 @@ toStaticPad dbytes =
     GT -> Left TooManyBytes
     _  -> Right (toStaticPadTruncate dbytes)
 
-toStaticTruncate
-  :: forall dbytes sbytes.
-     (DynamicBytes dbytes, StaticBytes sbytes)
+toStaticTruncate ::
+     forall dbytes sbytes. (DynamicBytes dbytes, StaticBytes sbytes)
   => dbytes
   -> Either StaticBytesException sbytes
 toStaticTruncate dbytes =
@@ -225,15 +231,14 @@ toStaticTruncate dbytes =
     LT -> Left NotEnoughBytes
     _  -> Right (toStaticPadTruncate dbytes)
 
-toStaticPadTruncate
-  :: (DynamicBytes dbytes, StaticBytes sbytes)
+toStaticPadTruncate ::
+     (DynamicBytes dbytes, StaticBytes sbytes)
   => dbytes
   -> sbytes
 toStaticPadTruncate dbytes = unsafePerformIO (withPeekD dbytes (usePeekS 0))
 
-fromStatic
-  :: forall dbytes sbytes.
-     (DynamicBytes dbytes, StaticBytes sbytes)
+fromStatic ::
+     forall dbytes sbytes. (DynamicBytes dbytes, StaticBytes sbytes)
   => sbytes
   -> dbytes
 fromStatic = fromWordsD (lengthS (Nothing :: Maybe sbytes)) . ($ []) . toWordsS

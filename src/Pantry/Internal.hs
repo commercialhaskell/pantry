@@ -38,8 +38,8 @@ import           Pantry.Types
 -- * Cannot begin with a parent directory (@../@)
 --
 -- * Spelled like an American, sorry
-normalizeParents
-  :: FilePath
+normalizeParents ::
+     FilePath
   -> Either String FilePath
 normalizeParents "" = Left "empty file path"
 normalizeParents ('/':_) = Left "absolute path"
@@ -68,10 +68,10 @@ normalizeParents fp = do
     [] -> Left "no non-empty components"
     c' -> Right $ T.unpack $ T.intercalate "/" c'
 
--- | Following tar file rules (Unix file paths only), make the second
--- file relative to the first file.
-makeTarRelative
-  :: FilePath -- ^ base file
+-- | Following tar file rules (Unix file paths only), make the second file
+-- relative to the first file.
+makeTarRelative ::
+     FilePath -- ^ base file
   -> FilePath -- ^ relative part
   -> Either String FilePath
 makeTarRelative _ ('/':_) = Left "absolute path found"

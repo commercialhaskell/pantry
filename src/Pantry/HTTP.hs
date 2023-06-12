@@ -59,41 +59,41 @@ httpSinkChecked
   -> ConduitT ByteString Void m a
   -> m (SHA256, FileSize, a)
 httpSinkChecked url msha msize sink = do
-    req <- liftIO $ parseUrlThrow $ T.unpack url
-    httpSink req $ const $ getZipSink $ (,,)
-      <$> ZipSink (checkSha msha)
-      <*> ZipSink (checkSize msize)
-      <*> ZipSink sink
-  where
-    checkSha mexpected = do
-      actual <- SHA256.sinkHash
-      for_ mexpected $ \expected -> unless (actual == expected) $
-        throwIO $ DownloadInvalidSHA256 url Mismatch
-          { mismatchExpected = expected
-          , mismatchActual = actual
-          }
-      pure actual
-    checkSize mexpected =
-      loop 0
-      where
-        loop accum = do
-          mbs <- await
-          case mbs of
-            Nothing ->
-              case mexpected of
-                Just (FileSize expected) | expected /= accum ->
-                  throwIO $ DownloadInvalidSize url Mismatch
-                    { mismatchExpected = FileSize expected
-                    , mismatchActual = FileSize accum
-                    }
-                _ -> pure (FileSize accum)
-            Just bs -> do
-              let accum' = accum + fromIntegral (B.length bs)
-              case mexpected of
-                Just (FileSize expected)
-                  | accum' > expected ->
-                    throwIO $ DownloadTooLarge url Mismatch
-                      { mismatchExpected = FileSize expected
-                      , mismatchActual = FileSize accum'
-                      }
-                _ -> loop accum'
+  req <- liftIO $ parseUrlThrow $ T.unpack url
+  httpSink req $ const $ getZipSink $ (,,)
+    <$> ZipSink (checkSha msha)
+    <*> ZipSink (checkSize msize)
+    <*> ZipSink sink
+ where
+  checkSha mexpected = do
+    actual <- SHA256.sinkHash
+    for_ mexpected $ \expected -> unless (actual == expected) $
+      throwIO $ DownloadInvalidSHA256 url Mismatch
+        { mismatchExpected = expected
+        , mismatchActual = actual
+        }
+    pure actual
+  checkSize mexpected =
+    loop 0
+   where
+    loop accum = do
+      mbs <- await
+      case mbs of
+        Nothing ->
+          case mexpected of
+            Just (FileSize expected) | expected /= accum ->
+              throwIO $ DownloadInvalidSize url Mismatch
+                { mismatchExpected = FileSize expected
+                , mismatchActual = FileSize accum
+                }
+            _ -> pure (FileSize accum)
+        Just bs -> do
+          let accum' = accum + fromIntegral (B.length bs)
+          case mexpected of
+            Just (FileSize expected)
+              | accum' > expected ->
+                throwIO $ DownloadTooLarge url Mismatch
+                  { mismatchExpected = FileSize expected
+                  , mismatchActual = FileSize accum'
+                  }
+            _ -> loop accum'

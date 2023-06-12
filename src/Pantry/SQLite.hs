@@ -19,8 +19,8 @@ import           RIO.Orphans ()
 import           System.FileLock
                    ( SharedExclusive (..), withFileLock, withTryFileLock )
 
-initStorage
-  :: HasLogFunc env
+initStorage ::
+     HasLogFunc env
   => Text
   -> Migration
   -> Path Abs File -- ^ storage file
@@ -56,27 +56,25 @@ initStorage description migration fp inner = do
                        runSqlConn action conn
       , withWriteLock_ = id
       }
-  where
-    wrapMigrationFailure = handleAny (throwIO . MigrationFailure description fp)
+ where
+  wrapMigrationFailure = handleAny (throwIO . MigrationFailure description fp)
 
-    sqinfo isMigration
-           = set extraPragmas ["PRAGMA busy_timeout=2000;"]
-           $ set walEnabled False
+  sqinfo isMigration
+    = set extraPragmas ["PRAGMA busy_timeout=2000;"]
+    $ set walEnabled False
 
-           -- When doing a migration, we want to disable foreign key
-           -- checking, since the order in which tables are created by
-           -- the migration scripts may not respect foreign keys. The
-           -- rest of the time: enforce those foreign keys.
-           $ set fkEnabled (not isMigration)
+    -- When doing a migration, we want to disable foreign key checking, since
+    -- the order in which tables are created by the migration scripts may not
+    -- respect foreign keys. The rest of the time: enforce those foreign keys.
+    $ set fkEnabled (not isMigration)
 
-           $ mkSqliteConnectionInfo (fromString $ toFilePath fp)
+    $ mkSqliteConnectionInfo (fromString $ toFilePath fp)
 
--- | Ensure that only one process is trying to write to the database
--- at a time. See
--- https://github.com/commercialhaskell/stack/issues/4471 and comments
+-- | Ensure that only one process is trying to write to the database at a time.
+-- See https://github.com/commercialhaskell/stack/issues/4471 and comments
 -- above.
-withWriteLock
-  :: HasLogFunc env
+withWriteLock ::
+     HasLogFunc env
   => Utf8Builder -- ^ database description, for lock messages
   -> Path Abs File -- ^ SQLite database file
   -> RIO env a
@@ -93,13 +91,24 @@ withWriteLock desc dbFile inner = do
               -- Wait five seconds before giving the first message to
               -- avoid spamming the user for uninteresting file locks
               delay $ 5 * 1000 * 1000 -- 5 seconds
-              logInfo $ "Unable to get a write lock on the " <> desc <> " database, waiting..."
+              logInfo $
+                   "Unable to get a write lock on the "
+                <> desc
+                <> " database, waiting..."
 
               -- Now loop printing a message every 1 minute
               forever $ do
                 delay (60 * 1000 * 1000) -- 1 minute
-                  `onCompanionDone` logInfo ("Acquired the " <> desc <> " database write lock")
-                logWarn ("Still waiting on the " <> desc <> " database write lock...")
+                  `onCompanionDone` logInfo
+                    (  "Acquired the "
+                    <> desc
+                    <> " database write lock"
+                    )
+                logWarn
+                  (  "Still waiting on the "
+                  <> desc
+                  <> " database write lock..."
+                  )
         withCompanion complainer $ \stopComplaining ->
           withFileLock lockFile Exclusive $ const $ do
             stopComplaining

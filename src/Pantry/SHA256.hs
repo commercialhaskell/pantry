@@ -4,16 +4,17 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 
--- | Provides a data type ('SHA256') for efficient memory
--- representation of a sha-256 hash value, together with helper
--- functions for converting to and from that value. This module is
--- intended to be imported qualified as @SHA256@.
+-- | Provides a data type ('SHA256') for efficient memory representation of a
+-- sha-256 hash value, together with helper functions for converting to and from
+-- that value. This module is intended to be imported qualified as @SHA256@.
 --
 -- Some nomenclature:
 --
--- * Hashing calculates a new hash value from some input. @from@ takes a value that represents an existing hash.
+-- * Hashing calculates a new hash value from some input. @from@ takes a value
+--   that represents an existing hash.
 --
--- * Raw means a raw binary representation of the hash value, without any hex encoding.
+-- * Raw means a raw binary representation of the hash value, without any hex
+--   encoding.
 --
 -- * Text always uses lower case hex encoding
 --
@@ -54,7 +55,7 @@ import qualified RIO.Text as T
 --
 -- @since 0.1.0.0
 newtype SHA256 = SHA256 Bytes32
-    deriving (Generic, Eq, NFData, Data, Typeable, Ord, Hashable)
+  deriving (Generic, Eq, NFData, Data, Typeable, Ord, Hashable)
 
 -- | Exceptions which can occur in this module
 --
@@ -94,7 +95,8 @@ sinkHash = fromDigest <$> Hash.sinkHash
 fromHexText :: Text -> Either SHA256Exception SHA256
 fromHexText = fromHexBytes . encodeUtf8
 
--- | Convert a base16-encoded 'ByteString' value containing a hash into a 'SHA256'.
+-- | Convert a base16-encoded 'ByteString' value containing a hash into a
+-- 'SHA256'.
 --
 -- @since 0.1.0.0
 fromHexBytes :: ByteString -> Either SHA256Exception SHA256
@@ -114,7 +116,8 @@ fromDigest digest =
 --
 -- @since 0.1.0.0
 fromRaw :: ByteString -> Either SHA256Exception SHA256
-fromRaw bs = either (Left . InvalidByteCount bs) (Right . SHA256) (toStaticExact bs)
+fromRaw bs =
+  either (Left . InvalidByteCount bs) (Right . SHA256) (toStaticExact bs)
 
 -- | Convert a 'SHA256' into a base16-encoded SHA256 hash.
 --
@@ -122,7 +125,8 @@ fromRaw bs = either (Left . InvalidByteCount bs) (Right . SHA256) (toStaticExact
 toHexText :: SHA256 -> Text
 toHexText ss =
   case decodeUtf8' $ toHexBytes ss of
-    Left e -> error $ "Impossible failure in staticSHA256ToText: " ++ show (ss, e)
+    Left e ->
+      error $ "Impossible failure in staticSHA256ToText: " ++ show (ss, e)
     Right t -> t
 
 -- | Convert a 'SHA256' into a base16-encoded SHA256 hash.

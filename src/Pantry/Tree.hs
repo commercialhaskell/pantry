@@ -23,8 +23,8 @@ import           RIO.FilePath ((</>), takeDirectory)
 import qualified RIO.Map as Map
 import qualified RIO.Text as T
 
-unpackTree
-  :: (HasPantryConfig env, HasLogFunc env)
+unpackTree ::
+     (HasPantryConfig env, HasLogFunc env)
   => RawPackageLocationImmutable -- for exceptions
   -> Path Abs Dir -- ^ dest dir, will be created if necessary
   -> Tree
@@ -46,16 +46,16 @@ unpackTree rpli (toFilePath -> dir) (TreeMap m) = do
             perms <- getPermissions dest
             setPermissions dest $ setOwnerExecutable True perms
 
--- | A helper function that performs the basic character encoding
--- necessary.
-rawParseGPD
-  :: MonadThrow m
+-- | A helper function that performs the basic character encoding necessary.
+rawParseGPD ::
+     MonadThrow m
   => Either RawPackageLocationImmutable (Path Abs File)
   -> ByteString
   -> m ([PWarning], GenericPackageDescription)
 rawParseGPD loc bs =
-    case eres of
-      Left (mversion, errs) -> throwM $ InvalidCabalFile loc mversion (toList errs) warnings
-      Right gpkg -> return (warnings, gpkg)
-  where
-    (warnings, eres) = runParseResult $ parseGenericPackageDescription bs
+  case eres of
+    Left (mversion, errs) ->
+      throwM $ InvalidCabalFile loc mversion (toList errs) warnings
+    Right gpkg -> return (warnings, gpkg)
+ where
+  (warnings, eres) = runParseResult $ parseGenericPackageDescription bs
