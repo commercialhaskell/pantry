@@ -264,8 +264,9 @@ createRepoArchive sr tarball = do
       RepoHg -> runHgCommand ["archive", tarball, "-X", ".hg_archival.txt"]
 
 
--- | Clone the repository and execute the action with the working directory set
--- to the repository root.
+-- | Clone the repository (and, in the case of Git and if necessary, fetch the
+-- specific commit) and execute the action with the working directory set to the
+-- repository root.
 --
 -- @since 0.1.0.0
 withRepo ::
@@ -275,39 +276,55 @@ withRepo ::
   -> RIO env a
 withRepo sr@SimpleRepo{..} action =
   withSystemTempDirectory "with-repo" $ \tmpDir -> do
-    -- Note we do not immediately change directories into the new temporary
-    -- directory, but instead wait until we have finished cloning the repo. This
-    -- is because the repo URL may be a relative path on the local filesystem,
-    -- and we should interpret it as relative to the current directory, not the
-    -- temporary directory.
-    let dir = tmpDir </> "cloned"
-        (runCommand, resetArgs, submoduleArgs) =
+    let repoUrl = T.unpack sRepoUrl
+        repoCommit = T.unpack sRepoCommit
+        dir = tmpDir </> "cloned"
+        (runCommand, resetArgs) =
           case sRepoType of
             RepoGit ->
               ( runGitCommand
-              , ["reset", "--hard", T.unpack sRepoCommit]
-              , Just ["submodule", "update", "--init", "--recursive"]
+              , ["reset", "--hard", repoCommit]
               )
             RepoHg ->
               ( runHgCommand
-              , ["update", "-C", T.unpack sRepoCommit]
-              , Nothing
+              , ["update", "-C", repoCommit]
               )
+        fetchCommit = ["fetch", repoUrl, repoCommit]
+        submoduleArgs = ["submodule", "update", "--init", "--recursive"]
         fixANSIForWindows =
           -- On Windows 10, an upstream issue with the `git clone` command means
           -- that command clears, but does not then restore, the
           -- ENABLE_VIRTUAL_TERMINAL_PROCESSING flag for native terminals. The
           -- following hack re-enables the lost ANSI-capability.
           when osIsWindows $ void $ liftIO $ hSupportsANSIWithoutEmulation stdout
-
     logInfo $ "Cloning " <> display sRepoCommit <> " from " <> display sRepoUrl
-    runCommand ["clone", T.unpack sRepoUrl, dir]
+    runCommand ["clone", repoUrl, dir]
     fixANSIForWindows
     created <- doesDirectoryExist dir
     unless created $ throwIO $ FailedToCloneRepo sr
 
+    -- Note we do not immediately change directories into the new temporary
+    -- directory, but instead wait until we have finished cloning the repo. This
+    -- is because the repo URL may be a relative path on the local filesystem,
+    -- and we should interpret it as relative to the current directory, not the
+    -- temporary directory.
     withWorkingDir dir $ do
-      runCommand resetArgs
-      traverse_ runCommand submoduleArgs
-      fixANSIForWindows
+      case sRepoType of
+        RepoGit -> do
+          catch
+            -- This will result in a failure exit code if the specified commit
+            -- is not in the clone of the repository.
+            (runCommand resetArgs)
+            ( \(_ :: ExitCodeException) -> do
+               -- Perhaps the specified commit is not one that is brought across
+               -- by `git clone`. For example, in the case of a GitHub
+               -- repository, it may be a commit from a different repository
+               -- that is the subject of an unmerged pull request. Try to fetch
+               -- the specific commit and then try again.
+               runCommand fetchCommit
+               runCommand resetArgs
+            )
+          runCommand submoduleArgs
+          fixANSIForWindows
+        RepoHg -> runCommand resetArgs
       action
