@@ -1,13 +1,16 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Pantry.CabalSpec (spec) where
 
-import Test.Hspec
-import Pantry
+module Pantry.CabalSpec
+  ( spec
+  ) where
+
+import           Distribution.Types.PackageName ( mkPackageName )
+import           Distribution.Types.Version ( mkVersion )
+import           Pantry
 import qualified Pantry.SHA256 as SHA256
-import RIO
-import Distribution.Types.PackageName (mkPackageName)
-import Distribution.Types.Version (mkVersion)
+import           RIO
+import           Test.Hspec
 
 spec :: Spec
 spec = describe "wrong cabal file" $ do

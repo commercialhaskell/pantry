@@ -1,8 +1,11 @@
-module Pantry.InternalSpec (spec) where
+module Pantry.InternalSpec
+  ( spec
+  ) where
 
-import Test.Hspec
-import Pantry (runPantryApp)
-import Pantry.Internal (normalizeParents, makeTarRelative, hpackVersion)
+import           Pantry ( runPantryApp )
+import           Pantry.Internal
+                   ( hpackVersion, makeTarRelative, normalizeParents )
+import           Test.Hspec
 
 spec :: Spec
 spec = do

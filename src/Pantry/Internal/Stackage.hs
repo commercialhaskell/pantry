@@ -4,47 +4,22 @@ module Pantry.Internal.Stackage
   ( module X
   ) where
 
-import Pantry.Hackage as X
-  ( forceUpdateHackageIndex
-  , getHackageTarball
-  , HackageTarballResult(..)
-  )
-import Pantry.Storage as X
-  ( BlobId
-  , EntityField(..)
-  , HackageCabalId
-  , ModuleNameId
-  , PackageName
-  , PackageNameId
-  , Tree(..)
-  , TreeEntryId
-  , TreeId
-  , Unique(..)
-  , Version
-  , versionVersion
-  , VersionId
-  , getBlobKey
-  , getPackageNameById
-  , getPackageNameId
-  , getTreeForKey
-  , getVersionId
-  , loadBlobById
-  , storeBlob
-  , migrateAll
-  , Key(unBlobKey)
-  , allHackageCabalCount
-  , allBlobsSource
-  , allBlobsCount
-  , allHackageCabalRawPackageLocations
-  )
-import Pantry.Types as X
-  ( ModuleNameP(..)
-  , PackageNameP(..)
-  , PantryConfig(..)
-  , SafeFilePath
-  , Storage(..)
-  , VersionP(..)
-  , mkSafeFilePath
-  , packageTreeKey
-  , unSafeFilePath
-  )
+import           Pantry.Hackage as X
+                   ( HackageTarballResult (..), forceUpdateHackageIndex
+                   , getHackageTarball
+                   )
+import           Pantry.Storage as X
+                   ( BlobId, EntityField (..), HackageCabalId, Key (unBlobKey)
+                   , ModuleNameId, PackageName, PackageNameId, Tree (..)
+                   , TreeEntryId, TreeId, Unique (..), Version, VersionId
+                   , allBlobsCount, allBlobsSource, allHackageCabalCount
+                   , allHackageCabalRawPackageLocations, getBlobKey
+                   , getPackageNameById, getPackageNameId, getTreeForKey
+                   , getVersionId, loadBlobById, migrateAll, storeBlob
+                   , versionVersion
+                   )
+import           Pantry.Types as X
+                   ( ModuleNameP (..), PackageNameP (..), PantryConfig (..)
+                   , SafeFilePath, Storage (..), VersionP (..), mkSafeFilePath
+                   , packageTreeKey, unSafeFilePath
+                   )

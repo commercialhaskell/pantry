@@ -3,14 +3,14 @@
 
 module Pantry.BuildPlanSpec where
 
-import           Pantry.Internal.AesonExtended (WithJSONWarnings(..))
-import           RIO
+import           Control.Monad.Catch ( MonadThrow )
 import qualified Data.ByteString.Char8 as S8
-import           Data.Yaml (decodeThrow)
+import           Data.List.NonEmpty ( NonEmpty )
+import           Data.Yaml ( decodeThrow )
 import           Pantry
+import           Pantry.Internal.AesonExtended ( WithJSONWarnings(..) )
+import           RIO
 import           Test.Hspec
-import           Control.Monad.Catch (MonadThrow)
-import           Data.List.NonEmpty (NonEmpty)
 
 spec :: Spec
 spec =

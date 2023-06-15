@@ -1,7 +1,8 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections       #-}
+
 -- | Logic for loading up trees from HTTPS archives.
 module Pantry.Archive
   ( getArchivePackage
@@ -12,50 +13,50 @@ module Pantry.Archive
   , findCabalOrHpackFile
   ) where
 
-import RIO
+import qualified Codec.Archive.Zip as Zip
+import           Conduit
+import           Data.Bits ( (.&.), shiftR )
+import qualified Data.Conduit.Tar as Tar
+import           Data.Conduit.Zlib ( ungzip )
+import qualified Data.Digest.CRC32 as CRC32
+import           Distribution.PackageDescription ( package, packageDescription )
+import qualified Hpack.Config as Hpack
+import           Pantry.HPack ( hpackVersion )
+import           Pantry.HTTP
+import           Pantry.Internal ( makeTarRelative, normalizeParents )
 import qualified Pantry.SHA256 as SHA256
-import Pantry.Storage hiding (Tree, TreeEntry, findOrGenerateCabalFile)
-import Pantry.Tree
-import Pantry.Types
-import RIO.Process
-import Pantry.Internal (normalizeParents, makeTarRelative)
+import           Pantry.Storage hiding
+                   ( Tree, TreeEntry, findOrGenerateCabalFile )
+import           Pantry.Tree
+import           Pantry.Types
+import           Path ( toFilePath )
+import           RIO
+import qualified RIO.ByteString.Lazy as BL
+import qualified RIO.List as List
+import qualified RIO.Map as Map
+import           RIO.Process
+import qualified RIO.Set as Set
 import qualified RIO.Text as T
 import qualified RIO.Text.Partial as T
-import qualified RIO.List as List
-import qualified RIO.ByteString.Lazy as BL
-import qualified RIO.Map as Map
-import qualified RIO.Set as Set
-import qualified Hpack.Config as Hpack
-import Pantry.HPack (hpackVersion)
-import Data.Bits ((.&.), shiftR)
-import Path (toFilePath)
-import qualified Codec.Archive.Zip as Zip
-import qualified Data.Digest.CRC32 as CRC32
-import Distribution.PackageDescription (packageDescription, package)
 
-import Conduit
-import Data.Conduit.Zlib (ungzip)
-import qualified Data.Conduit.Tar as Tar
-import Pantry.HTTP
-
-fetchArchivesRaw
-  :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+fetchArchivesRaw ::
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => [(RawArchive, RawPackageMetadata)]
   -> RIO env ()
 fetchArchivesRaw pairs =
   for_ pairs $ \(ra, rpm) ->
     getArchive (RPLIArchive ra rpm) ra rpm
 
-fetchArchives
-  :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+fetchArchives ::
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => [(Archive, PackageMetadata)]
   -> RIO env ()
 fetchArchives pairs =
   -- TODO be more efficient, group together shared archives
   fetchArchivesRaw [(toRawArchive a, toRawPM pm) | (a, pm) <- pairs]
 
-getArchiveKey
-  :: forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+getArchiveKey ::
+     forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => RawPackageLocationImmutable -- ^ for exceptions
   -> RawArchive
   -> RawPackageMetadata
@@ -66,16 +67,16 @@ getArchiveKey rpli archive rpm =
 thd4 :: (a, b, c, d) -> c
 thd4 (_, _, z, _) = z
 
-getArchivePackage
-  :: forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env, HasCallStack)
+getArchivePackage ::
+     forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env, HasCallStack)
   => RawPackageLocationImmutable -- ^ for exceptions
   -> RawArchive
   -> RawPackageMetadata
   -> RIO env Package
 getArchivePackage rpli archive rpm = thd4 <$> getArchive rpli archive rpm
 
-getArchive
-  :: forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env, HasCallStack)
+getArchive ::
+     forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env, HasCallStack)
   => RawPackageLocationImmutable -- ^ for exceptions
   -> RawArchive
   -> RawPackageMetadata
@@ -92,26 +93,30 @@ getArchive rpli archive rpm = do
         etree <- withStorage $ loadCachedTree $ packageTree pa
         case etree of
           Left e -> do
-            logDebug $ "getArchive of " <> displayShow rpli <> ": loadCachedTree failed: " <> displayShow e
+            logDebug $
+                 "getArchive of "
+              <> displayShow rpli
+              <> ": loadCachedTree failed: "
+              <> displayShow e
             pure Nothing
           Right x -> pure $ Just x
   cached@(_, _, pa, _) <-
     case (mcached, mtree) of
       (Just (a, b, c), Just d) -> pure (a, b, c, d)
       -- Not in the archive. Load the archive. Completely ignore the
-      -- PackageMetadata for now, we'll check that the Package
-      -- info matches next.
+      -- PackageMetadata for now, we'll check that the Package info matches
+      -- next.
       _ -> withArchiveLoc archive $ \fp sha size -> do
         (pa, tree) <- parseArchive rpli archive fp
-        -- Storing in the cache exclusively uses information we have
-        -- about the archive itself, not metadata from the user.
+        -- Storing in the cache exclusively uses information we have about the
+        -- archive itself, not metadata from the user.
         storeCache archive sha size pa
         pure (sha, size, pa, tree)
 
   either throwIO (\_ -> pure cached) $ checkPackageMetadata rpli rpm pa
 
-storeCache
-  :: forall env. (HasPantryConfig env, HasLogFunc env)
+storeCache ::
+     forall env. (HasPantryConfig env, HasLogFunc env)
   => RawArchive
   -> SHA256
   -> FileSize
@@ -119,11 +124,12 @@ storeCache
   -> RIO env ()
 storeCache archive sha size pa =
   case raLocation archive of
-    ALUrl url -> withStorage $ storeArchiveCache url (raSubdir archive) sha size (packageTreeKey pa)
+    ALUrl url -> withStorage $
+      storeArchiveCache url (raSubdir archive) sha size (packageTreeKey pa)
     ALFilePath _ -> pure () -- TODO cache local as well
 
-loadCache
-  :: forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+loadCache ::
+     forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => RawPackageLocationImmutable
   -> RawArchive
   -> RIO env (Maybe (SHA256, FileSize, Package))
@@ -131,49 +137,64 @@ loadCache rpli archive =
   case loc of
     ALFilePath _ -> pure Nothing -- TODO can we do something intelligent here?
     ALUrl url -> withStorage (loadArchiveCache url (raSubdir archive)) >>= loop
-  where
-    loc = raLocation archive
-    msha = raHash archive
-    msize = raSize archive
+ where
+  loc = raLocation archive
+  msha = raHash archive
+  msize = raSize archive
 
-    loadFromCache :: TreeId -> RIO env (Maybe Package)
-    loadFromCache tid = fmap Just $ withStorage $ loadPackageById rpli tid
+  loadFromCache :: TreeId -> RIO env (Maybe Package)
+  loadFromCache tid = fmap Just $ withStorage $ loadPackageById rpli tid
 
-    loop [] = pure Nothing
-    loop ((sha, size, tid):rest) =
-      case msha of
-        Nothing -> do
-          case msize of
-            Just size' | size /= size' -> loop rest
-            _ -> do
-              case loc of
-                ALUrl url -> do
+  loop [] = pure Nothing
+  loop ((sha, size, tid):rest) =
+    case msha of
+      Nothing -> do
+        case msize of
+          Just size' | size /= size' -> loop rest
+          _ -> do
+            case loc of
+              ALUrl url -> do
+                -- Only debug level, let lock files solve this
+                logDebug $
+                     "Using archive from "
+                  <> display url
+                  <> " without a specified cryptographic hash"
+                logDebug $
+                     "Cached hash is "
+                  <> display sha
+                  <> ", file size "
+                  <> display size
+              ALFilePath _ -> pure ()
+            fmap (sha, size,) <$> loadFromCache tid
+      Just sha'
+        | sha == sha' ->
+            case msize of
+              Nothing -> do
+                case loc of
                   -- Only debug level, let lock files solve this
-                  logDebug $ "Using archive from " <> display url <> " without a specified cryptographic hash"
-                  logDebug $ "Cached hash is " <> display sha <> ", file size " <> display size
-                ALFilePath _ -> pure ()
-              fmap (sha, size,) <$> loadFromCache tid
-        Just sha'
-          | sha == sha' ->
-              case msize of
-                Nothing -> do
-                  case loc of
-                    -- Only debug level, let lock files solve this
-                    ALUrl url -> logDebug $ "Archive from " <> display url <> " does not specify a size"
-                    ALFilePath _ -> pure ()
-                  fmap (sha, size,) <$> loadFromCache tid
-                Just size'
-                  | size == size' -> fmap (sha, size,) <$> loadFromCache tid
-                  | otherwise -> do
-                      -- This is an actual warning, since we have a concrete mismatch
-                      logWarn $ "Archive from " <> display loc <> " has a matching hash but mismatched size"
-                      logWarn "Please verify that your configuration provides the correct size"
-                      loop rest
-          | otherwise -> loop rest
+                  ALUrl url -> logDebug $
+                       "Archive from "
+                    <> display url
+                    <> " does not specify a size"
+                  ALFilePath _ -> pure ()
+                fmap (sha, size,) <$> loadFromCache tid
+              Just size'
+                | size == size' -> fmap (sha, size,) <$> loadFromCache tid
+                | otherwise -> do
+                    -- This is an actual warning, since we have a concrete
+                    -- mismatch
+                    logWarn $
+                         "Archive from "
+                      <> display loc
+                      <> " has a matching hash but mismatched size"
+                    logWarn "Please verify that your configuration provides \
+                            \the correct size"
+                    loop rest
+        | otherwise -> loop rest
 
 -- ensure name, version, etc are correct
-checkPackageMetadata
-  :: RawPackageLocationImmutable
+checkPackageMetadata ::
+     RawPackageLocationImmutable
   -> RawPackageMetadata
   -> Package
   -> Either PantryException Package
@@ -197,11 +218,10 @@ checkPackageMetadata pl pm pa = do
 
    in if and tests then Right pa else Left err
 
--- | Provide a local file with the contents of the archive, regardless
--- of where it comes from. Perform SHA256 and file size validation if
--- downloading.
-withArchiveLoc
-  :: HasLogFunc env
+-- | Provide a local file with the contents of the archive, regardless of where
+-- it comes from. Perform SHA256 and file size validation if downloading.
+withArchiveLoc ::
+     HasLogFunc env
   => RawArchive
   -> (FilePath -> SHA256 -> FileSize -> RIO env a)
   -> RIO env a
@@ -210,16 +230,20 @@ withArchiveLoc (RawArchive (ALFilePath resolved) msha msize _subdir) f = do
       fp = toFilePath abs'
   (sha, size) <- withBinaryFile fp ReadMode $ \h -> do
     size <- FileSize . fromIntegral <$> hFileSize h
-    for_ msize $ \size' -> when (size /= size') $ throwIO $ LocalInvalidSize abs' Mismatch
-      { mismatchExpected = size'
-      , mismatchActual = size
-      }
+    for_ msize $ \size' ->
+      when (size /= size') $
+        throwIO $ LocalInvalidSize abs' Mismatch
+          { mismatchExpected = size'
+          , mismatchActual = size
+          }
 
     sha <- runConduit (sourceHandle h .| SHA256.sinkHash)
-    for_ msha $ \sha' -> when (sha /= sha') $ throwIO $ LocalInvalidSHA256 abs' Mismatch
-      { mismatchExpected = sha'
-      , mismatchActual = sha
-      }
+    for_ msha $ \sha' ->
+      when (sha /= sha') $
+        throwIO $ LocalInvalidSHA256 abs' Mismatch
+          { mismatchExpected = sha'
+          , mismatchActual = sha
+          }
 
     pure (sha, size)
   f fp sha size
@@ -250,8 +274,8 @@ data MetaEntry = MetaEntry
   }
   deriving Show
 
-foldArchive
-  :: (HasPantryConfig env, HasLogFunc env)
+foldArchive ::
+     (HasPantryConfig env, HasLogFunc env)
   => ArchiveLocation -- ^ for error reporting
   -> FilePath
   -> ArchiveType
@@ -290,8 +314,8 @@ foldArchive loc fp ATZip accum0 f = withBinaryFile fp ReadMode $ \h -> do
   lbs <- BL.hGetContents h
   foldM go accum0 (filter (not . isDir) $ Zip.zEntries $ Zip.toArchive lbs)
 
-foldTar
-  :: (HasPantryConfig env, HasLogFunc env)
+foldTar ::
+     (HasPantryConfig env, HasLogFunc env)
   => ArchiveLocation -- ^ for exceptions
   -> a
   -> (a -> MetaEntry -> ConduitT ByteString o (RIO env) a)
@@ -303,28 +327,28 @@ foldTar loc accum0 f = do
     accum' <- f accum me
     writeIORef ref $! accum')
   readIORef ref
-  where
-    toME :: MonadIO m => Tar.FileInfo -> m (Maybe MetaEntry)
-    toME fi = do
-      let exc = InvalidTarFileType loc (Tar.getFileInfoPath fi) (Tar.fileType fi)
-      mmet <-
-        case Tar.fileType fi of
-          Tar.FTSymbolicLink bs ->
-            case decodeUtf8' bs of
-              Left _ -> throwIO exc
-              Right text -> pure $ Just $ METLink $ T.unpack text
-          Tar.FTNormal -> pure $ Just $
-            if Tar.fileMode fi .&. 0o100 /= 0
-              then METExecutable
-              else METNormal
-          Tar.FTDirectory -> pure Nothing
-          _ -> throwIO exc
-      pure $
-        (\met -> MetaEntry
-          { mePath = Tar.getFileInfoPath fi
-          , meType = met
-          })
-        <$> mmet
+ where
+  toME :: MonadIO m => Tar.FileInfo -> m (Maybe MetaEntry)
+  toME fi = do
+    let exc = InvalidTarFileType loc (Tar.getFileInfoPath fi) (Tar.fileType fi)
+    mmet <-
+      case Tar.fileType fi of
+        Tar.FTSymbolicLink bs ->
+          case decodeUtf8' bs of
+            Left _ -> throwIO exc
+            Right text -> pure $ Just $ METLink $ T.unpack text
+        Tar.FTNormal -> pure $ Just $
+          if Tar.fileMode fi .&. 0o100 /= 0
+            then METExecutable
+            else METNormal
+        Tar.FTDirectory -> pure Nothing
+        _ -> throwIO exc
+    pure $
+      (\met -> MetaEntry
+        { mePath = Tar.getFileInfoPath fi
+        , meType = met
+        })
+      <$> mmet
 
 data SimpleEntry = SimpleEntry
   { seSource :: !FilePath
@@ -332,18 +356,16 @@ data SimpleEntry = SimpleEntry
   }
   deriving Show
 
-
--- | Attempt to parse the contents of the given archive in the given
--- subdir into a 'Tree'. This will not consult any caches. It will
--- ensure that:
+-- | Attempt to parse the contents of the given archive in the given subdir into
+-- a 'Tree'. This will not consult any caches. It will ensure that:
 --
 -- * The cabal file exists
 --
 -- * The cabal file can be parsed
 --
 -- * The name inside the cabal file matches the name of the cabal file itself
-parseArchive
-  :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+parseArchive ::
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => RawPackageLocationImmutable
   -> RawArchive
   -> FilePath -- ^ file holding the archive
@@ -362,8 +384,10 @@ parseArchive rpli archive fp = do
   let toSimple :: FilePath -> MetaEntry -> Either String (Map FilePath SimpleEntry)
       toSimple key me =
         case meType me of
-          METNormal -> Right $ Map.singleton key $ SimpleEntry (mePath me) FTNormal
-          METExecutable -> Right $ Map.singleton key $ SimpleEntry (mePath me) FTExecutable
+          METNormal ->
+            Right $ Map.singleton key $ SimpleEntry (mePath me) FTNormal
+          METExecutable ->
+            Right $ Map.singleton key $ SimpleEntry (mePath me) FTExecutable
           METLink relDest -> do
             case relDest of
               '/':_ -> Left $ concat
@@ -402,15 +426,32 @@ parseArchive rpli archive fp = do
               Nothing ->
                 -- Check if it's a symlink to a directory
                 case findWithPrefix dest files of
-                  [] -> Left $ "Symbolic link dest not found from " ++ mePath me ++ " to " ++ relDest ++ ", looking for " ++ dest ++ ".\n"
-                            ++ "This may indicate that the source is a git archive which uses git-annex.\n"
-                            ++ "See https://github.com/commercialhaskell/stack/issues/4579 for further information."
-                  pairs -> fmap fold $ for pairs $ \(suffix, me') -> toSimple (key ++ '/' : suffix) me'
+                  [] -> Left $
+                             "Symbolic link dest not found from "
+                          ++ mePath me
+                          ++ " to "
+                          ++ relDest
+                          ++ ", looking for "
+                          ++ dest
+                          ++ ".\n"
+                          ++ "This may indicate that the source is a git \
+                             \archive which uses git-annex.\n"
+                          ++ "See https://github.com/commercialhaskell/stack/issues/4579 \
+                             \for further information."
+                  pairs ->
+                    fmap fold $ for pairs $ \(suffix, me') -> toSimple (key ++ '/' : suffix) me'
               Just me' ->
                 case meType me' of
-                  METNormal -> Right $ Map.singleton key $ SimpleEntry dest FTNormal
-                  METExecutable -> Right $ Map.singleton key $ SimpleEntry dest FTExecutable
-                  METLink _ -> Left $ "Symbolic link dest cannot be a symbolic link, from " ++ mePath me ++ " to " ++ relDest
+                  METNormal ->
+                    Right $ Map.singleton key $ SimpleEntry dest FTNormal
+                  METExecutable ->
+                    Right $ Map.singleton key $ SimpleEntry dest FTExecutable
+                  METLink _ ->
+                    Left $
+                         "Symbolic link dest cannot be a symbolic link, from "
+                      ++ mePath me
+                      ++ " to "
+                      ++ relDest
 
   case fold <$> Map.traverseWithKey toSimple files of
     Left e -> throwIO $ UnsupportedTarball loc $ T.pack e
@@ -435,37 +476,47 @@ parseArchive rpli archive fp = do
                 else pure m
           tree :: CachedTree <- fmap (CachedTreeMap . Map.fromList) $ for safeFiles $ \(sfp, se) ->
             case Map.lookup (seSource se) blobs of
-              Nothing -> error $ "Impossible: blob not found for: " ++ seSource se
-              Just (blobKey, blobId) -> pure (sfp, (TreeEntry blobKey (seType se), blobId))
+              Nothing ->
+                error $ "Impossible: blob not found for: " ++ seSource se
+              Just (blobKey, blobId) ->
+                pure (sfp, (TreeEntry blobKey (seType se), blobId))
           -- parse the cabal file and ensure it has the right name
           buildFile <- findCabalOrHpackFile rpli $ unCachedTree tree
           (buildFilePath, buildFileBlobKey, buildFileEntry) <- case buildFile of
-                                                                 BFCabal fpath te@(TreeEntry key _) -> pure (fpath, key, te)
-                                                                 BFHpack te@(TreeEntry key _) -> pure (hpackSafeFilePath, key, te)
+            BFCabal fpath te@(TreeEntry key _) -> pure (fpath, key, te)
+            BFHpack te@(TreeEntry key _) -> pure (hpackSafeFilePath, key, te)
           mbs <- withStorage $ loadBlob buildFileBlobKey
-          bs <-
-            case mbs of
-              Nothing -> throwIO $ TreeReferencesMissingBlob rpli buildFilePath buildFileBlobKey
-              Just bs -> pure bs
+          bs <- case mbs of
+            Nothing -> throwIO $
+              TreeReferencesMissingBlob rpli buildFilePath buildFileBlobKey
+            Just bs -> pure bs
           cabalBs <- case buildFile of
             BFCabal _ _ -> pure bs
             BFHpack _ -> snd <$> hpackToCabal rpli (unCachedTree tree)
           (_warnings, gpd) <- rawParseGPD (Left rpli) cabalBs
           let ident@(PackageIdentifier name _) = package $ packageDescription gpd
           case buildFile of
-            BFCabal _ _ -> when (buildFilePath /= cabalFileName name) $ throwIO $ WrongCabalFileName rpli buildFilePath name
-            _ -> return ()
+            BFCabal _ _ ->
+              when (buildFilePath /= cabalFileName name) $
+                throwIO $ WrongCabalFileName rpli buildFilePath name
+            _ -> pure ()
           -- It's good! Store the tree, let's bounce
           (tid, treeKey') <- withStorage $ storeTree rpli ident tree buildFile
           packageCabal <- case buildFile of
-                            BFCabal _ _ -> pure $ PCCabalFile buildFileEntry
-                            BFHpack _ -> do
-                              cabalKey <- withStorage $ do
-                                            hpackId <- storeHPack rpli tid
-                                            loadCabalBlobKey hpackId
-                              hpackSoftwareVersion <- hpackVersion
-                              let cabalTreeEntry = TreeEntry cabalKey (teType buildFileEntry)
-                              pure $ PCHpack $ PHpack { phOriginal = buildFileEntry, phGenerated = cabalTreeEntry, phVersion = hpackSoftwareVersion}
+            BFCabal _ _ -> pure $ PCCabalFile buildFileEntry
+            BFHpack _ -> do
+              cabalKey <- withStorage $ do
+                hpackId <- storeHPack rpli tid
+                loadCabalBlobKey hpackId
+              hpackSoftwareVersion <- hpackVersion
+              let cabalTreeEntry = TreeEntry cabalKey (teType buildFileEntry)
+              pure
+                $ PCHpack
+                $ PHpack
+                    { phOriginal = buildFileEntry
+                    , phGenerated = cabalTreeEntry
+                    , phVersion = hpackSoftwareVersion
+                    }
           pure (Package
             { packageTreeKey = treeKey'
             , packageTree = unCachedTree tree
@@ -473,17 +524,17 @@ parseArchive rpli archive fp = do
             , packageIdent = ident
             }, tree)
 
--- | Find all of the files in the Map with the given directory as a
--- prefix. Directory is given without trailing slash. Returns the
--- suffix after stripping the given prefix.
+-- | Find all of the files in the Map with the given directory as a prefix.
+-- Directory is given without trailing slash. Returns the suffix after stripping
+-- the given prefix.
 findWithPrefix :: FilePath -> Map FilePath MetaEntry -> [(FilePath, MetaEntry)]
 findWithPrefix dir = mapMaybe go . Map.toList
-  where
-    prefix = dir ++ "/"
-    go (x, y) = (, y) <$> List.stripPrefix prefix x
+ where
+  prefix = dir ++ "/"
+  go (x, y) = (, y) <$> List.stripPrefix prefix x
 
-findCabalOrHpackFile
-  :: MonadThrow m
+findCabalOrHpackFile ::
+     MonadThrow m
   => RawPackageLocationImmutable -- ^ for exceptions
   -> Tree
   -> m BuildFile
@@ -523,8 +574,8 @@ stripCommonPrefix pairs@((firstFP, _):_) = fromMaybe pairs $ do
   stripCommonPrefix <$> traverse strip pairs
 
 -- | Take us down to the specified subdirectory
-takeSubdir
-  :: Text -- ^ subdir
+takeSubdir ::
+     Text -- ^ subdir
   -> [(FilePath, a)] -- ^ files after stripping common prefix
   -> [(Text, a)]
 takeSubdir subdir = mapMaybe $ \(fp, a) -> do

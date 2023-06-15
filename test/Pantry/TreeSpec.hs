@@ -1,13 +1,16 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Pantry.TreeSpec (spec) where
 
-import Test.Hspec
-import RIO
-import Pantry
+module Pantry.TreeSpec
+  ( spec
+  ) where
+
+import           Distribution.Types.PackageName ( mkPackageName )
+import           Distribution.Types.Version ( mkVersion )
+import           Pantry
 import qualified Pantry.SHA256 as SHA256
-import Distribution.Types.PackageName (mkPackageName)
-import Distribution.Types.Version (mkVersion)
+import           RIO
+import           Test.Hspec
 
 spec :: Spec
 spec = do

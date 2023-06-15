@@ -1,10 +1,11 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE DeriveDataTypeable  #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE GADTs               #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TypeOperators       #-}
+
 -- | This is an unstable API, exposed only for testing. Relying on
 -- this may break your code! Caveat emptor.
 --
@@ -26,31 +27,36 @@ module Pantry.Internal.StaticBytes
   , fromStatic
   ) where
 
-import RIO hiding (words)
+import           Data.Bits
+import           Data.ByteArray
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
+import qualified Data.Primitive.ByteArray as BA
 import qualified Data.Vector.Primitive as VP
+import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector.Unboxed.Base as VU
-import qualified Data.Vector.Storable as VS
-import System.IO.Unsafe (unsafePerformIO)
-import Foreign.Ptr
-import Foreign.ForeignPtr
-import Foreign.Storable
-import Data.Bits
-import qualified Data.Primitive.ByteArray as BA
-import Data.ByteArray
+import           Foreign.ForeignPtr
+import           Foreign.Ptr
+import           Foreign.Storable
+import           RIO hiding ( words )
+import           System.IO.Unsafe ( unsafePerformIO )
 
 newtype Bytes8 = Bytes8 Word64
   deriving (Eq, Ord, Generic, NFData, Hashable, Data)
+
 instance Show Bytes8 where
   show (Bytes8 w) = show (fromWordsD 8 [w] :: B.ByteString)
+
 data Bytes16 = Bytes16 !Bytes8 !Bytes8
   deriving (Show, Eq, Ord, Generic, NFData, Hashable, Data)
+
 data Bytes32 = Bytes32 !Bytes16 !Bytes16
   deriving (Show, Eq, Ord, Generic, NFData, Hashable, Data)
+
 data Bytes64 = Bytes64 !Bytes32 !Bytes32
   deriving (Show, Eq, Ord, Generic, NFData, Hashable, Data)
+
 data Bytes128 = Bytes128 !Bytes64 !Bytes64
   deriving (Show, Eq, Ord, Generic, NFData, Hashable, Data)
 
@@ -58,44 +64,44 @@ data StaticBytesException
   = NotEnoughBytes
   | TooManyBytes
   deriving (Show, Eq, Typeable)
+
 instance Exception StaticBytesException
 
 -- All lengths below are given in bytes
 
 class DynamicBytes dbytes where
   lengthD :: dbytes -> Int
-  -- | Yeah, it looks terrible to use a list here, but fusion should
-  -- kick in
+  -- | Yeah, it looks terrible to use a list here, but fusion should kick in
   withPeekD :: dbytes -> ((Int -> IO Word64) -> IO a) -> IO a
   -- | May throw a runtime exception if invariants are violated!
   fromWordsD :: Int -> [Word64] -> dbytes
 
-fromWordsForeign
-  :: (ForeignPtr a -> Int -> b)
+fromWordsForeign ::
+     (ForeignPtr a -> Int -> b)
   -> Int
   -> [Word64]
   -> b
 fromWordsForeign wrapper len words0 = unsafePerformIO $ do
   fptr <- B.mallocByteString len
   withForeignPtr fptr $ \ptr -> do
-    let loop _ [] = return ()
+    let loop _ [] = pure ()
         loop off (w:ws) = do
           pokeElemOff (castPtr ptr) off w
           loop (off + 1) ws
     loop 0 words0
-  return $ wrapper fptr len
+  pure $ wrapper fptr len
 
-withPeekForeign
-  :: (ForeignPtr a, Int, Int)
+withPeekForeign ::
+     (ForeignPtr a, Int, Int)
   -> ((Int -> IO Word64) -> IO b)
   -> IO b
 withPeekForeign (fptr, off, len) inner =
   withForeignPtr fptr $ \ptr -> do
     let f off'
-          | off' >= len = return 0
+          | off' >= len = pure 0
           | off' + 8 > len = do
               let loop w64 i
-                    | off' + i >= len = return w64
+                    | off' + i >= len = pure w64
                     | otherwise = do
                         w8 :: Word8 <- peekByteOff ptr (off + off' + i)
                         let w64' = shiftL (fromIntegral w8) (i * 8) .|. w64
@@ -126,16 +132,16 @@ instance word8 ~ Word8 => DynamicBytes (VP.Vector word8) where
     loop 0 words0
   withPeekD (VP.Vector off len ba) inner = do
     let f off'
-          | off' >= len = return 0
+          | off' >= len = pure 0
           | off' + 8 > len = do
               let loop w64 i
-                    | off' + i >= len = return w64
+                    | off' + i >= len = pure w64
                     | otherwise = do
                         let w8 :: Word8 = BA.indexByteArray ba (off + off' + i)
                         let w64' = shiftL (fromIntegral w8) (i * 8) .|. w64
                         loop w64' (i + 1)
               loop 0 0
-          | otherwise = return $ BA.indexByteArray ba (off + (off' `div` 8))
+          | otherwise = pure $ BA.indexByteArray ba (off + (off' `div` 8))
     inner f
 
 instance word8 ~ Word8 => DynamicBytes (VU.Vector word8) where
@@ -177,15 +183,19 @@ instance StaticBytes Bytes128 where
 instance ByteArrayAccess Bytes8 where
   length _ = 8
   withByteArray = withByteArrayS
+
 instance ByteArrayAccess Bytes16 where
   length _ = 16
   withByteArray = withByteArrayS
+
 instance ByteArrayAccess Bytes32 where
   length _ = 32
   withByteArray = withByteArrayS
+
 instance ByteArrayAccess Bytes64 where
   length _ = 64
   withByteArray = withByteArrayS
+
 instance ByteArrayAccess Bytes128 where
   length _ = 128
   withByteArray = withByteArrayS
@@ -193,9 +203,8 @@ instance ByteArrayAccess Bytes128 where
 withByteArrayS :: StaticBytes sbytes => sbytes -> (Ptr p -> IO a) -> IO a
 withByteArrayS sbytes = withByteArray (fromStatic sbytes :: ByteString)
 
-toStaticExact
-  :: forall dbytes sbytes.
-     (DynamicBytes dbytes, StaticBytes sbytes)
+toStaticExact ::
+     forall dbytes sbytes. (DynamicBytes dbytes, StaticBytes sbytes)
   => dbytes
   -> Either StaticBytesException sbytes
 toStaticExact dbytes =
@@ -204,9 +213,8 @@ toStaticExact dbytes =
     GT -> Left TooManyBytes
     EQ -> Right (toStaticPadTruncate dbytes)
 
-toStaticPad
-  :: forall dbytes sbytes.
-     (DynamicBytes dbytes, StaticBytes sbytes)
+toStaticPad ::
+     forall dbytes sbytes. (DynamicBytes dbytes, StaticBytes sbytes)
   => dbytes
   -> Either StaticBytesException sbytes
 toStaticPad dbytes =
@@ -214,9 +222,8 @@ toStaticPad dbytes =
     GT -> Left TooManyBytes
     _  -> Right (toStaticPadTruncate dbytes)
 
-toStaticTruncate
-  :: forall dbytes sbytes.
-     (DynamicBytes dbytes, StaticBytes sbytes)
+toStaticTruncate ::
+     forall dbytes sbytes. (DynamicBytes dbytes, StaticBytes sbytes)
   => dbytes
   -> Either StaticBytesException sbytes
 toStaticTruncate dbytes =
@@ -224,15 +231,14 @@ toStaticTruncate dbytes =
     LT -> Left NotEnoughBytes
     _  -> Right (toStaticPadTruncate dbytes)
 
-toStaticPadTruncate
-  :: (DynamicBytes dbytes, StaticBytes sbytes)
+toStaticPadTruncate ::
+     (DynamicBytes dbytes, StaticBytes sbytes)
   => dbytes
   -> sbytes
 toStaticPadTruncate dbytes = unsafePerformIO (withPeekD dbytes (usePeekS 0))
 
-fromStatic
-  :: forall dbytes sbytes.
-     (DynamicBytes dbytes, StaticBytes sbytes)
+fromStatic ::
+     forall dbytes sbytes. (DynamicBytes dbytes, StaticBytes sbytes)
   => sbytes
   -> dbytes
 fromStatic = fromWordsD (lengthS (Nothing :: Maybe sbytes)) . ($ []) . toWordsS

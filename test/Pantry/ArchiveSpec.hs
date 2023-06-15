@@ -1,14 +1,17 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-module Pantry.ArchiveSpec (spec) where
+{-# LANGUAGE RecordWildCards   #-}
 
-import Test.Hspec
-import Data.Maybe (fromJust)
-import RIO
-import RIO.Text as T
-import Pantry
-import Path.IO (resolveFile')
+module Pantry.ArchiveSpec
+  ( spec
+  ) where
+
+import           Data.Maybe ( fromJust )
+import           Pantry
+import           Path.IO ( resolveFile' )
+import           RIO
+import           RIO.Text as T
+import           Test.Hspec
 
 data TestLocation
   = TLFilePath String
@@ -24,11 +27,11 @@ getRawPackageLocationIdent' TestArchive{..} = do
   testLocation' <- case testLocation of
     TLFilePath relPath -> do
       absPath <- resolveFile' relPath
-      return $ ALFilePath $ ResolvedPath
+      pure $ ALFilePath $ ResolvedPath
         { resolvedRelative = RelFilePath $ fromString relPath
         , resolvedAbsolute = absPath
         }
-    TLUrl url -> return $ ALUrl url
+    TLUrl url -> pure $ ALUrl url
   let archive = RawArchive
         { raLocation = testLocation'
         , raHash = Nothing

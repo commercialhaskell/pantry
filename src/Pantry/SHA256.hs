@@ -1,18 +1,20 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE NoImplicitPrelude          #-}
+{-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
--- | Provides a data type ('SHA256') for efficient memory
--- representation of a sha-256 hash value, together with helper
--- functions for converting to and from that value. This module is
--- intended to be imported qualified as @SHA256@.
+{-# LANGUAGE OverloadedStrings          #-}
+
+-- | Provides a data type ('SHA256') for efficient memory representation of a
+-- sha-256 hash value, together with helper functions for converting to and from
+-- that value. This module is intended to be imported qualified as @SHA256@.
 --
 -- Some nomenclature:
 --
--- * Hashing calculates a new hash value from some input. @from@ takes a value that represents an existing hash.
+-- * Hashing calculates a new hash value from some input. @from@ takes a value
+--   that represents an existing hash.
 --
--- * Raw means a raw binary representation of the hash value, without any hex encoding.
+-- * Raw means a raw binary representation of the hash value, without any hex
+--   encoding.
 --
 -- * Text always uses lower case hex encoding
 --
@@ -37,24 +39,23 @@ module Pantry.SHA256
   , toRaw
   ) where
 
-import RIO
-import Data.Aeson
-import Database.Persist.Sql
-import Pantry.Internal.StaticBytes
-import Conduit
-import qualified RIO.Text as T
-
-import qualified Crypto.Hash.Conduit as Hash (hashFile, sinkHash)
-import qualified Crypto.Hash as Hash (hash, hashlazy, Digest, SHA256)
+import           Conduit
+import qualified Crypto.Hash as Hash ( Digest, SHA256, hash, hashlazy )
+import qualified Crypto.Hash.Conduit as Hash ( hashFile, sinkHash )
+import           Data.Aeson
 import qualified Data.ByteArray
 import qualified Data.ByteArray.Encoding as Mem
+import           Database.Persist.Sql
+import           Pantry.Internal.StaticBytes
+import           RIO
+import qualified RIO.Text as T
 
 -- | A SHA256 hash, stored in a static size for more efficient
 -- memory representation.
 --
 -- @since 0.1.0.0
 newtype SHA256 = SHA256 Bytes32
-    deriving (Generic, Eq, NFData, Data, Typeable, Ord, Hashable)
+  deriving (Generic, Eq, NFData, Data, Typeable, Ord, Hashable)
 
 -- | Exceptions which can occur in this module
 --
@@ -94,7 +95,8 @@ sinkHash = fromDigest <$> Hash.sinkHash
 fromHexText :: Text -> Either SHA256Exception SHA256
 fromHexText = fromHexBytes . encodeUtf8
 
--- | Convert a base16-encoded 'ByteString' value containing a hash into a 'SHA256'.
+-- | Convert a base16-encoded 'ByteString' value containing a hash into a
+-- 'SHA256'.
 --
 -- @since 0.1.0.0
 fromHexBytes :: ByteString -> Either SHA256Exception SHA256
@@ -114,7 +116,8 @@ fromDigest digest =
 --
 -- @since 0.1.0.0
 fromRaw :: ByteString -> Either SHA256Exception SHA256
-fromRaw bs = either (Left . InvalidByteCount bs) (Right . SHA256) (toStaticExact bs)
+fromRaw bs =
+  either (Left . InvalidByteCount bs) (Right . SHA256) (toStaticExact bs)
 
 -- | Convert a 'SHA256' into a base16-encoded SHA256 hash.
 --
@@ -122,7 +125,8 @@ fromRaw bs = either (Left . InvalidByteCount bs) (Right . SHA256) (toStaticExact
 toHexText :: SHA256 -> Text
 toHexText ss =
   case decodeUtf8' $ toHexBytes ss of
-    Left e -> error $ "Impossible failure in staticSHA256ToText: " ++ show (ss, e)
+    Left e ->
+      error $ "Impossible failure in staticSHA256ToText: " ++ show (ss, e)
     Right t -> t
 
 -- | Convert a 'SHA256' into a base16-encoded SHA256 hash.

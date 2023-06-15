@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 -- | Exposed for testing, do not use!
 module Pantry.Internal
   ( parseTree
@@ -17,12 +18,12 @@ module Pantry.Internal
   , withStorage_
   ) where
 
-import Control.Exception (assert)
-import Pantry.Types
-import Pantry.SQLite (initStorage)
-import Pantry.HPack (hpackVersion)
+import           Control.Exception ( assert )
+import           Data.Maybe ( fromMaybe )
 import qualified Data.Text as T
-import Data.Maybe (fromMaybe)
+import           Pantry.HPack ( hpackVersion )
+import           Pantry.SQLite ( initStorage )
+import           Pantry.Types
 
 -- | Like @System.FilePath.normalise@, however:
 --
@@ -37,8 +38,8 @@ import Data.Maybe (fromMaybe)
 -- * Cannot begin with a parent directory (@../@)
 --
 -- * Spelled like an American, sorry
-normalizeParents
-  :: FilePath
+normalizeParents ::
+     FilePath
   -> Either String FilePath
 normalizeParents "" = Left "empty file path"
 normalizeParents ('/':_) = Left "absolute path"
@@ -67,10 +68,10 @@ normalizeParents fp = do
     [] -> Left "no non-empty components"
     c' -> Right $ T.unpack $ T.intercalate "/" c'
 
--- | Following tar file rules (Unix file paths only), make the second
--- file relative to the first file.
-makeTarRelative
-  :: FilePath -- ^ base file
+-- | Following tar file rules (Unix file paths only), make the second file
+-- relative to the first file.
+makeTarRelative ::
+     FilePath -- ^ base file
   -> FilePath -- ^ relative part
   -> Either String FilePath
 makeTarRelative _ ('/':_) = Left "absolute path found"

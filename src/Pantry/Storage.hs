@@ -1,24 +1,25 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE NoImplicitPrelude          #-}
+{-# LANGUAGE BangPatterns               #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TupleSections              #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE ViewPatterns               #-}
+
 module Pantry.Storage
   ( SqlBackend
   , initStorage
@@ -101,29 +102,40 @@ module Pantry.Storage
   , unCachedTree
   ) where
 
-import RIO hiding (FilePath)
-import RIO.Process
-import qualified RIO.ByteString as B
-import qualified Pantry.Types as P
-import qualified RIO.List as List
-import qualified RIO.FilePath as FilePath
-import RIO.FilePath ((</>), takeDirectory)
-import RIO.Directory (createDirectoryIfMissing, setPermissions, getPermissions, setOwnerExecutable)
-import Database.Persist
-import Database.Persist.Sqlite
-import Database.Persist.TH
-import RIO.Orphans (HasResourceMap)
+import           Conduit
+import           Data.Acquire ( with )
+import           Database.Persist
+import           Database.Persist.Sqlite
+import           Database.Persist.TH
+import           Pantry.HPack ( hpack, hpackVersion )
 import qualified Pantry.SHA256 as SHA256
-import qualified RIO.Map as Map
-import qualified RIO.Text as T
-import RIO.Time (UTCTime, getCurrentTime)
-import Path (Path, Abs, File, Dir, toFilePath, filename, parseAbsDir, fromAbsFile, fromRelFile)
-import Path.IO (listDir, createTempDir, getTempDir, removeDirRecur)
-import Pantry.HPack (hpackVersion, hpack)
-import Conduit
-import Data.Acquire (with)
-import Pantry.Types (PackageNameP (..), VersionP (..), SHA256, FileSize (..), FileType (..), HasPantryConfig, BlobKey, Repo (..), TreeKey, SafeFilePath, Revision (..), Package (..), SnapshotCacheHash (..), connRDBMS)
 import qualified Pantry.SQLite as SQLite
+import           Pantry.Types
+                   ( BlobKey, FileSize (..), FileType (..), HasPantryConfig
+                   , Package (..), PackageNameP (..), Repo (..), Revision (..)
+                   , SHA256, SafeFilePath, SnapshotCacheHash (..), TreeKey
+                   , VersionP (..), connRDBMS
+                   )
+import qualified Pantry.Types as P
+import           Path
+                   ( Abs, Dir, File, Path, filename, fromAbsFile, fromRelFile
+                   , parseAbsDir, toFilePath
+                   )
+import           Path.IO ( createTempDir, getTempDir, listDir, removeDirRecur )
+import           RIO hiding ( FilePath )
+import qualified RIO.ByteString as B
+import           RIO.Directory
+                   ( createDirectoryIfMissing, getPermissions
+                   , setOwnerExecutable, setPermissions
+                   )
+import           RIO.FilePath ( (</>), takeDirectory )
+import qualified RIO.FilePath as FilePath
+import qualified RIO.List as List
+import qualified RIO.Map as Map
+import           RIO.Orphans ( HasResourceMap )
+import           RIO.Process
+import qualified RIO.Text as T
+import           RIO.Time ( UTCTime, getCurrentTime )
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 -- Raw blobs
@@ -261,25 +273,25 @@ ModuleName
     UniqueModule name
 |]
 
-initStorage
-  :: HasLogFunc env
+initStorage ::
+     HasLogFunc env
   => Path Abs File -- ^ storage file
   -> (P.Storage -> RIO env a)
   -> RIO env a
 initStorage =
   SQLite.initStorage "Pantry" migrateAll
 
-withStorage
-  :: (HasPantryConfig env, HasLogFunc env)
+withStorage ::
+     (HasPantryConfig env, HasLogFunc env)
   => ReaderT SqlBackend (RIO env) a
   -> RIO env a
 withStorage action = do
   storage <- view (P.pantryConfigL.to P.pcStorage)
   SQLite.withStorage_ storage action
 
--- | This is a helper type to distinguish db queries between different rdbms backends. The important
--- part is that the affects described in this data type should be semantically equivalent between
--- the supported engines.
+-- | This is a helper type to distinguish db queries between different rdbms
+-- backends. The important part is that the affects described in this data type
+-- should be semantically equivalent between the supported engines.
 data RdbmsActions env a = RdbmsActions
   { raSqlite :: !(ReaderT SqlBackend (RIO env) a)
   -- ^ A query that is specific to SQLite
@@ -287,9 +299,10 @@ data RdbmsActions env a = RdbmsActions
   -- ^ A query that is specific to PostgreSQL
   }
 
--- | This function provides a way to create queries supported by multiple sql backends.
-rdbmsAwareQuery
-  :: RdbmsActions env a
+-- | This function provides a way to create queries supported by multiple sql
+-- backends.
+rdbmsAwareQuery ::
+     RdbmsActions env a
   -> ReaderT SqlBackend (RIO env) a
 rdbmsAwareQuery RdbmsActions {raSqlite, raPostgres} = do
   rdbms <- Pantry.Types.connRDBMS <$> ask
@@ -298,25 +311,24 @@ rdbmsAwareQuery RdbmsActions {raSqlite, raPostgres} = do
     "sqlite" -> raSqlite
     _ -> error $ "rdbmsAwareQuery: unsupported rdbms '" ++ T.unpack rdbms ++ "'"
 
-
-getPackageNameById
-  :: PackageNameId
+getPackageNameById ::
+     PackageNameId
   -> ReaderT SqlBackend (RIO env) (Maybe P.PackageName)
 getPackageNameById = fmap (unPackageNameP . packageNameName <$>) . get
 
-
-getPackageNameId
-  :: P.PackageName
+getPackageNameId ::
+     P.PackageName
   -> ReaderT SqlBackend (RIO env) PackageNameId
-getPackageNameId = fmap (either entityKey id) . insertBy . PackageName . PackageNameP
+getPackageNameId =
+  fmap (either entityKey id) . insertBy . PackageName . PackageNameP
 
-getVersionId
-  :: P.Version
+getVersionId ::
+     P.Version
   -> ReaderT SqlBackend (RIO env) VersionId
 getVersionId = fmap (either entityKey id) . insertBy . Version . VersionP
 
-storeBlob
-  :: ByteString
+storeBlob ::
+     ByteString
   -> ReaderT SqlBackend (RIO env) (BlobId, BlobKey)
 storeBlob bs = do
   let sha = SHA256.hashBytes bs
@@ -329,20 +341,20 @@ storeBlob bs = do
           RdbmsActions
             { raSqlite =
                 insert Blob {blobSha = sha, blobSize = size, blobContents = bs}
-            , raPostgres =
-                do rawExecute
-                     "INSERT INTO blob(sha, size, contents) VALUES (?, ?, ?) ON CONFLICT DO NOTHING"
-                     [ toPersistValue sha
-                     , toPersistValue size
-                     , toPersistValue bs
-                     ]
-                   rawSql
-                     "SELECT blob.id FROM blob WHERE blob.sha = ?"
-                     [toPersistValue sha] >>= \case
-                     [Single key] -> pure key
-                     _ ->
-                       error
-                         "soreBlob: there was a critical problem storing a blob."
+            , raPostgres = do
+                rawExecute
+                  "INSERT INTO blob(sha, size, contents) VALUES (?, ?, ?) ON \
+                  \CONFLICT DO NOTHING"
+                  [ toPersistValue sha
+                  , toPersistValue size
+                  , toPersistValue bs
+                  ]
+                rawSql
+                  "SELECT blob.id FROM blob WHERE blob.sha = ?"
+                  [toPersistValue sha] >>= \case
+                  [Single key] -> pure key
+                  _ -> error
+                    "soreBlob: there was a critical problem storing a blob."
             }
       key:rest -> assert (null rest) (pure key)
   pure (key, P.BlobKey sha size)
@@ -383,13 +395,15 @@ allBlobsSource mblobId =
   mapC (entityKey &&& blobContents . entityVal)
 
 -- | Pull all hackage cabal entries from the database as
--- 'RawPackageLocationImmutable'. We do a manual join rather than
--- dropping to raw SQL, and Esqueleto would add more deps.
+-- 'RawPackageLocationImmutable'. We do a manual join rather than dropping to
+-- raw SQL, and Esqueleto would add more deps.
 allHackageCabalRawPackageLocations ::
      HasResourceMap env
   => Maybe HackageCabalId
-  -- ^ For some x, yield cabals whose id>x.
-  -> ReaderT SqlBackend (RIO env) (Map.Map HackageCabalId P.RawPackageLocationImmutable)
+     -- ^ For some x, yield cabals whose id>x.
+  -> ReaderT
+       SqlBackend (RIO env)
+       (Map.Map HackageCabalId P.RawPackageLocationImmutable)
 allHackageCabalRawPackageLocations mhackageId = do
   hackageCabals :: Map HackageCabalId HackageCabal <-
     selectTuples
@@ -425,10 +439,10 @@ allHackageCabalRawPackageLocations mhackageId = do
                                   (P.CFIRevision
                                      (hackageCabalRevision hackageCabal)))
                                (fmap P.TreeKey mblobKey)))
-  where
-    selectTuples pred sort =
-      fmap (Map.fromList . map tuple) (selectList pred sort)
-    tuple (Entity k v) = (k, v)
+ where
+  selectTuples pred sort =
+    fmap (Map.fromList . map tuple) (selectList pred sort)
+  tuple (Entity k v) = (k, v)
 
 allBlobsCount :: Maybe BlobId -> ReaderT SqlBackend (RIO env) Int
 allBlobsCount mblobId = count [BlobId >. blobId | Just blobId <- [mblobId]]
@@ -481,7 +495,10 @@ clearHackageRevisions :: ReaderT SqlBackend (RIO env) ()
 clearHackageRevisions = deleteWhere ([] :: [Filter HackageCabal])
 
 storeHackageRevision ::
-     P.PackageName -> P.Version -> BlobId -> ReaderT SqlBackend (RIO env) ()
+     P.PackageName
+  -> P.Version
+  -> BlobId
+  -> ReaderT SqlBackend (RIO env) ()
 storeHackageRevision name version key = do
   nameid <- getPackageNameId name
   versionid <- getVersionId version
@@ -497,8 +514,8 @@ storeHackageRevision name version key = do
     , hackageCabalTree = Nothing
     }
 
-loadHackagePackageVersions
-  :: P.PackageName
+loadHackagePackageVersions ::
+     P.PackageName
   -> ReaderT SqlBackend (RIO env) (Map P.Version (Map Revision BlobKey))
 loadHackagePackageVersions name = do
   nameid <- getPackageNameId name
@@ -514,8 +531,8 @@ loadHackagePackageVersions name = do
     go (Single revision, Single (P.VersionP version), Single key, Single size) =
       (version, Map.singleton revision (P.BlobKey key size))
 
-loadHackagePackageVersion
-  :: P.PackageName
+loadHackagePackageVersion ::
+     P.PackageName
   -> P.Version
   -> ReaderT SqlBackend (RIO env) (Map Revision (BlobId, P.BlobKey))
 loadHackagePackageVersion name version = do
@@ -529,16 +546,15 @@ loadHackagePackageVersion name version = do
     \AND   hackage.version=?\n\
     \AND   hackage.cabal=blob.id"
     [toPersistValue nameid, toPersistValue versionid]
-  where
-    go (Single revision, Single sha, Single size, Single bid) =
-      (revision, (bid, P.BlobKey sha size))
+ where
+  go (Single revision, Single sha, Single size, Single bid) =
+    (revision, (bid, P.BlobKey sha size))
 
-loadLatestCacheUpdate
-  :: ReaderT SqlBackend (RIO env) (Maybe (FileSize, SHA256))
-loadLatestCacheUpdate =
-    fmap go <$> selectFirst [] [Desc CacheUpdateTime]
-  where
-    go (Entity _ cu) = (cacheUpdateSize cu, cacheUpdateSha cu)
+loadLatestCacheUpdate ::
+  ReaderT SqlBackend (RIO env) (Maybe (FileSize, SHA256))
+loadLatestCacheUpdate = fmap go <$> selectFirst [] [Desc CacheUpdateTime]
+ where
+  go (Entity _ cu) = (cacheUpdateSize cu, cacheUpdateSha cu)
 
 storeCacheUpdate :: FileSize -> SHA256 -> ReaderT SqlBackend (RIO env) ()
 storeCacheUpdate size sha = do
@@ -549,8 +565,8 @@ storeCacheUpdate size sha = do
     , cacheUpdateSha = sha
     }
 
-storeHackageTarballInfo
-  :: P.PackageName
+storeHackageTarballInfo ::
+     P.PackageName
   -> P.Version
   -> SHA256
   -> FileSize
@@ -565,36 +581,36 @@ storeHackageTarballInfo name version sha size = do
     , hackageTarballSize = size
     }
 
-loadHackageTarballInfo
-  :: P.PackageName
+loadHackageTarballInfo ::
+     P.PackageName
   -> P.Version
   -> ReaderT SqlBackend (RIO env) (Maybe (SHA256, FileSize))
 loadHackageTarballInfo name version = do
   nameid <- getPackageNameId name
   versionid <- getVersionId version
   fmap go <$> getBy (UniqueHackageTarball nameid versionid)
-  where
-    go (Entity _ ht) = (hackageTarballSha ht, hackageTarballSize ht)
+ where
+  go (Entity _ ht) = (hackageTarballSha ht, hackageTarballSize ht)
 
 storeCabalFile ::
-       ByteString
-    -> P.PackageName
-    -> ReaderT SqlBackend (RIO env) BlobId
+     ByteString
+  -> P.PackageName
+  -> ReaderT SqlBackend (RIO env) BlobId
 storeCabalFile cabalBS pkgName = do
-    (bid, _) <- storeBlob cabalBS
-    let cabalFile = P.cabalFileName pkgName
-    _ <- insertBy FilePath {filePathPath = cabalFile}
-    return bid
+  (bid, _) <- storeBlob cabalBS
+  let cabalFile = P.cabalFileName pkgName
+  _ <- insertBy FilePath {filePathPath = cabalFile}
+  pure bid
 
 loadFilePath ::
-       SafeFilePath
-    -> ReaderT SqlBackend (RIO env) (Entity FilePath)
+     SafeFilePath
+  -> ReaderT SqlBackend (RIO env) (Entity FilePath)
 loadFilePath path = do
-    fp <- getBy $ UniqueSfp path
-    case fp of
-        Nothing -> error $
-          "loadFilePath: No row found for " <> T.unpack (P.unSafeFilePath path)
-        Just record -> return record
+  fp <- getBy $ UniqueSfp path
+  case fp of
+    Nothing -> error $
+      "loadFilePath: No row found for " <> T.unpack (P.unSafeFilePath path)
+    Just record -> pure record
 
 loadHPackTreeEntity :: TreeId -> ReaderT SqlBackend (RIO env) (Entity TreeEntry)
 loadHPackTreeEntity tid = do
@@ -603,23 +619,22 @@ loadHPackTreeEntity tid = do
   hpackTreeEntry <-
     selectFirst [TreeEntryTree ==. tid, TreeEntryPath ==. filePathId] []
   case hpackTreeEntry of
-    Nothing ->
-      error $
-      "loadHPackTreeEntity: No package.yaml file found in TreeEntry for TreeId:  " ++
-      show tid
-    Just record -> return record
+    Nothing -> error $
+         "loadHPackTreeEntity: No package.yaml file found in TreeEntry for TreeId:  "
+      ++ show tid
+    Just record -> pure record
 
 storeHPack ::
-       (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-    => P.RawPackageLocationImmutable
-    -> TreeId
-    -> ReaderT SqlBackend (RIO env) (Key HPack)
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+  => P.RawPackageLocationImmutable
+  -> TreeId
+  -> ReaderT SqlBackend (RIO env) (Key HPack)
 storeHPack rpli tid = do
-    vid <- hpackVersionId
-    hpackRecord <- getBy (UniqueHPack tid vid)
-    case hpackRecord of
-      Nothing -> generateHPack rpli tid vid
-      Just record -> return $ entityKey record
+  vid <- hpackVersionId
+  hpackRecord <- getBy (UniqueHPack tid vid)
+  case hpackRecord of
+    Nothing -> generateHPack rpli tid vid
+    Just record -> pure $ entityKey record
 
 loadCabalBlobKey :: HPackId -> ReaderT SqlBackend (RIO env) BlobKey
 loadCabalBlobKey hpackId = do
@@ -627,35 +642,35 @@ loadCabalBlobKey hpackId = do
   getBlobKey $ hPackCabalBlob hpackRecord
 
 generateHPack ::
-       (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-    => P.RawPackageLocationImmutable -- ^ for exceptions
-    -> TreeId
-    -> VersionId
-    -> ReaderT SqlBackend (RIO env) (Key HPack)
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+  => P.RawPackageLocationImmutable -- ^ for exceptions
+  -> TreeId
+  -> VersionId
+  -> ReaderT SqlBackend (RIO env) (Key HPack)
 generateHPack rpli tid vid = do
-    tree <- getTree tid
-    (pkgName, cabalBS) <- hpackToCabalS rpli tree
-    bid <- storeCabalFile cabalBS pkgName
-    let cabalFile = P.cabalFileName pkgName
-    fid <- insertBy FilePath {filePathPath = cabalFile}
-    let hpackRecord =
-            HPack
-                { hPackTree = tid
-                , hPackVersion = vid
-                , hPackCabalBlob = bid
-                , hPackCabalPath = either entityKey id fid
-                }
-    either entityKey id <$> insertBy hpackRecord
+  tree <- getTree tid
+  (pkgName, cabalBS) <- hpackToCabalS rpli tree
+  bid <- storeCabalFile cabalBS pkgName
+  let cabalFile = P.cabalFileName pkgName
+  fid <- insertBy FilePath {filePathPath = cabalFile}
+  let hpackRecord =
+        HPack
+          { hPackTree = tid
+          , hPackVersion = vid
+          , hPackCabalBlob = bid
+          , hPackCabalPath = either entityKey id fid
+          }
+  either entityKey id <$> insertBy hpackRecord
 
 
 hpackVersionId ::
-       (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-    => ReaderT SqlBackend (RIO env) VersionId
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+  => ReaderT SqlBackend (RIO env) VersionId
 hpackVersionId = do
-    hpackSoftwareVersion <- lift hpackVersion
-    fmap (either entityKey id) $
-      insertBy $
-      Version {versionVersion = P.VersionP hpackSoftwareVersion}
+  hpackSoftwareVersion <- lift hpackVersion
+  fmap (either entityKey id) $
+    insertBy $
+    Version {versionVersion = P.VersionP hpackSoftwareVersion}
 
 
 getFilePathId :: SafeFilePath -> ReaderT SqlBackend (RIO env) FilePathId
@@ -666,23 +681,22 @@ getFilePathId sfp =
       rdbmsAwareQuery
         RdbmsActions
           { raSqlite = insert $ FilePath sfp
-          , raPostgres =
-              do rawExecute
-                   "INSERT INTO file_path(path) VALUES (?) ON CONFLICT DO NOTHING"
-                   [toPersistValue sfp]
-                 rawSql
-                   "SELECT id FROM file_path WHERE path = ?"
-                   [toPersistValue sfp] >>= \case
-                   [Single key] -> pure key
-                   _ ->
-                     error
-                       "getFilePathId: there was a critical problem storing a blob."
+          , raPostgres = do
+              rawExecute
+                "INSERT INTO file_path(path) VALUES (?) ON CONFLICT DO NOTHING"
+                [toPersistValue sfp]
+              rawSql
+                "SELECT id FROM file_path WHERE path = ?"
+                [toPersistValue sfp] >>= \case
+                [Single key] -> pure key
+                _ -> error
+                  "getFilePathId: there was a critical problem storing a blob."
           }
     _ ->
       error $
       "getFilePathId: FilePath unique constraint key is violated for: " ++ fp
-  where
-    fp = T.unpack (P.unSafeFilePath sfp)
+ where
+  fp = T.unpack (P.unSafeFilePath sfp)
 
 -- | A tree that has already been stored in the database
 newtype CachedTree
@@ -692,8 +706,8 @@ newtype CachedTree
 unCachedTree :: CachedTree -> P.Tree
 unCachedTree (CachedTreeMap m) = P.TreeMap $ fst <$> m
 
-storeTree
-  :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+storeTree ::
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => P.RawPackageLocationImmutable -- ^ for exceptions
   -> P.PackageIdentifier
   -> CachedTree
@@ -702,14 +716,18 @@ storeTree
 storeTree rpli (P.PackageIdentifier name version) tree@(CachedTreeMap m) buildFile = do
   (bid, blobKey) <- storeBlob $ P.renderTree $ unCachedTree tree
   (cabalid, ftype) <- case buildFile of
-                P.BFHpack (P.TreeEntry _ ftype) -> pure (Nothing, ftype)
-                P.BFCabal _ (P.TreeEntry (P.BlobKey btypeSha _) ftype) -> do
-                               buildTypeid <- loadBlobBySHA btypeSha
-                               buildid <-
-                                   case buildTypeid of
-                                     Just buildId -> pure buildId
-                                     Nothing -> error $ "storeTree: " ++ show buildFile ++ " BlobKey not found: " ++ show (tree, btypeSha)
-                               return (Just buildid, ftype)
+    P.BFHpack (P.TreeEntry _ ftype) -> pure (Nothing, ftype)
+    P.BFCabal _ (P.TreeEntry (P.BlobKey btypeSha _) ftype) -> do
+      buildTypeid <- loadBlobBySHA btypeSha
+      buildid <-
+        case buildTypeid of
+          Just buildId -> pure buildId
+          Nothing -> error $
+               "storeTree: "
+            ++ show buildFile
+            ++ " BlobKey not found: "
+            ++ show (tree, btypeSha)
+      pure (Just buildid, ftype)
   nameid <- getPackageNameId name
   versionid <- getVersionId version
   etid <- insertBy Tree
@@ -734,8 +752,8 @@ storeTree rpli (P.PackageIdentifier name version) tree@(CachedTreeMap m) buildFi
       pure (tid, P.TreeKey blobKey)
   case buildFile of
     P.BFHpack _ -> void $ storeHPack rpli tid
-    P.BFCabal _ _ -> return ()
-  return (tid, pTreeKey)
+    P.BFCabal _ _ -> pure ()
+  pure (tid, pTreeKey)
 
 getTree :: TreeId -> ReaderT SqlBackend (RIO env) P.Tree
 getTree tid = do
@@ -754,8 +772,8 @@ loadTree key = do
     Nothing -> pure Nothing
     Just ent -> Just <$> loadTreeByEnt ent
 
-getTreeForKey
-  :: TreeKey
+getTreeForKey ::
+     TreeKey
   -> ReaderT SqlBackend (RIO env) (Maybe (Entity Tree))
 getTreeForKey (P.TreeKey key) = do
   mbid <- getBlobId key
@@ -769,60 +787,51 @@ loadPackageById ::
     -> TreeId
     -> ReaderT SqlBackend (RIO env) Package
 loadPackageById rpli tid = do
-    (mts :: Maybe Tree) <- get tid
-    ts <-
-        case mts of
-            Nothing ->
-                error $ "loadPackageById: invalid foreign key " ++ show tid
-            Just ts -> pure ts
-    (tree :: P.Tree) <- loadTreeByEnt $ Entity tid ts
-    (blobKey :: BlobKey) <- getBlobKey $ treeKey ts
-    (mname :: Maybe PackageName) <- get $ treeName ts
-    name <-
-        case mname of
-            Nothing ->
-                error $
-                "loadPackageByid: invalid foreign key " ++ show (treeName ts)
-            Just (PackageName (P.PackageNameP name)) -> pure name
-    mversion <- get $ treeVersion ts
-    version <-
-        case mversion of
-            Nothing ->
-                error $
-                "loadPackageByid: invalid foreign key " ++ show (treeVersion ts)
-            Just (Version (P.VersionP version)) -> pure version
-    let ident = P.PackageIdentifier name version
-    (packageEntry, mtree) <-
-        case treeCabal ts of
-            Just keyBlob -> do
-                cabalKey <- getBlobKey keyBlob
-                return
-                    ( P.PCCabalFile $ P.TreeEntry cabalKey (treeCabalType ts)
-                    , tree)
-            Nothing -> do
-                hpackVid <- hpackVersionId
-                hpackEntity <- getBy (UniqueHPack tid hpackVid)
-                let (P.TreeMap tmap) = tree
-                    cabalFile = P.cabalFileName name
-                case hpackEntity of
-                    Nothing
-                        -- This case will happen when you either
-                        -- update stack with a new hpack version or
-                        -- use different hpack version via
-                        -- --with-hpack option.
-                     -> do
-                        (hpackId :: HPackId) <- storeHPack rpli tid
-                        hpackRecord <- getJust hpackId
-                        getHPackCabalFile hpackRecord ts tmap cabalFile
-                    Just (Entity _ item) ->
-                        getHPackCabalFile item ts tmap cabalFile
-    pure
-        Package
-            { packageTreeKey = P.TreeKey blobKey
-            , packageTree = mtree
-            , packageCabalEntry = packageEntry
-            , packageIdent = ident
-            }
+  (mts :: Maybe Tree) <- get tid
+  ts <- case mts of
+    Nothing ->
+      error $ "loadPackageById: invalid foreign key " ++ show tid
+    Just ts -> pure ts
+  (tree :: P.Tree) <- loadTreeByEnt $ Entity tid ts
+  (blobKey :: BlobKey) <- getBlobKey $ treeKey ts
+  (mname :: Maybe PackageName) <- get $ treeName ts
+  name <- case mname of
+    Nothing -> error $
+      "loadPackageByid: invalid foreign key " ++ show (treeName ts)
+    Just (PackageName (P.PackageNameP name)) -> pure name
+  mversion <- get $ treeVersion ts
+  version <- case mversion of
+    Nothing -> error $
+      "loadPackageByid: invalid foreign key " ++ show (treeVersion ts)
+    Just (Version (P.VersionP version)) -> pure version
+  let ident = P.PackageIdentifier name version
+  (packageEntry, mtree) <- case treeCabal ts of
+    Just keyBlob -> do
+      cabalKey <- getBlobKey keyBlob
+      pure
+        ( P.PCCabalFile $ P.TreeEntry cabalKey (treeCabalType ts)
+        , tree)
+    Nothing -> do
+      hpackVid <- hpackVersionId
+      hpackEntity <- getBy (UniqueHPack tid hpackVid)
+      let (P.TreeMap tmap) = tree
+          cabalFile = P.cabalFileName name
+      case hpackEntity of
+        Nothing -> do
+          -- This case will happen when you either update stack with a new hpack
+          -- version or use different hpack version via --with-hpack option.
+          (hpackId :: HPackId) <- storeHPack rpli tid
+          hpackRecord <- getJust hpackId
+          getHPackCabalFile hpackRecord ts tmap cabalFile
+        Just (Entity _ item) ->
+          getHPackCabalFile item ts tmap cabalFile
+  pure
+    Package
+      { packageTreeKey = P.TreeKey blobKey
+      , packageTree = mtree
+      , packageCabalEntry = packageEntry
+      , packageIdent = ident
+      }
 
 getHPackBlobKey :: HPack -> ReaderT SqlBackend (RIO env) BlobKey
 getHPackBlobKey hpackRecord = do
@@ -835,30 +844,30 @@ getHPackBlobKeyById hpackId = do
   hpackRecord <- getJust hpackId
   getHPackBlobKey hpackRecord
 
-
 getHPackCabalFile ::
-       (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-    => HPack
-    -> Tree
-    -> Map SafeFilePath P.TreeEntry
-    -> SafeFilePath
-    -> ReaderT SqlBackend (RIO env) (P.PackageCabal, P.Tree)
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+  => HPack
+  -> Tree
+  -> Map SafeFilePath P.TreeEntry
+  -> SafeFilePath
+  -> ReaderT SqlBackend (RIO env) (P.PackageCabal, P.Tree)
 getHPackCabalFile hpackRecord ts tmap cabalFile = do
-    cabalKey <- getBlobKey (hPackCabalBlob hpackRecord)
-    hpackKey <- getHPackBlobKey hpackRecord
-    hpackSoftwareVersion <- lift hpackVersion
-    let fileType = treeCabalType ts
-        cbTreeEntry = P.TreeEntry cabalKey fileType
-        hpackTreeEntry = P.TreeEntry hpackKey fileType
-        tree = P.TreeMap $ Map.insert cabalFile cbTreeEntry tmap
-    return
-        ( P.PCHpack $
-          P.PHpack
-              { P.phOriginal = hpackTreeEntry
-              , P.phGenerated = cbTreeEntry
-              , P.phVersion = hpackSoftwareVersion
-              }
-        , tree)
+  cabalKey <- getBlobKey (hPackCabalBlob hpackRecord)
+  hpackKey <- getHPackBlobKey hpackRecord
+  hpackSoftwareVersion <- lift hpackVersion
+  let fileType = treeCabalType ts
+      cbTreeEntry = P.TreeEntry cabalKey fileType
+      hpackTreeEntry = P.TreeEntry hpackKey fileType
+      tree = P.TreeMap $ Map.insert cabalFile cbTreeEntry tmap
+  pure
+    ( P.PCHpack $
+      P.PHpack
+          { P.phOriginal = hpackTreeEntry
+          , P.phGenerated = cbTreeEntry
+          , P.phVersion = hpackSoftwareVersion
+          }
+    , tree
+    )
 
 loadTreeByEnt :: Entity Tree -> ReaderT SqlBackend (RIO env) P.Tree
 loadTreeByEnt (Entity tid _t) = do
@@ -874,8 +883,8 @@ loadTreeByEnt (Entity tid _t) = do
          (sfp, P.TreeEntry (P.BlobKey sha size) ft))
     entries
 
-storeHackageTree
-  :: P.PackageName
+storeHackageTree ::
+     P.PackageName
   -> P.Version
   -> BlobId
   -> P.TreeKey
@@ -891,8 +900,8 @@ storeHackageTree name version cabal treeKey' = do
     ]
     [HackageCabalTree =. Just (entityKey ent)]
 
-loadHackageTreeKey
-  :: P.PackageName
+loadHackageTreeKey ::
+     P.PackageName
   -> P.Version
   -> SHA256
   -> ReaderT SqlBackend (RIO env) (Maybe TreeKey)
@@ -917,8 +926,8 @@ loadHackageTreeKey name ver sha = do
     (Single treesha, Single size):_ ->
       pure $ Just $ P.TreeKey $ P.BlobKey treesha size
 
-loadHackageTree
-  :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+loadHackageTree ::
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => P.RawPackageLocationImmutable -- ^ for exceptions
   -> P.PackageName
   -> P.Version
@@ -941,8 +950,8 @@ loadHackageTree rpli name ver bid = do
         Nothing -> assert False $ pure Nothing
         Just tid -> Just <$> loadPackageById rpli tid
 
-storeArchiveCache
-  :: Text -- ^ URL
+storeArchiveCache ::
+     Text -- ^ URL
   -> Text -- ^ subdir
   -> SHA256
   -> FileSize
@@ -960,8 +969,8 @@ storeArchiveCache url subdir sha size treeKey' = do
     , archiveCacheTree = entityKey ent
     }
 
-loadArchiveCache
-  :: Text -- ^ URL
+loadArchiveCache ::
+     Text -- ^ URL
   -> Text -- ^ subdir
   -> ReaderT SqlBackend (RIO env) [(SHA256, FileSize, TreeId)]
 loadArchiveCache url subdir = map go <$> selectList
@@ -969,11 +978,11 @@ loadArchiveCache url subdir = map go <$> selectList
   , ArchiveCacheSubdir ==. subdir
   ]
   [Desc ArchiveCacheTime]
-  where
-    go (Entity _ ac) = (archiveCacheSha ac, archiveCacheSize ac, archiveCacheTree ac)
+ where
+  go (Entity _ ac) = (archiveCacheSha ac, archiveCacheSize ac, archiveCacheTree ac)
 
-storeRepoCache
-  :: Repo
+storeRepoCache ::
+     Repo
   -> Text -- ^ subdir
   -> TreeId
   -> ReaderT SqlBackend (RIO env) ()
@@ -988,8 +997,8 @@ storeRepoCache repo subdir tid = do
     , repoCacheTree = tid
     }
 
-loadRepoCache
-  :: Repo
+loadRepoCache ::
+     Repo
   -> ReaderT SqlBackend (RIO env) (Maybe TreeId)
 loadRepoCache repo = fmap (repoCacheTree . entityVal) <$> selectFirst
   [ RepoCacheUrl ==. repoUrl repo
@@ -1000,7 +1009,9 @@ loadRepoCache repo = fmap (repoCacheTree . entityVal) <$> selectFirst
   [Desc RepoCacheTime]
 
 storePreferredVersion ::
-     P.PackageName -> Text -> ReaderT SqlBackend (RIO env) ()
+     P.PackageName
+  -> Text
+  -> ReaderT SqlBackend (RIO env) ()
 storePreferredVersion name p = do
   nameid <- getPackageNameId name
   ment <- getBy $ UniquePreferred nameid
@@ -1012,13 +1023,14 @@ storePreferredVersion name p = do
     Just (Entity pid _) -> update pid [PreferredVersionsPreferred =. p]
 
 loadPreferredVersion ::
-     P.PackageName -> ReaderT SqlBackend (RIO env) (Maybe Text)
+     P.PackageName
+  -> ReaderT SqlBackend (RIO env) (Maybe Text)
 loadPreferredVersion name = do
   nameid <- getPackageNameId name
   fmap (preferredVersionsPreferred . entityVal) <$> getBy (UniquePreferred nameid)
 
-sinkHackagePackageNames
-  :: (P.PackageName -> Bool)
+sinkHackagePackageNames ::
+     (P.PackageName -> Bool)
   -> ConduitT P.PackageName Void (ReaderT SqlBackend (RIO env)) a
   -> ReaderT SqlBackend (RIO env) a
 sinkHackagePackageNames predicate sink = do
@@ -1027,19 +1039,19 @@ sinkHackagePackageNames predicate sink = do
     $ src
    .| concatMapMC go
    .| sink
-  where
-    go (Entity nameid (PackageName (PackageNameP name)))
-      | predicate name = do
-          -- Make sure it's actually on Hackage. Would be much more
-          -- efficient with some raw SQL and an inner join, but we
-          -- don't have a Conduit version of rawSql.
-          onHackage <- checkOnHackage nameid
-          pure $ if onHackage then Just name else Nothing
-      | otherwise = pure Nothing
+ where
+  go (Entity nameid (PackageName (PackageNameP name)))
+    | predicate name = do
+        -- Make sure it's actually on Hackage. Would be much more efficient with
+        -- some raw SQL and an inner join, but we don't have a Conduit version
+        -- of rawSql.
+        onHackage <- checkOnHackage nameid
+        pure $ if onHackage then Just name else Nothing
+    | otherwise = pure Nothing
 
-    checkOnHackage nameid = do
-      cnt <- count [HackageCabalName ==. nameid]
-      pure $ cnt > 0
+  checkOnHackage nameid = do
+    cnt <- count [HackageCabalName ==. nameid]
+    pure $ cnt > 0
 
 -- | Get the filename for the cabal file in the given directory.
 --
@@ -1048,59 +1060,61 @@ sinkHackagePackageNames predicate sink = do
 --
 -- If the directory contains a file named package.yaml, hpack is used to
 -- generate a .cabal file from it.
-findOrGenerateCabalFile
-    :: forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-    => Path Abs Dir -- ^ package directory
-    -> RIO env (P.PackageName, Path Abs File)
+findOrGenerateCabalFile ::
+     forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+  => Path Abs Dir -- ^ package directory
+  -> RIO env (P.PackageName, Path Abs File)
 findOrGenerateCabalFile pkgDir = do
-    hpack pkgDir
-    files <- filter (flip hasExtension "cabal" . toFilePath) . snd
-         <$> listDir pkgDir
-    -- If there are multiple files, ignore files that start with
-    -- ".". On unixlike environments these are hidden, and this
-    -- character is not valid in package names. The main goal is
-    -- to ignore emacs lock files - see
-    -- https://github.com/commercialhaskell/stack/issues/1897.
-    let isHidden ('.':_) = True
-        isHidden _ = False
-    case filter (not . isHidden . fromRelFile . filename) files of
-        [] -> throwIO $ P.NoCabalFileFound pkgDir
-        [x] -> maybe
-          (throwIO $ P.InvalidCabalFilePath x)
-          (\pn -> pure (pn, x)) $
-            List.stripSuffix ".cabal" (toFilePath (filename x)) >>=
-            P.parsePackageName
-        _:_ -> throwIO $ P.MultipleCabalFilesFound pkgDir files
-      where hasExtension fp x = FilePath.takeExtension fp == "." ++ x
+  hpack pkgDir
+  files <- filter (flip hasExtension "cabal" . toFilePath) . snd
+       <$> listDir pkgDir
+  -- If there are multiple files, ignore files that start with ".". On unix-like
+  -- environments these are hidden, and this character is not valid in package
+  -- names. The main goal is to ignore emacs lock files - see
+  -- https://github.com/commercialhaskell/stack/issues/1897.
+  let isHidden ('.':_) = True
+      isHidden _ = False
+  case filter (not . isHidden . fromRelFile . filename) files of
+    [] -> throwIO $ P.NoCabalFileFound pkgDir
+    [x] -> maybe
+      (throwIO $ P.InvalidCabalFilePath x)
+      (\pn -> pure (pn, x)) $
+        List.stripSuffix ".cabal" (toFilePath (filename x)) >>=
+        P.parsePackageName
+    _:_ -> throwIO $ P.MultipleCabalFilesFound pkgDir files
+ where
+  hasExtension fp x = FilePath.takeExtension fp == "." ++ x
 
 -- | Similar to 'hpackToCabal' but doesn't require a new connection to database.
-hpackToCabalS :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-              => P.RawPackageLocationImmutable -- ^ for exceptions
-              -> P.Tree
-              -> ReaderT SqlBackend (RIO env) (P.PackageName, ByteString)
+hpackToCabalS ::
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+  => P.RawPackageLocationImmutable -- ^ for exceptions
+  -> P.Tree
+  -> ReaderT SqlBackend (RIO env) (P.PackageName, ByteString)
 hpackToCabalS rpli tree = do
   tmpDir <- lift $ do
-              tdir <- getTempDir
-              createTempDir tdir "hpack-pkg-dir"
+    tdir <- getTempDir
+    createTempDir tdir "hpack-pkg-dir"
   unpackTreeToDir rpli tmpDir tree
   (packageName, cfile) <- lift $ findOrGenerateCabalFile tmpDir
   !bs <- lift $ B.readFile (fromAbsFile cfile)
   lift $ removeDirRecur tmpDir
-  return (packageName, bs)
+  pure (packageName, bs)
 
-hpackToCabal :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-           => P.RawPackageLocationImmutable -- ^ for exceptions
-           -> P.Tree
-           -> RIO env (P.PackageName, ByteString)
+hpackToCabal ::
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+  => P.RawPackageLocationImmutable -- ^ for exceptions
+  -> P.Tree
+  -> RIO env (P.PackageName, ByteString)
 hpackToCabal rpli tree = withSystemTempDirectory "hpack-pkg-dir" $ \tmpdir -> do
-               tdir <- parseAbsDir tmpdir
-               withStorage $ unpackTreeToDir rpli tdir tree
-               (packageName, cfile) <- findOrGenerateCabalFile tdir
-               bs <- B.readFile (fromAbsFile cfile)
-               return (packageName, bs)
+  tdir <- parseAbsDir tmpdir
+  withStorage $ unpackTreeToDir rpli tdir tree
+  (packageName, cfile) <- findOrGenerateCabalFile tdir
+  bs <- B.readFile (fromAbsFile cfile)
+  pure (packageName, bs)
 
-unpackTreeToDir
-  :: (HasPantryConfig env, HasLogFunc env)
+unpackTreeToDir ::
+     (HasPantryConfig env, HasLogFunc env)
   => P.RawPackageLocationImmutable -- ^ for exceptions
   -> Path Abs Dir -- ^ dest dir, will be created if necessary
   -> P.Tree
@@ -1133,26 +1147,26 @@ countHackageCabals = do
     (Single n):_ ->
       pure n
 
-getSnapshotCacheByHash
-  :: SnapshotCacheHash
+getSnapshotCacheByHash ::
+     SnapshotCacheHash
   -> ReaderT SqlBackend (RIO env) (Maybe SnapshotCacheId)
 getSnapshotCacheByHash =
   fmap (fmap entityKey) . getBy . UniqueSnapshotCache . unSnapshotCacheHash
 
-getSnapshotCacheId
-  :: SnapshotCacheHash
+getSnapshotCacheId ::
+     SnapshotCacheHash
   -> ReaderT SqlBackend (RIO env) SnapshotCacheId
 getSnapshotCacheId =
   fmap (either entityKey id) . insertBy . SnapshotCache . unSnapshotCacheHash
 
-getModuleNameId
-  :: P.ModuleName
+getModuleNameId ::
+     P.ModuleName
   -> ReaderT SqlBackend (RIO env) ModuleNameId
 getModuleNameId =
   fmap (either entityKey id) . insertBy . ModuleName . P.ModuleNameP
 
-storeSnapshotModuleCache
-  :: SnapshotCacheId
+storeSnapshotModuleCache ::
+     SnapshotCacheId
   -> Map P.PackageName (Set P.ModuleName)
   -> ReaderT SqlBackend (RIO env) ()
 storeSnapshotModuleCache cache packageModules =
@@ -1166,8 +1180,8 @@ storeSnapshotModuleCache cache packageModules =
         , packageExposedModuleModule = moduleName
         }
 
-loadExposedModulePackages
-  :: SnapshotCacheId
+loadExposedModulePackages ::
+     SnapshotCacheId
   -> P.ModuleName
   -> ReaderT SqlBackend (RIO env) [P.PackageName]
 loadExposedModulePackages cacheId mName =
@@ -1181,24 +1195,27 @@ loadExposedModulePackages cacheId mName =
     [ toPersistValue (P.ModuleNameP mName)
     , toPersistValue cacheId
     ]
-  where
-    go (Single (P.PackageNameP m)) = m
+ where
+  go (Single (P.PackageNameP m)) = m
 
 newtype LoadCachedTreeException = MissingBlob BlobKey
   deriving (Show, Typeable)
+
 instance Exception LoadCachedTreeException
 
 -- | Ensure that all blobs needed for this package are present in the cache
-loadCachedTree :: forall env. P.Tree -> ReaderT SqlBackend (RIO env) (Either LoadCachedTreeException CachedTree)
+loadCachedTree ::
+     forall env. P.Tree
+  -> ReaderT SqlBackend (RIO env) (Either LoadCachedTreeException CachedTree)
 loadCachedTree (P.TreeMap m) =
-    try $ CachedTreeMap <$> traverse loadEntry m
-  where
-    loadEntry :: P.TreeEntry -> ReaderT SqlBackend (RIO env) (P.TreeEntry, BlobId)
-    loadEntry te = (te, ) <$> loadBlob' (P.teBlob te)
+  try $ CachedTreeMap <$> traverse loadEntry m
+ where
+  loadEntry :: P.TreeEntry -> ReaderT SqlBackend (RIO env) (P.TreeEntry, BlobId)
+  loadEntry te = (te, ) <$> loadBlob' (P.teBlob te)
 
-    loadBlob' :: BlobKey -> ReaderT SqlBackend (RIO env) BlobId
-    loadBlob' blobKey@(P.BlobKey sha _) = do
-      mbid <- loadBlobBySHA sha
-      case mbid of
-        Nothing -> throwIO $ MissingBlob blobKey
-        Just bid -> pure bid
+  loadBlob' :: BlobKey -> ReaderT SqlBackend (RIO env) BlobId
+  loadBlob' blobKey@(P.BlobKey sha _) = do
+    mbid <- loadBlobBySHA sha
+    case mbid of
+      Nothing -> throwIO $ MissingBlob blobKey
+      Just bid -> pure bid
