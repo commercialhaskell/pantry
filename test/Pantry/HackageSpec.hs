@@ -1,11 +1,14 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Pantry.HackageSpec (spec) where
 
-import Test.Hspec
-import Pantry
-import RIO
-import Distribution.Types.Version (mkVersion)
+module Pantry.HackageSpec
+  ( spec
+  ) where
+
+import           Distribution.Types.Version ( mkVersion )
+import           Pantry
+import           RIO
+import           Test.Hspec
 
 spec :: Spec
 spec = do

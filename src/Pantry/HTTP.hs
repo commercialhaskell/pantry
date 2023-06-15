@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+
 module Pantry.HTTP
   ( module Export
   , withResponse
@@ -8,31 +9,28 @@ module Pantry.HTTP
   ) where
 
 import           Conduit
-import           Network.HTTP.Client          as Export (parseRequest)
-import           Network.HTTP.Client          as Export (parseUrlThrow)
-import           Network.HTTP.Client          as Export (BodyReader, HttpExceptionContent (StatusCodeException))
-import qualified Network.HTTP.Client          as HTTP (withResponse)
-import           Network.HTTP.Client.Internal as Export (setUri)
-import           Network.HTTP.Client.TLS      (getGlobalManager)
-import           Network.HTTP.Simple          as Export (HttpException (..),
-                                                         Request, Response,
-                                                         addRequestHeader,
-                                                         defaultRequest,
-                                                         getResponseBody,
-                                                         getResponseHeaders,
-                                                         getResponseStatus,
-                                                         setRequestHeader)
-import qualified Network.HTTP.Simple          as HTTP hiding (withResponse)
-import           Network.HTTP.Types           as Export (Header, HeaderName,
-                                                         Status, hCacheControl,
-                                                         hRange, ok200,
-                                                         partialContent206,
-                                                         statusCode)
-import qualified Pantry.SHA256                as SHA256
+import           Network.HTTP.Client as Export
+                   ( BodyReader, HttpExceptionContent (StatusCodeException)
+                   , parseRequest, parseUrlThrow
+                   )
+import qualified Network.HTTP.Client as HTTP ( withResponse )
+import           Network.HTTP.Client.Internal as Export ( setUri )
+import           Network.HTTP.Client.TLS ( getGlobalManager )
+import           Network.HTTP.Simple as Export
+                   ( HttpException (..), Request, Response, addRequestHeader
+                   , defaultRequest, getResponseBody, getResponseHeaders
+                   , getResponseStatus, setRequestHeader
+                   )
+import qualified Network.HTTP.Simple as HTTP hiding ( withResponse )
+import           Network.HTTP.Types as Export
+                   ( Header, HeaderName, Status, hCacheControl, hRange, ok200
+                   , partialContent206, statusCode
+                   )
+import qualified Pantry.SHA256 as SHA256
 import           Pantry.Types
 import           RIO
-import qualified RIO.ByteString               as B
-import qualified RIO.Text                     as T
+import qualified RIO.ByteString as B
+import qualified RIO.Text as T
 
 setUserAgent :: Request -> Request
 setUserAgent = setRequestHeader "User-Agent" ["Haskell pantry package"]
@@ -51,7 +49,7 @@ httpSink
   => Request
   -> (Response () -> ConduitT ByteString Void m a)
   -> m a
-httpSink req inner = HTTP.httpSink (setUserAgent req) inner
+httpSink req = HTTP.httpSink (setUserAgent req)
 
 httpSinkChecked
   :: MonadUnliftIO m
@@ -61,41 +59,41 @@ httpSinkChecked
   -> ConduitT ByteString Void m a
   -> m (SHA256, FileSize, a)
 httpSinkChecked url msha msize sink = do
-    req <- liftIO $ parseUrlThrow $ T.unpack url
-    httpSink req $ const $ getZipSink $ (,,)
-      <$> ZipSink (checkSha msha)
-      <*> ZipSink (checkSize msize)
-      <*> ZipSink sink
-  where
-    checkSha mexpected = do
-      actual <- SHA256.sinkHash
-      for_ mexpected $ \expected -> unless (actual == expected) $
-        throwIO $ DownloadInvalidSHA256 url Mismatch
-          { mismatchExpected = expected
-          , mismatchActual = actual
-          }
-      pure actual
-    checkSize mexpected =
-      loop 0
-      where
-        loop accum = do
-          mbs <- await
-          case mbs of
-            Nothing ->
-              case mexpected of
-                Just (FileSize expected) | expected /= accum ->
-                  throwIO $ DownloadInvalidSize url Mismatch
-                    { mismatchExpected = FileSize expected
-                    , mismatchActual = FileSize accum
-                    }
-                _ -> pure (FileSize accum)
-            Just bs -> do
-              let accum' = accum + fromIntegral (B.length bs)
-              case mexpected of
-                Just (FileSize expected)
-                  | accum' > expected ->
-                    throwIO $ DownloadTooLarge url Mismatch
-                      { mismatchExpected = FileSize expected
-                      , mismatchActual = FileSize accum'
-                      }
-                _ -> loop accum'
+  req <- liftIO $ parseUrlThrow $ T.unpack url
+  httpSink req $ const $ getZipSink $ (,,)
+    <$> ZipSink (checkSha msha)
+    <*> ZipSink (checkSize msize)
+    <*> ZipSink sink
+ where
+  checkSha mexpected = do
+    actual <- SHA256.sinkHash
+    for_ mexpected $ \expected -> unless (actual == expected) $
+      throwIO $ DownloadInvalidSHA256 url Mismatch
+        { mismatchExpected = expected
+        , mismatchActual = actual
+        }
+    pure actual
+  checkSize mexpected =
+    loop 0
+   where
+    loop accum = do
+      mbs <- await
+      case mbs of
+        Nothing ->
+          case mexpected of
+            Just (FileSize expected) | expected /= accum ->
+              throwIO $ DownloadInvalidSize url Mismatch
+                { mismatchExpected = FileSize expected
+                , mismatchActual = FileSize accum
+                }
+            _ -> pure (FileSize accum)
+        Just bs -> do
+          let accum' = accum + fromIntegral (B.length bs)
+          case mexpected of
+            Just (FileSize expected)
+              | accum' > expected ->
+                throwIO $ DownloadTooLarge url Mismatch
+                  { mismatchExpected = FileSize expected
+                  , mismatchActual = FileSize accum'
+                  }
+            _ -> loop accum'

@@ -5,13 +5,6 @@
 
 packages:
 - completed:
-    hackage: Cabal-3.0.0.0@sha256:f0862eca5ef06da6e6a592c452a747a953e52adce6f66246d3c7a0aa458dfe35,26783
-    pantry-tree:
-      sha256: 121717f151bf20c2e1ca5a7733c4bdad4d864f1d4d96fdb9346a1012ea81e425
-      size: 71616
-  original:
-    hackage: Cabal-3.0.0.0@sha256:f0862eca5ef06da6e6a592c452a747a953e52adce6f66246d3c7a0aa458dfe35,26783
-- completed:
     hackage: hpack-0.35.2@sha256:f8fea65f195c455b809c992d643c5db1b69615eda385fcb5ea6fa59773037fa7,5024
     pantry-tree:
       sha256: b1376940842ac0468aee17e289d35e5759758d7ba800569b9364e3b2522d7651
@@ -27,7 +20,7 @@ packages:
     hackage: rio-prettyprint-0.1.4.0@sha256:1f8eb3ead0ef33d3736d53e1de5e9b2c91a0c207cdca23321bd74c401e85f23a,1301
 snapshots:
 - completed:
-    sha256: 637fb77049b25560622a224845b7acfe81a09fdb6a96a3c75997a10b651667f6
-    size: 534126
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/16/31.yaml
-  original: lts-16.31
+    sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68
+    size: 590100
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/28.yaml
+  original: lts-18.28

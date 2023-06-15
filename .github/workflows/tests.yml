@@ -6,8 +6,8 @@ on:
     branches:
     - master
 
-# As of 29 August 2022, ubuntu-22.04, windows-latest and macos-latest come with
-# Stack 2.7.5.
+# As of 21 March 2023, ubuntu-latest, windows-latest and macos-latest come
+# with Stack 2.9.3.
 
 jobs:
   build:
@@ -17,21 +17,19 @@ jobs:
       fail-fast: false
       matrix:
         os:
-        # As of 29 August 2022, ubuntu-lastest corresponds to ubuntu-20.04.
-        # However, ubuntu-20.04 has package 'libc6 (2.31-0ubuntu9.7 and others)'
-        # and, from GHC 9.4.1, ghc-9.4.1-x86_64-fedora33-linux.tar.xz etc is
-        # built on Fedora 33, whuch comes with glibc version 2.32. Hence use
-        # ubuntu-22.04.
-        - ubuntu-22.04
-        - macos-latest
-        - windows-latest
+        - ubuntu-latest
         stack-yaml:
         - stack-ghc-8.6.5.yaml
         - stack-ghc-8.8.4.yaml
-        - stack-ghc-9.2.4.yaml
-        - stack-ghc-9.4.2.yaml
-        - stack-persistent-2.11.yaml
-        - stack-cabal-3.4.yaml
+        - stack-ghc-8.10.7.yaml
+        - stack.yaml # GHC 9.2.7
+        - stack-ghc-9.4.5.yaml
+        - stack-cabal-3.10.yaml
+        include:
+        - os: macos-latest
+          stack-yaml: stack.yaml
+        - os: windows-latest
+          stack-yaml: stack.yaml
     steps:
     - name: Clone project
       uses: actions/checkout@v3
@@ -54,3 +52,36 @@ jobs:
       run: |
         set -ex
         stack test --stack-yaml ${{ matrix.stack-yaml }} --bench --no-run-benchmarks --haddock --no-haddock-deps
+  test-pretty-exceptions:
+    name: Test build of test-pretty-exceptions
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-latest
+        - windows-latest
+        stack-yaml:
+        - stack.yaml # GHC 9.2.7
+    steps:
+    - name: Clone project
+      uses: actions/checkout@v3
+    - name: Cache dependencies on Unix-like OS
+      if: startsWith(runner.os, 'Linux') || startsWith(runner.os, 'macOS')
+      uses: actions/cache@v3
+      with:
+        path: ~/.stack
+        key: ${{ runner.os }}-${{ matrix.stack-yaml }}-pretty
+    - name: Cache dependencies on Windows
+      if: startsWith(runner.os, 'Windows')
+      uses: actions/cache@v3
+      with:
+        path: |
+           ~\AppData\Roaming\stack
+           ~\AppData\Local\Programs\stack
+        key: ${{ runner.os }}-${{ matrix.stack-yaml }}-pretty
+    - name: Build test-pretty-exceptions
+      shell: bash
+      run: |
+        set -ex
+        stack --stack-yaml ${{ matrix.stack-yaml }} build --flag pantry:test-pretty-exceptions

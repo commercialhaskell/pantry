@@ -1,8 +1,7 @@
-# GHC 8.8.4
-resolver: lts-16.31
+# GHC 8.10.7
+resolver: lts-18.28
 
 extra-deps:
-- Cabal-3.0.0.0@sha256:f0862eca5ef06da6e6a592c452a747a953e52adce6f66246d3c7a0aa458dfe35,26783
 - hpack-0.35.2@sha256:f8fea65f195c455b809c992d643c5db1b69615eda385fcb5ea6fa59773037fa7,5024
 - rio-prettyprint-0.1.4.0@sha256:1f8eb3ead0ef33d3736d53e1de5e9b2c91a0c207cdca23321bd74c401e85f23a,1301
 
