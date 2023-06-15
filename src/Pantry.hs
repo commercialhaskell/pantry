@@ -393,7 +393,7 @@ getLatestHackageRevision req name version = do
     Just (revision, cfKey@(BlobKey sha size)) -> do
       let cfi = CFIHash sha (Just size)
       treeKey' <- getHackageTarballKey (PackageIdentifierRevision name version cfi)
-      return $ Just (revision, cfKey, treeKey')
+      pure $ Just (revision, cfKey, treeKey')
 
 -- | Fetch keys and blobs and insert into the database where possible.
 fetchTreeKeys ::
@@ -1328,7 +1328,7 @@ loadAndCompleteSnapshotRaw' debugRSL rawLoc cacheSL cachePL = do
             , snapshotPackages = packages
             , snapshotDrop = apcDrop unused
             }
-      return (snapshot, sloc : slocs,completed0 ++ completed)
+      pure (snapshot, sloc : slocs,completed0 ++ completed)
 
 data SingleOrNot a
   = Single !a
@@ -1593,14 +1593,14 @@ loadFromURL ::
 loadFromURL url Nothing = do
   mcached <- withStorage $ loadURLBlob url
   case mcached of
-    Just bs -> return bs
+    Just bs -> pure bs
     Nothing -> loadWithCheck url Nothing
 loadFromURL url (Just bkey) = do
   mcached <- withStorage $ loadBlob bkey
   case mcached of
     Just bs -> do
       logDebug "Loaded snapshot from Pantry database."
-      return bs
+      pure bs
     Nothing -> loadUrlViaCasaOrWithCheck url bkey
 
 loadUrlViaCasaOrWithCheck ::
@@ -1632,7 +1632,7 @@ loadWithCheck url mblobkey = do
   let bs = B.concat bss
   withStorage $ storeURLBlob url bs
   logDebug ("Loaded snapshot from third party: " <> display url)
-  return bs
+  pure bs
 
 warningsParserHelperRaw ::
      HasLogFunc env
@@ -1925,9 +1925,9 @@ prunePackageWithDeps ::
 prunePackageWithDeps pkgs getName getDeps (pname, a)  = do
   (pruned, kept) <- get
   if Map.member pname pruned
-  then return True
+  then pure True
   else if Map.member pname kept
-    then return False
+    then pure False
     else do
       let deps = Map.elems $ Map.restrictKeys pkgs (Set.fromList $ getDeps a)
       prunedDeps <- forMaybeM deps $ \dep -> do
@@ -1939,7 +1939,7 @@ prunePackageWithDeps pkgs getName getDeps (pname, a)  = do
         modify' $ second (Map.insert pname a)
       else do
         modify' $ first (Map.insert pname prunedDeps)
-      return $ not (null prunedDeps)
+      pure $ not (null prunedDeps)
 
 -- | Use a snapshot cache, which caches which modules are in which packages in a
 -- given snapshot. This is mostly intended for usage by Stack.
@@ -1960,7 +1960,7 @@ withSnapshotCache hash getModuleMapping f = do
       withStorage $ do
         scId <- getSnapshotCacheId hash
         storeSnapshotModuleCache scId packageModules
-        return scId
+        pure scId
     Just scId -> pure scId
   f $ withStorage . loadExposedModulePackages cacheId
 

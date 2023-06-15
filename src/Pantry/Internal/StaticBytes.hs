@@ -84,12 +84,12 @@ fromWordsForeign ::
 fromWordsForeign wrapper len words0 = unsafePerformIO $ do
   fptr <- B.mallocByteString len
   withForeignPtr fptr $ \ptr -> do
-    let loop _ [] = return ()
+    let loop _ [] = pure ()
         loop off (w:ws) = do
           pokeElemOff (castPtr ptr) off w
           loop (off + 1) ws
     loop 0 words0
-  return $ wrapper fptr len
+  pure $ wrapper fptr len
 
 withPeekForeign ::
      (ForeignPtr a, Int, Int)
@@ -98,10 +98,10 @@ withPeekForeign ::
 withPeekForeign (fptr, off, len) inner =
   withForeignPtr fptr $ \ptr -> do
     let f off'
-          | off' >= len = return 0
+          | off' >= len = pure 0
           | off' + 8 > len = do
               let loop w64 i
-                    | off' + i >= len = return w64
+                    | off' + i >= len = pure w64
                     | otherwise = do
                         w8 :: Word8 <- peekByteOff ptr (off + off' + i)
                         let w64' = shiftL (fromIntegral w8) (i * 8) .|. w64
@@ -132,16 +132,16 @@ instance word8 ~ Word8 => DynamicBytes (VP.Vector word8) where
     loop 0 words0
   withPeekD (VP.Vector off len ba) inner = do
     let f off'
-          | off' >= len = return 0
+          | off' >= len = pure 0
           | off' + 8 > len = do
               let loop w64 i
-                    | off' + i >= len = return w64
+                    | off' + i >= len = pure w64
                     | otherwise = do
                         let w8 :: Word8 = BA.indexByteArray ba (off + off' + i)
                         let w64' = shiftL (fromIntegral w8) (i * 8) .|. w64
                         loop w64' (i + 1)
               loop 0 0
-          | otherwise = return $ BA.indexByteArray ba (off + (off' `div` 8))
+          | otherwise = pure $ BA.indexByteArray ba (off + (off' `div` 8))
     inner f
 
 instance word8 ~ Word8 => DynamicBytes (VU.Vector word8) where

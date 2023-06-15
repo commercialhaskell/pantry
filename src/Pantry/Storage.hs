@@ -600,7 +600,7 @@ storeCabalFile cabalBS pkgName = do
   (bid, _) <- storeBlob cabalBS
   let cabalFile = P.cabalFileName pkgName
   _ <- insertBy FilePath {filePathPath = cabalFile}
-  return bid
+  pure bid
 
 loadFilePath ::
      SafeFilePath
@@ -610,7 +610,7 @@ loadFilePath path = do
   case fp of
     Nothing -> error $
       "loadFilePath: No row found for " <> T.unpack (P.unSafeFilePath path)
-    Just record -> return record
+    Just record -> pure record
 
 loadHPackTreeEntity :: TreeId -> ReaderT SqlBackend (RIO env) (Entity TreeEntry)
 loadHPackTreeEntity tid = do
@@ -622,7 +622,7 @@ loadHPackTreeEntity tid = do
     Nothing -> error $
          "loadHPackTreeEntity: No package.yaml file found in TreeEntry for TreeId:  "
       ++ show tid
-    Just record -> return record
+    Just record -> pure record
 
 storeHPack ::
      (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
@@ -634,7 +634,7 @@ storeHPack rpli tid = do
   hpackRecord <- getBy (UniqueHPack tid vid)
   case hpackRecord of
     Nothing -> generateHPack rpli tid vid
-    Just record -> return $ entityKey record
+    Just record -> pure $ entityKey record
 
 loadCabalBlobKey :: HPackId -> ReaderT SqlBackend (RIO env) BlobKey
 loadCabalBlobKey hpackId = do
@@ -727,7 +727,7 @@ storeTree rpli (P.PackageIdentifier name version) tree@(CachedTreeMap m) buildFi
             ++ show buildFile
             ++ " BlobKey not found: "
             ++ show (tree, btypeSha)
-      return (Just buildid, ftype)
+      pure (Just buildid, ftype)
   nameid <- getPackageNameId name
   versionid <- getVersionId version
   etid <- insertBy Tree
@@ -752,8 +752,8 @@ storeTree rpli (P.PackageIdentifier name version) tree@(CachedTreeMap m) buildFi
       pure (tid, P.TreeKey blobKey)
   case buildFile of
     P.BFHpack _ -> void $ storeHPack rpli tid
-    P.BFCabal _ _ -> return ()
-  return (tid, pTreeKey)
+    P.BFCabal _ _ -> pure ()
+  pure (tid, pTreeKey)
 
 getTree :: TreeId -> ReaderT SqlBackend (RIO env) P.Tree
 getTree tid = do
@@ -808,7 +808,7 @@ loadPackageById rpli tid = do
   (packageEntry, mtree) <- case treeCabal ts of
     Just keyBlob -> do
       cabalKey <- getBlobKey keyBlob
-      return
+      pure
         ( P.PCCabalFile $ P.TreeEntry cabalKey (treeCabalType ts)
         , tree)
     Nothing -> do
@@ -859,7 +859,7 @@ getHPackCabalFile hpackRecord ts tmap cabalFile = do
       cbTreeEntry = P.TreeEntry cabalKey fileType
       hpackTreeEntry = P.TreeEntry hpackKey fileType
       tree = P.TreeMap $ Map.insert cabalFile cbTreeEntry tmap
-  return
+  pure
     ( P.PCHpack $
       P.PHpack
           { P.phOriginal = hpackTreeEntry
@@ -1099,7 +1099,7 @@ hpackToCabalS rpli tree = do
   (packageName, cfile) <- lift $ findOrGenerateCabalFile tmpDir
   !bs <- lift $ B.readFile (fromAbsFile cfile)
   lift $ removeDirRecur tmpDir
-  return (packageName, bs)
+  pure (packageName, bs)
 
 hpackToCabal ::
      (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
@@ -1111,7 +1111,7 @@ hpackToCabal rpli tree = withSystemTempDirectory "hpack-pkg-dir" $ \tmpdir -> do
   withStorage $ unpackTreeToDir rpli tdir tree
   (packageName, cfile) <- findOrGenerateCabalFile tdir
   bs <- B.readFile (fromAbsFile cfile)
-  return (packageName, bs)
+  pure (packageName, bs)
 
 unpackTreeToDir ::
      (HasPantryConfig env, HasLogFunc env)

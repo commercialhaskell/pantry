@@ -127,7 +127,7 @@ _ ...:? [] = fail "failed to find an empty key"
 o ...:? ss@(key:_) = apply
  where
   pc = presentCount o ss
-  apply | pc == 0   = return Nothing
+  apply | pc == 0   = pure Nothing
         | pc >  1   = fail $
                         "failed to parse field " ++
                         show key ++ ": " ++
@@ -155,7 +155,7 @@ withObjectWarnings expected f =
                 (Set.fromList (map keyToText (HashMap.keys obj)))
                 (wpmExpectedFields w)
             )
-    return
+    pure
       ( WithJSONWarnings a
           ( wpmWarnings w ++
             case unrecognizedFields of
@@ -168,7 +168,7 @@ withObjectWarnings expected f =
 unWarningParser :: WarningParser a -> Parser a
 unWarningParser wp = do
   (a,_) <- runWriterT wp
-  return a
+  pure a
 
 -- | Log JSON warnings.
 logJSONWarnings ::
@@ -188,14 +188,14 @@ jsonSubWarnings f = do
         { wpmWarnings = warnings
         }
     )
-  return result
+  pure result
 
 -- | Handle warnings in a @Traversable@ of sub-objects.
 jsonSubWarningsT ::
      Traversable t
   => WarningParser (t (WithJSONWarnings a)) -> WarningParser (t a)
 jsonSubWarningsT f =
-  mapM (jsonSubWarnings . return) =<< f
+  mapM (jsonSubWarnings . pure) =<< f
 
 -- | Handle warnings in a @Maybe Traversable@ of sub-objects.
 jsonSubWarningsTT ::
@@ -203,7 +203,7 @@ jsonSubWarningsTT ::
   => WarningParser (u (t (WithJSONWarnings a)))
   -> WarningParser (u (t a))
 jsonSubWarningsTT f =
-  mapM (jsonSubWarningsT . return) =<< f
+  mapM (jsonSubWarningsT . pure) =<< f
 
 -- Parsed JSON value without any warnings
 noJSONWarnings :: a -> WithJSONWarnings a

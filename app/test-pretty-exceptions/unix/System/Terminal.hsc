@@ -35,10 +35,10 @@ getTerminalWidth =
   alloca $ \p -> do
     errno <- ioctl (#const STDOUT_FILENO) (#const TIOCGWINSZ) p
     if errno < 0
-    then return Nothing
+    then pure Nothing
     else do
       WindowWidth w <- peek p
-      return . Just . fromIntegral $ w
+      pure . Just . fromIntegral $ w
 
 -- | hIsTerminaDevice does not recognise handles to mintty terminals as terminal
 -- devices, but isMinTTYHandle does.

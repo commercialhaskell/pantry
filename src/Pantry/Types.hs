@@ -687,7 +687,7 @@ newtype GitHubRepo = GitHubRepo Text
 instance FromJSON GitHubRepo where
   parseJSON = withText "GitHubRepo" $ \s -> do
     case T.split (== '/') s of
-      [x, y] | not (T.null x || T.null y) -> return (GitHubRepo s)
+      [x, y] | not (T.null x || T.null y) -> pure (GitHubRepo s)
       _ -> fail "expecting \"user/repo\""
 
 -- | Configuration to securely download package metadata and contents. For most
@@ -2064,7 +2064,7 @@ unSafeFilePath (SafeFilePath t) = t
 safeFilePathToPath :: (MonadThrow m) => Path Abs Dir -> SafeFilePath -> m (Path Abs File)
 safeFilePathToPath dir (SafeFilePath path) = do
   fpath <- parseRelFile (T.unpack path)
-  return $ dir </> fpath
+  pure $ dir </> fpath
 
 mkSafeFilePath :: Text -> Maybe SafeFilePath
 mkSafeFilePath t = do
@@ -2931,14 +2931,14 @@ parseSnapName :: MonadThrow m => Text -> m SnapName
 parseSnapName t0 =
   case lts <|> nightly of
     Nothing -> throwM $ ParseSnapNameException t0
-    Just sn -> return sn
+    Just sn -> pure sn
  where
   lts = do
     t1 <- T.stripPrefix "lts-" t0
     Right (x, t2) <- Just $ decimal t1
     t3 <- T.stripPrefix "." t2
     Right (y, "") <- Just $ decimal t3
-    return $ LTS x y
+    pure $ LTS x y
   nightly = do
     t1 <- T.stripPrefix "nightly-" t0
     Nightly <$> readMaybe (T.unpack t1)

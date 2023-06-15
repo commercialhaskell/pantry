@@ -137,7 +137,7 @@ updateHackageIndexInternal forceUpdate mreason = do
       case parseURI $ T.unpack url of
         Nothing ->
           throwString $ "Invalid Hackage Security base URL: " ++ T.unpack url
-        Just x -> return x
+        Just x -> pure x
     run <- askRunInIO
     let logTUF = run . logInfo . fromString . HS.pretty
         withRepo = HS.withRepository
@@ -348,15 +348,15 @@ instance FromJSON PackageDownload where
   parseJSON = withObject "PackageDownload" $ \o1 -> do
     o2 <- o1 .: "signed"
     Object o3 <- o2 .: "targets"
-    Object o4:_ <- return $ toList o3
+    Object o4:_ <- pure $ toList o3
     len <- o4 .: "length"
     hashes <- o4 .: "hashes"
     sha256' <- hashes .: "sha256"
     sha256 <-
       case SHA256.fromHexText sha256' of
         Left e -> fail $ "Invalid sha256: " ++ show e
-        Right x -> return x
-    return $ PackageDownload sha256 len
+        Right x -> pure x
+    pure $ PackageDownload sha256 len
 
 getHackageCabalFile ::
      (HasPantryConfig env, HasLogFunc env)

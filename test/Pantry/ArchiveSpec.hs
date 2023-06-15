@@ -27,11 +27,11 @@ getRawPackageLocationIdent' TestArchive{..} = do
   testLocation' <- case testLocation of
     TLFilePath relPath -> do
       absPath <- resolveFile' relPath
-      return $ ALFilePath $ ResolvedPath
+      pure $ ALFilePath $ ResolvedPath
         { resolvedRelative = RelFilePath $ fromString relPath
         , resolvedAbsolute = absPath
         }
-    TLUrl url -> return $ ALUrl url
+    TLUrl url -> pure $ ALUrl url
   let archive = RawArchive
         { raLocation = testLocation'
         , raHash = Nothing

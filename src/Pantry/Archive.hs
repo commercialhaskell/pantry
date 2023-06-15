@@ -499,7 +499,7 @@ parseArchive rpli archive fp = do
             BFCabal _ _ ->
               when (buildFilePath /= cabalFileName name) $
                 throwIO $ WrongCabalFileName rpli buildFilePath name
-            _ -> return ()
+            _ -> pure ()
           -- It's good! Store the tree, let's bounce
           (tid, treeKey') <- withStorage $ storeTree rpli ident tree buildFile
           packageCabal <- case buildFile of
