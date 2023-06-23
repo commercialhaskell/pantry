@@ -50,15 +50,17 @@ casaBlobSource ::
 casaBlobSource keys = source .| convert .| store
  where
   source = do
-    pullUrl <- lift $ lift $ lift $ view $ pantryConfigL . to pcCasaRepoPrefix
-    maxPerRequest <-
-      lift $ lift $ lift $ view $ pantryConfigL . to pcCasaMaxPerRequest
-    Casa.blobsSource
-      (Casa.SourceConfig
-         { sourceConfigUrl = pullUrl
-         , sourceConfigBlobs = toBlobKeyMap keys
-         , sourceConfigMaxBlobsPerRequest = maxPerRequest
-         })
+    mCasaConfig <- lift $ lift $ lift $ view $ pantryConfigL . to pcCasaConfig
+    case mCasaConfig of
+      Just (pullUrl, maxPerRequest) -> do
+        Casa.blobsSource
+          ( Casa.SourceConfig
+              { sourceConfigUrl = pullUrl
+              , sourceConfigBlobs = toBlobKeyMap keys
+              , sourceConfigMaxBlobsPerRequest = maxPerRequest
+              }
+          )
+      Nothing -> throwM NoCasaConfig
    where
     toBlobKeyMap :: Foldable f => f BlobKey -> HashMap Casa.BlobKey Int
     toBlobKeyMap = HM.fromList . map unpackBlobKey . toList
@@ -78,6 +80,6 @@ casaBlobSource keys = source .| convert .| store
       pure (BlobKey sha256 (FileSize (fromIntegral (B.length blob))), blob)
   store = mapMC insertBlob
    where
-     insertBlob original@(_key, binary) = do
-       _ <- lift (storeBlob binary)
-       pure original
+    insertBlob original@(_key, binary) = do
+      _ <- lift (storeBlob binary)
+      pure original

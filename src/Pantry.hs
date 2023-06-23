@@ -24,6 +24,7 @@ module Pantry
   , defaultSnapshotLocation
   , HasPantryConfig (..)
   , withPantryConfig
+  , withPantryConfig'
   , HpackExecutable (..)
 
     -- ** Convenience
@@ -260,7 +261,9 @@ formatYamlParseError file e =
   <> ":\n\n"
   <> displayException e
 
--- | Create a new 'PantryConfig' with the given settings.
+-- | Create a new 'PantryConfig' with the given settings. For a version where
+-- the use of Casa (content-addressable storage archive) is optional, see
+-- 'withPantryConfig''.
 --
 -- For something easier to use in simple cases, see 'runPantryApp'.
 --
@@ -287,7 +290,36 @@ withPantryConfig ::
   -> (PantryConfig -> RIO env a)
      -- ^ What to do with the config
   -> RIO env a
-withPantryConfig root pic he count pullURL maxPerRequest snapLoc inner = do
+withPantryConfig root pic he count pullURL maxPerRequest =
+  withPantryConfig' root pic he count (Just (pullURL, maxPerRequest))
+
+-- | Create a new 'PantryConfig' with the given settings.
+--
+-- For something easier to use in simple cases, see 'runPantryApp'.
+--
+-- @since 0.8.3
+withPantryConfig'
+  :: HasLogFunc env
+  => Path Abs Dir
+  -- ^ pantry root directory, where the SQLite database and Hackage
+  -- downloads are kept.
+  -> PackageIndexConfig
+  -- ^ Package index configuration. You probably want
+  -- 'defaultPackageIndexConfig'.
+  -> HpackExecutable
+  -- ^ When converting an hpack @package.yaml@ file to a cabal file,
+  -- what version of hpack should we use?
+  -> Int
+  -- ^ Maximum connection count
+  -> Maybe (CasaRepoPrefix, Int)
+  -- ^ Optionally, the Casa pull URL e.g. @https://casa.fpcomplete.com@ and the
+  -- maximum number of Casa keys to pull per request.
+  -> (SnapName -> RawSnapshotLocation)
+  -- ^ The location of snapshot synonyms
+  -> (PantryConfig -> RIO env a)
+  -- ^ What to do with the config
+  -> RIO env a
+withPantryConfig' root pic he count mCasaConfig snapLoc inner = do
   env <- ask
   pantryRelFile <- parseRelFile "pantry.sqlite3"
   -- Silence persistent's logging output, which is really noisy
@@ -304,8 +336,7 @@ withPantryConfig root pic he count pullURL maxPerRequest snapLoc inner = do
       , pcConnectionCount = count
       , pcParsedCabalFilesRawImmutable = ref1
       , pcParsedCabalFilesMutable = ref2
-      , pcCasaRepoPrefix = pullURL
-      , pcCasaMaxPerRequest = maxPerRequest
+      , pcCasaConfig = mCasaConfig
       , pcSnapshotLocation = snapLoc
       }
 
@@ -932,12 +963,16 @@ tryLoadPackageRawViaDbOrCasa rpli treeKey' = do
       logDebug ("Loaded package from Pantry: " <> display rpli)
       pure (Just package)
     Nothing -> do
-      mviaCasa <- tryLoadPackageRawViaCasa rpli treeKey'
-      case mviaCasa of
-        Just package -> do
-          logDebug ("Loaded package from Casa: " <> display rpli)
-          pure (Just package)
+      mCasaConfig <- view $ pantryConfigL . to pcCasaConfig
+      case mCasaConfig of
         Nothing -> pure Nothing
+        Just _ -> do
+          mviaCasa <- tryLoadPackageRawViaCasa rpli treeKey'
+          case mviaCasa of
+            Just package -> do
+              logDebug ("Loaded package from Casa: " <> display rpli)
+              pure (Just package)
+            Nothing -> pure Nothing
 
 -- | Maybe load the package from Casa.
 tryLoadPackageRawViaCasa ::
@@ -1744,8 +1779,8 @@ getTreeKey (PLIArchive _ pm) = pmTreeKey pm
 getTreeKey (PLIRepo _ pm) = pmTreeKey pm
 
 -- | Convenient data type that allows you to work with pantry more easily than
--- using 'withPantryConfig' directly. Uses basically sane settings, like sharing
--- a pantry directory with Stack.
+-- using 'withPantryConfig' or 'withPantryConfig'' directly. Uses basically sane
+-- settings, like sharing a pantry directory with Stack.
 --
 -- You can use 'runPantryApp' to use this.
 --
@@ -1808,13 +1843,12 @@ runPantryAppWith maxConnCount casaRepoPrefix casaMaxPerRequest f = runSimpleApp 
   sa <- ask
   stack <- getAppUserDataDirectory "stack"
   root <- parseAbsDir $ stack FilePath.</> "pantry"
-  withPantryConfig
+  withPantryConfig'
     root
     defaultPackageIndexConfig
     HpackBundled
     maxConnCount
-    casaRepoPrefix
-    casaMaxPerRequest
+    (Just (casaRepoPrefix, casaMaxPerRequest))
     defaultSnapshotLocation
     $ \pc ->
       runRIO
@@ -1836,13 +1870,12 @@ runPantryAppClean f =
   liftIO $ withSystemTempDirectory "pantry-clean" $ \dir -> runSimpleApp $ do
     sa <- ask
     root <- resolveDir' dir
-    withPantryConfig
+    withPantryConfig'
       root
       defaultPackageIndexConfig
       HpackBundled
       8
-      defaultCasaRepoPrefix
-      defaultCasaMaxPerRequest
+      (Just (defaultCasaRepoPrefix, defaultCasaMaxPerRequest))
       defaultSnapshotLocation
       $ \pc ->
         runRIO

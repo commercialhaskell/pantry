@@ -273,8 +273,8 @@ data Storage = Storage
   }
 
 -- | Configuration value used by the entire pantry package. Create one using
--- @withPantryConfig@. See also @PantryApp@ for a convenience approach to using
--- pantry.
+-- 'withPantryConfig' or 'withPantryConfig''. See also 'PantryApp' for a
+-- convenience approach to using pantry.
 --
 -- @since 0.1.0.0
 data PantryConfig = PantryConfig
@@ -307,10 +307,9 @@ data PantryConfig = PantryConfig
     -- file, and print out any warnings that still need to be printed.
   , pcConnectionCount :: !Int
     -- ^ concurrently open downloads
-  , pcCasaRepoPrefix :: !CasaRepoPrefix
-    -- ^ The pull URL e.g. @https://casa.fpcomplete.com/v1/pull@
-  , pcCasaMaxPerRequest :: !Int
-    -- ^ Maximum blobs sent per pull request.
+  , pcCasaConfig :: !(Maybe (CasaRepoPrefix, Int))
+    -- ^ Optionally, the Casa pull URL e.g. @https://casa.fpcomplete.com@ and
+    -- the maximum number of Casa keys to pull per request.
   , pcSnapshotLocation :: SnapName -> RawSnapshotLocation
     -- ^ The location of snapshot synonyms
   }
@@ -1078,6 +1077,7 @@ data PantryException
   | InvalidCabalFilePath !(Path Abs File)
   | DuplicatePackageNames !Utf8Builder ![(PackageName, [RawPackageLocationImmutable])]
   | MigrationFailure !Text !(Path Abs File) !SomeException
+  | NoCasaConfig
   | InvalidTreeFromCasa !BlobKey !ByteString
   | ParseSnapNameException !Text
   | HpackLibraryException !(Path Abs File) !String
@@ -1098,6 +1098,9 @@ instance Show PantryException where
 -- Prettier versions of these error messages are also provided. See the instance
 -- of Pretty.
 instance Display PantryException where
+  display NoCasaConfig =
+    "Error: [S-889]\n"
+    <> "The Pantry configuration has no Casa configuration."
   display (InvalidTreeFromCasa blobKey _bs) =
     "Error: [S-258]\n"
     <> "Invalid tree from casa: "
@@ -1423,6 +1426,10 @@ instance Display PantryException where
 -- intended to be substantively the same as the corresponding 'black and white'
 -- versions.
 instance Pretty PantryException where
+  pretty NoCasaConfig =
+    "[S-889]"
+    <> line
+    <> flow "The Pantry configuration has no Casa configuration."
   pretty (InvalidTreeFromCasa blobKey _bs) =
     "[S-258]"
     <> line
