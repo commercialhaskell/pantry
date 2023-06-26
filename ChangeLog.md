@@ -1,5 +1,13 @@
 # Changelog for pantry
 
+## v0.8.3
+
+* Expose `withPantryConfig'`, which allows for optional use of Casa.
+  `NoCasaConfig` is now a data constructor of `PantryException`.
+* `withRepo`, in the case of Git, will now, if necessary, fetch the specific
+  commit. (For example, GitHub repositories include the commits of unmerged pull
+  requests but these are not fetched when the repository is cloned.)
+
 ## v0.8.2.2
 
 * Add error S-395 (`NoLocalPackageDirFound`).
