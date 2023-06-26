@@ -1,5 +1,5 @@
 # GHC 9.4.5
-resolver: nightly-2023-05-03
+resolver: lts-21.0
 
 flags:
   ansi-terminal:
