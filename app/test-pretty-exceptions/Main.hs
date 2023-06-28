@@ -197,6 +197,7 @@ examples = concat
   , [ InvalidCabalFilePath pathAbsFileExample ]
   , [ DuplicatePackageNames sourceMsgExample duplicatePackageNamesExamples ]
   , [ MigrationFailure descriptionExample pathAbsFileExample someExceptionExample ]
+  , [ NoCasaConfig ]
   , [ InvalidTreeFromCasa blobKeyExample blobExample ]
   , [ ParseSnapNameException rawSnapNameExample ]
   , [ HpackLibraryException pathAbsFileExample errorMessageExample ]
