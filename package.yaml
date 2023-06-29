@@ -136,6 +136,7 @@ executables:
 
 tests:
   spec:
+    build-tools: hspec-discover
     source-dirs: test
     main: Spec.hs
     dependencies:
