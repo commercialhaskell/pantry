@@ -1,7 +1,6 @@
 *~
 *.swp
 
-# Haskell Tool Stack-related
-/.stack-work/
-
+# Haskell build tool related
+.stack-work/
 dist-newstyle/
