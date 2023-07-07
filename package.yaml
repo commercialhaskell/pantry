@@ -1,5 +1,5 @@
 name:        pantry
-version:     0.8.3
+version:     0.9.0
 synopsis:    Content addressable Haskell package management
 description: Please see the README on GitHub at <https://github.com/commercialhaskell/pantry#readme>
 category:    Development
@@ -30,6 +30,7 @@ dependencies:
 - Cabal >= 3 && < 3.11
 - casa-client
 - casa-types
+- companion
 - conduit
 - conduit-extra
 - containers
@@ -58,6 +59,7 @@ dependencies:
 - rio
 - rio-orphans
 - rio-prettyprint
+- static-bytes
 - tar-conduit
 - text
 - text-metrics
@@ -93,13 +95,11 @@ library:
 
   # For testing
   - Pantry.Internal
-  - Pantry.Internal.StaticBytes
 
   # For stackage-server
   - Pantry.Internal.Stackage
 
   # For stack
-  - Pantry.Internal.Companion
   - Pantry.Internal.AesonExtended
 
   other-modules:

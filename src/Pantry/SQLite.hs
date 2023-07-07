@@ -8,8 +8,9 @@ module Pantry.SQLite
   , initStorage
   ) where
 
+import           Control.Concurrent.Companion
+                   ( Companion, onCompanionDone, withCompanion )
 import           Database.Persist.Sqlite
-import           Pantry.Internal.Companion
 import           Pantry.Types
                    ( PantryException (MigrationFailure), Storage (..) )
 import           Path ( Abs, File, Path, parent, toFilePath )

@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           pantry
-version:        0.8.3
+version:        0.9.0
 synopsis:       Content addressable Haskell package management
 description:    Please see the README on GitHub at <https://github.com/commercialhaskell/pantry#readme>
 category:       Development
@@ -38,9 +38,7 @@ library
       Pantry
       Pantry.SHA256
       Pantry.Internal
-      Pantry.Internal.StaticBytes
       Pantry.Internal.Stackage
-      Pantry.Internal.Companion
       Pantry.Internal.AesonExtended
   other-modules:
       Hackage.Security.Client.Repository.HttpLib.HttpClient
@@ -65,6 +63,7 @@ library
     , bytestring
     , casa-client
     , casa-types
+    , companion
     , conduit
     , conduit-extra
     , containers
@@ -93,6 +92,7 @@ library
     , rio
     , rio-orphans
     , rio-prettyprint
+    , static-bytes
     , tar-conduit
     , text
     , text-metrics
@@ -134,6 +134,7 @@ executable test-pretty-exceptions
     , bytestring
     , casa-client
     , casa-types
+    , companion
     , conduit
     , conduit-extra
     , containers
@@ -164,6 +165,7 @@ executable test-pretty-exceptions
     , rio
     , rio-orphans
     , rio-prettyprint
+    , static-bytes
     , tar-conduit
     , text
     , text-metrics
@@ -208,7 +210,6 @@ test-suite spec
       Pantry.FileSpec
       Pantry.GlobalHintsSpec
       Pantry.HackageSpec
-      Pantry.Internal.StaticBytesSpec
       Pantry.InternalSpec
       Pantry.TreeSpec
       Pantry.TypesSpec
@@ -227,6 +228,7 @@ test-suite spec
     , bytestring
     , casa-client
     , casa-types
+    , companion
     , conduit
     , conduit-extra
     , containers
@@ -260,6 +262,7 @@ test-suite spec
     , rio
     , rio-orphans
     , rio-prettyprint
+    , static-bytes
     , tar-conduit
     , text
     , text-metrics

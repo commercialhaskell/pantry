@@ -1,5 +1,11 @@
 # Changelog for pantry
 
+## v0.9.0
+
+* Remove module `Pantry.Internal.Companion` and depend on `companion` package.
+* Remove module `Pantry.Internal.StaticBytes` and depend on `static-bytes`
+  package.
+
 ## v0.8.3
 
 * Expose `withPantryConfig'`, which allows for optional use of Casa.
