@@ -2,6 +2,8 @@
 
 ## v0.9.0
 
+* Remove module `Pantry.Internal.AesonExtended` and depend on
+  `aeson-warning-parser` package.
 * Remove module `Pantry.Internal.Companion` and depend on `companion` package.
 * Remove module `Pantry.Internal.StaticBytes` and depend on `static-bytes`
   package.

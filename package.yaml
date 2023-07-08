@@ -25,6 +25,7 @@ flags:
 dependencies:
 - base >=4.10 && < 5
 - aeson
+- aeson-warning-parser
 - ansi-terminal
 - bytestring
 - Cabal >= 3 && < 3.11
@@ -98,9 +99,6 @@ library:
 
   # For stackage-server
   - Pantry.Internal.Stackage
-
-  # For stack
-  - Pantry.Internal.AesonExtended
 
   other-modules:
   - Hackage.Security.Client.Repository.HttpLib.HttpClient

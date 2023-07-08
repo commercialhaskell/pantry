@@ -125,11 +125,28 @@ module Pantry.Types
   ) where
 
 import           Casa.Client ( CasaRepoPrefix )
+import           Database.Persist
+import           Database.Persist.Sql
+#if MIN_VERSION_persistent(2, 13, 0)
+import           Database.Persist.SqlBackend.Internal ( connRDBMS )
+#endif
 import           Data.Aeson.Encoding.Internal ( unsafeToEncoding )
-import           Data.Aeson.Types ( Parser, toJSONKeyText )
+import           Data.Aeson.Types
+                   ( FromJSON (..), FromJSONKey (..), FromJSONKeyFunction (..)
+                   , Object, Parser, ToJSON (..), ToJSONKey (..)
+                   , ToJSONKeyFunction (..), Value (..), (.=), object
+                   , toJSONKeyText, withObject, withText
+                   )
+import           Data.Aeson.WarningParser
+                   ( WarningParser, WithJSONWarnings, (..:), (..:?), (..!=)
+                   , (.:), (...:?), jsonSubWarnings, jsonSubWarningsT
+                   , noJSONWarnings, tellJSONField, withObjectWarnings
+                   )
 import           Data.ByteString.Builder
                    ( byteString, toLazyByteString, wordDec )
+import qualified Data.Conduit.Tar as Tar
 import qualified Data.List.NonEmpty as NE
+import qualified Data.Map.Strict as Map ( mapKeysMonotonic )
 import           Data.Text.Read ( decimal )
 import           Distribution.CabalSpecVersion ( cabalSpecLatest )
 #if MIN_VERSION_Cabal(3,4,0)
@@ -137,6 +154,7 @@ import           Distribution.CabalSpecVersion ( cabalSpecToVersionDigits )
 #else
 import           Distribution.CabalSpecVersion ( CabalSpecVersion (..) )
 #endif
+import qualified Distribution.Compat.CharParsing as Parse
 import           Distribution.ModuleName ( ModuleName )
 import           Distribution.PackageDescription
                    ( FlagName, GenericPackageDescription, unFlagName )
@@ -151,25 +169,9 @@ import           Distribution.Types.PackageName
                    ( PackageName, mkPackageName, unPackageName )
 import           Distribution.Types.Version ( Version, mkVersion, nullVersion )
 import           Distribution.Types.VersionRange ( VersionRange )
-import qualified Data.Conduit.Tar as Tar
-import qualified Data.Map.Strict as Map ( mapKeysMonotonic )
-import           Database.Persist
-import           Database.Persist.Sql
-#if MIN_VERSION_persistent(2, 13, 0)
-import           Database.Persist.SqlBackend.Internal ( connRDBMS )
-#endif
-import qualified Distribution.Compat.CharParsing as Parse
 import qualified Hpack.Config as Hpack
 import           Network.HTTP.Client ( parseRequest )
 import           Network.HTTP.Types ( Status, statusCode )
-import           Pantry.Internal.AesonExtended
-                   ( FromJSON (..), FromJSONKey (..), FromJSONKeyFunction (..)
-                   , Object, ToJSON (..), ToJSONKey (..), ToJSONKeyFunction (..)
-                   , Value (..), WarningParser, WithJSONWarnings, (..:), (..:?)
-                   , (..!=), (.=), (.:), (...:?), jsonSubWarnings
-                   , jsonSubWarningsT, noJSONWarnings, object, tellJSONField
-                   , withObject, withObjectWarnings, withText
-                   )
 import           Pantry.SHA256 ( SHA256 )
 import qualified Pantry.SHA256 as SHA256
 import           Path

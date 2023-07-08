@@ -199,7 +199,8 @@ import           Casa.Client ( CasaRepoPrefix, thParserCasaRepo )
 import           Conduit
 import           Control.Arrow ( right )
 import           Control.Monad.State.Strict ( State, execState, get, modify' )
-import           Data.Aeson.Types ( parseEither )
+import           Data.Aeson.Types ( Value, parseEither )
+import           Data.Aeson.WarningParser ( WithJSONWarnings (..) )
 #if !MIN_VERSION_rio(0,1,17)
 import           Data.Bifunctor ( bimap )
 #endif
@@ -222,7 +223,6 @@ import           Pantry.Archive
 import           Pantry.Casa
 import           Pantry.HTTP
 import           Pantry.Hackage
-import           Pantry.Internal.AesonExtended ( Value, WithJSONWarnings (..) )
 import           Pantry.Repo
 import qualified Pantry.SHA256 as SHA256
 import           Pantry.Storage hiding

@@ -39,7 +39,6 @@ library
       Pantry.SHA256
       Pantry.Internal
       Pantry.Internal.Stackage
-      Pantry.Internal.AesonExtended
   other-modules:
       Hackage.Security.Client.Repository.HttpLib.HttpClient
       Pantry.Archive
@@ -58,6 +57,7 @@ library
   build-depends:
       Cabal >=3 && <3.11
     , aeson
+    , aeson-warning-parser
     , ansi-terminal
     , base >=4.10 && <5
     , bytestring
@@ -129,6 +129,7 @@ executable test-pretty-exceptions
   build-depends:
       Cabal >=3 && <3.11
     , aeson
+    , aeson-warning-parser
     , ansi-terminal
     , base >=4.10 && <5
     , bytestring
@@ -223,6 +224,7 @@ test-suite spec
       Cabal >=3 && <3.11
     , QuickCheck
     , aeson
+    , aeson-warning-parser
     , ansi-terminal
     , base >=4.10 && <5
     , bytestring
