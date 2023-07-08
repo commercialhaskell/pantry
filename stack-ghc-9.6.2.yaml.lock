@@ -5,6 +5,13 @@
 
 packages:
 - completed:
+    hackage: aeson-warning-parser-0.1.0@sha256:f2c1c42b73aa35d352060abcbb867c410cbbf57d0cb0fed607bcd1e2a74954ad,1308
+    pantry-tree:
+      sha256: 645c42c1e52c3a0e7fcedf06cd97d1fca590bf83a0eb19eed08314f4a3cf6b5f
+      size: 336
+  original:
+    hackage: aeson-warning-parser-0.1.0@sha256:f2c1c42b73aa35d352060abcbb867c410cbbf57d0cb0fed607bcd1e2a74954ad,1308
+- completed:
     hackage: casa-client-0.0.1@sha256:7c254d0f21fa96c1e64fff027a479ba2e93b2d53bb1938b62dc63dc6018f12a1,892
     pantry-tree:
       sha256: 0ddc768a7a4c0d1e2ba595eeff8a4f5a1a1c23f0a01d3fc1f80b326dc9d8315b

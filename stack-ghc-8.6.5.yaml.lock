@@ -12,19 +12,26 @@ packages:
   original:
     hackage: Cabal-3.0.0.0@sha256:f0862eca5ef06da6e6a592c452a747a953e52adce6f66246d3c7a0aa458dfe35,26783
 - completed:
+    hackage: aeson-warning-parser-0.1.0@sha256:f2c1c42b73aa35d352060abcbb867c410cbbf57d0cb0fed607bcd1e2a74954ad,1308
+    pantry-tree:
+      sha256: 645c42c1e52c3a0e7fcedf06cd97d1fca590bf83a0eb19eed08314f4a3cf6b5f
+      size: 336
+  original:
+    hackage: aeson-warning-parser-0.1.0@sha256:f2c1c42b73aa35d352060abcbb867c410cbbf57d0cb0fed607bcd1e2a74954ad,1308
+- completed:
     hackage: casa-client-0.0.1@sha256:7c254d0f21fa96c1e64fff027a479ba2e93b2d53bb1938b62dc63dc6018f12a1,892
     pantry-tree:
       sha256: 0ddc768a7a4c0d1e2ba595eeff8a4f5a1a1c23f0a01d3fc1f80b326dc9d8315b
       size: 167
   original:
-    hackage: casa-client-0.0.1
+    hackage: casa-client-0.0.1@sha256:7c254d0f21fa96c1e64fff027a479ba2e93b2d53bb1938b62dc63dc6018f12a1,892
 - completed:
     hackage: casa-types-0.0.1@sha256:8b51799015bbedac89662682c1f6da536a3914b6526cee15150fdac3f8853080,736
     pantry-tree:
       sha256: 6574f162db2f3401a674e07113f2fc86a5541877aed3ba415a8ba3dd88e75987
       size: 165
   original:
-    hackage: casa-types-0.0.1
+    hackage: casa-types-0.0.1@sha256:8b51799015bbedac89662682c1f6da536a3914b6526cee15150fdac3f8853080,736
 - completed:
     hackage: companion-0.1.0@sha256:99f6de52c832d433639232a6d77d33abbca3b3037e49b7db6242fb9f569a8a2b,1093
     pantry-tree:

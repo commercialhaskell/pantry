@@ -19,11 +19,9 @@ import           Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import           Pantry
-import           Pantry.Internal
-                   ( Tree (..), TreeEntry (..), mkSafeFilePath, parseTree
-                   , renderTree
-                   )
 import qualified Pantry.SHA256 as SHA256
+import           Pantry.Types
+                   ( Tree (..), TreeEntry (..), parseTree, renderTree )
 import           RIO
 import qualified RIO.Text as T
 import           RIO.Time ( Day (..) )

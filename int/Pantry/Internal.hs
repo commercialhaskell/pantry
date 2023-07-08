@@ -1,29 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Exposed for testing, do not use!
 module Pantry.Internal
-  ( parseTree
-  , renderTree
-  , Tree (..)
-  , TreeEntry (..)
-  , FileType(..)
-  , mkSafeFilePath
-  , pcHpackExecutable
-  , normalizeParents
+  ( normalizeParents
   , makeTarRelative
-  , getGlobalHintsFile
-  , hpackVersion
-  , Storage
-  , initStorage
-  , withStorage_
   ) where
 
 import           Control.Exception ( assert )
 import           Data.Maybe ( fromMaybe )
 import qualified Data.Text as T
-import           Pantry.HPack ( hpackVersion )
-import           Pantry.SQLite ( initStorage )
-import           Pantry.Types
 
 -- | Like @System.FilePath.normalise@, however:
 --

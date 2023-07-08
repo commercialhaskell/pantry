@@ -7,6 +7,7 @@
 * Remove module `Pantry.Internal.Companion` and depend on `companion` package.
 * Remove module `Pantry.Internal.StaticBytes` and depend on `static-bytes`
   package.
+* Remove module `Pantry.Internal`, previously exposed only for testing.
 
 ## v0.8.3
 

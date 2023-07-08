@@ -81,6 +81,11 @@ when:
 ghc-options:
   - -Wall
 
+# For testing
+internal-libraries:
+  internal:
+    source-dirs: int/
+
 library:
   source-dirs: src/
   when:
@@ -89,29 +94,27 @@ library:
       source-dirs: src/windows/
     else:
       source-dirs: src/unix/
+  dependencies:
+  - internal
 
   exposed-modules:
   - Pantry
-  - Pantry.SHA256
-
-  # For testing
-  - Pantry.Internal
 
   # For stackage-server
   - Pantry.Internal.Stackage
+
+  reexported-modules:
+  - Pantry.SHA256
 
   other-modules:
   - Hackage.Security.Client.Repository.HttpLib.HttpClient
   - Pantry.Archive
   - Pantry.HTTP
-  - Pantry.HPack
   - Pantry.Hackage
   - Pantry.Repo
-  - Pantry.SQLite
   - Pantry.Storage
   - Pantry.Casa
   - Pantry.Tree
-  - Pantry.Types
 
 executables:
   test-pretty-exceptions:
@@ -144,3 +147,4 @@ tests:
     - hspec
     - QuickCheck
     - raw-strings-qq
+    - internal
