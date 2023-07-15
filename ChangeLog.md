@@ -1,5 +1,15 @@
 # Changelog for pantry
 
+## v0.9.0
+
+* Remove module `Pantry.Internal.AesonExtended` and depend on
+  `aeson-warning-parser` package.
+* Remove module `Pantry.Internal.Companion` and depend on `companion` package.
+* Remove module `Pantry.Internal.StaticBytes` and depend on `static-bytes`
+  package.
+* Remove module `Pantry.Internal`, previously exposed only for testing.
+* Update Hackage bootstrap root key set.
+
 ## v0.8.3
 
 * Expose `withPantryConfig'`, which allows for optional use of Casa.

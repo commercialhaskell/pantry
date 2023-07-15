@@ -10,6 +10,7 @@ module Pantry.TypesSpec
     ( spec
     ) where
 
+import           Data.Aeson.WarningParser ( WithJSONWarnings (..) )
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Yaml as Yaml
 import           Distribution.Types.PackageName ( mkPackageName )
@@ -18,12 +19,9 @@ import           Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import           Pantry
-import           Pantry.Internal
-                   ( Tree (..), TreeEntry (..), mkSafeFilePath, parseTree
-                   , renderTree
-                   )
-import           Pantry.Internal.AesonExtended
 import qualified Pantry.SHA256 as SHA256
+import           Pantry.Types
+                   ( Tree (..), TreeEntry (..), parseTree, renderTree )
 import           RIO
 import qualified RIO.Text as T
 import           RIO.Time ( Day (..) )

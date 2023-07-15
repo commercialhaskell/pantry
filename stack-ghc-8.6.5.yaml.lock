@@ -12,19 +12,33 @@ packages:
   original:
     hackage: Cabal-3.0.0.0@sha256:f0862eca5ef06da6e6a592c452a747a953e52adce6f66246d3c7a0aa458dfe35,26783
 - completed:
+    hackage: aeson-warning-parser-0.1.0@sha256:f2c1c42b73aa35d352060abcbb867c410cbbf57d0cb0fed607bcd1e2a74954ad,1308
+    pantry-tree:
+      sha256: 645c42c1e52c3a0e7fcedf06cd97d1fca590bf83a0eb19eed08314f4a3cf6b5f
+      size: 336
+  original:
+    hackage: aeson-warning-parser-0.1.0@sha256:f2c1c42b73aa35d352060abcbb867c410cbbf57d0cb0fed607bcd1e2a74954ad,1308
+- completed:
     hackage: casa-client-0.0.1@sha256:7c254d0f21fa96c1e64fff027a479ba2e93b2d53bb1938b62dc63dc6018f12a1,892
     pantry-tree:
       sha256: 0ddc768a7a4c0d1e2ba595eeff8a4f5a1a1c23f0a01d3fc1f80b326dc9d8315b
       size: 167
   original:
-    hackage: casa-client-0.0.1
+    hackage: casa-client-0.0.1@sha256:7c254d0f21fa96c1e64fff027a479ba2e93b2d53bb1938b62dc63dc6018f12a1,892
 - completed:
     hackage: casa-types-0.0.1@sha256:8b51799015bbedac89662682c1f6da536a3914b6526cee15150fdac3f8853080,736
     pantry-tree:
       sha256: 6574f162db2f3401a674e07113f2fc86a5541877aed3ba415a8ba3dd88e75987
       size: 165
   original:
-    hackage: casa-types-0.0.1
+    hackage: casa-types-0.0.1@sha256:8b51799015bbedac89662682c1f6da536a3914b6526cee15150fdac3f8853080,736
+- completed:
+    hackage: companion-0.1.0@sha256:99f6de52c832d433639232a6d77d33abbca3b3037e49b7db6242fb9f569a8a2b,1093
+    pantry-tree:
+      sha256: 7d36c8a038ab4db197c0a395c63523b47beec9f6c72a64271bb0f6b112d1ebd1
+      size: 328
+  original:
+    hackage: companion-0.1.0@sha256:99f6de52c832d433639232a6d77d33abbca3b3037e49b7db6242fb9f569a8a2b,1093
 - completed:
     hackage: hpack-0.35.2@sha256:f8fea65f195c455b809c992d643c5db1b69615eda385fcb5ea6fa59773037fa7,5024
     pantry-tree:
@@ -39,6 +53,13 @@ packages:
       size: 628
   original:
     hackage: rio-prettyprint-0.1.4.0@sha256:1f8eb3ead0ef33d3736d53e1de5e9b2c91a0c207cdca23321bd74c401e85f23a,1301
+- completed:
+    hackage: static-bytes-0.1.0@sha256:35dbf30f617baa0151682c97687042516be07872a39984f9fe31f78125b962bf,1627
+    pantry-tree:
+      sha256: 38980443d7bdf00dde4c34babbb1e4b858cdc3aca8973c50f22444cfb03135a2
+      size: 440
+  original:
+    hackage: static-bytes-0.1.0@sha256:35dbf30f617baa0151682c97687042516be07872a39984f9fe31f78125b962bf,1627
 snapshots:
 - completed:
     sha256: 7ea31a280c56bf36ff591a7397cc384d0dff622e7f9e4225b47d8980f019a0f0

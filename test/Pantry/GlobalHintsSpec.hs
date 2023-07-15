@@ -9,7 +9,7 @@ module Pantry.GlobalHintsSpec
 import Distribution.Types.PackageName ( mkPackageName )
 import Distribution.Version ( mkVersion )
 import Pantry ( WantedCompiler (..), loadGlobalHints, runPantryAppClean )
-import Pantry.Internal
+import Pantry.Types ( getGlobalHintsFile )
 import Path ( toFilePath )
 import RIO
 import qualified RIO.Map as Map

@@ -3,8 +3,8 @@ module Pantry.InternalSpec
   ) where
 
 import           Pantry ( runPantryApp )
-import           Pantry.Internal
-                   ( hpackVersion, makeTarRelative, normalizeParents )
+import           Pantry.HPack ( hpackVersion )
+import           Pantry.Internal ( makeTarRelative, normalizeParents )
 import           Test.Hspec
 
 spec :: Spec

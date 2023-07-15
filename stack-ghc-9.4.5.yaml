@@ -1,6 +1,11 @@
 # GHC 9.4.5
 resolver: lts-21.0
 
+extra-deps:
+- aeson-warning-parser-0.1.0@sha256:f2c1c42b73aa35d352060abcbb867c410cbbf57d0cb0fed607bcd1e2a74954ad,1308
+- companion-0.1.0@sha256:99f6de52c832d433639232a6d77d33abbca3b3037e49b7db6242fb9f569a8a2b,1093
+- static-bytes-0.1.0@sha256:35dbf30f617baa0151682c97687042516be07872a39984f9fe31f78125b962bf,1627
+
 flags:
   ansi-terminal:
     win32-2-13-1: false

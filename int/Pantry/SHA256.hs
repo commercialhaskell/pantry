@@ -45,8 +45,9 @@ import qualified Crypto.Hash.Conduit as Hash ( hashFile, sinkHash )
 import           Data.Aeson
 import qualified Data.ByteArray
 import qualified Data.ByteArray.Encoding as Mem
+import           Data.StaticBytes
+                   ( Bytes32, StaticBytesException, toStaticExact )
 import           Database.Persist.Sql
-import           Pantry.Internal.StaticBytes
 import           RIO
 import qualified RIO.Text as T
 
