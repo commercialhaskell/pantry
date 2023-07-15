@@ -8,6 +8,7 @@
 * Remove module `Pantry.Internal.StaticBytes` and depend on `static-bytes`
   package.
 * Remove module `Pantry.Internal`, previously exposed only for testing.
+* Update Hackage bootstrap root key set.
 
 ## v0.8.3
 
