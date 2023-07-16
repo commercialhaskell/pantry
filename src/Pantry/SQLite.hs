@@ -22,10 +22,10 @@ import           System.FileLock
 
 initStorage ::
      HasLogFunc env
-  => Text
-  -> Migration
-  -> Path Abs File -- ^ storage file
-  -> (Storage -> RIO env a)
+  => Text -- ^ Database description, for lock messages.
+  -> Migration -- ^ Initial migration.
+  -> Path Abs File -- ^ SQLite database file.
+  -> (Storage -> RIO env a) -- ^ What to do with the initialised 'Storage'.
   -> RIO env a
 initStorage description migration fp inner = do
   ensureDir $ parent fp
@@ -76,7 +76,7 @@ initStorage description migration fp inner = do
 -- above.
 withWriteLock ::
      HasLogFunc env
-  => Utf8Builder -- ^ database description, for lock messages
+  => Utf8Builder -- ^ Database description, for lock messages
   -> Path Abs File -- ^ SQLite database file
   -> RIO env a
   -> RIO env a

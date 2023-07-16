@@ -260,12 +260,13 @@ cabalFileName name =
 newtype Revision = Revision Word
   deriving (Generic, Show, Eq, NFData, Data, Typeable, Ord, Hashable, Display, PersistField, PersistFieldSql)
 
--- | Represents a SQL database connection. This used to be a newtype wrapper
--- around a connection pool. However, when investigating
--- <https://github.com/commercialhaskell/stack/issues/4471>, it appeared that
--- holding a pool resulted in overly long write locks being held on the
--- database. As a result, we now abstract away whether a pool is used, and the
--- default implementation in "Pantry.Storage" does not use a pool.
+-- | Represents a SQL database connection.
+
+-- This used to be a newtype wrapper around a connection pool. However, when
+-- investigating <https://github.com/commercialhaskell/stack/issues/4471>, it
+-- appeared that holding a pool resulted in overly long write locks being held
+-- on the database. As a result, we now abstract away whether a pool is used,
+-- and the default implementation in "Pantry.Storage" does not use a pool.
 data Storage = Storage
   { withStorage_ ::
          forall env a. HasLogFunc env
