@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.9.1
+
+* Expose module `Pantry.SQLite`.
+
 ## v0.9.0
 
 * Remove module `Pantry.Internal.AesonExtended` and depend on
