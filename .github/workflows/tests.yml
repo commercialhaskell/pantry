@@ -5,9 +5,10 @@ on:
   push:
     branches:
     - master
+  workflow_dispatch:
 
-# As of 21 March 2023, ubuntu-latest, windows-latest and macos-latest come
-# with Stack 2.9.3.
+# As of 7 August 2023, ubuntu-latest, windows-latest and macos-latest come
+# with Stack 2.11.1.
 
 jobs:
   build:
@@ -18,18 +19,15 @@ jobs:
       matrix:
         os:
         - ubuntu-latest
-        stack-yaml:
-        - stack-ghc-8.6.5.yaml
-        - stack-ghc-8.8.4.yaml
-        - stack-ghc-8.10.7.yaml
-        - stack.yaml # GHC 9.2.7
+        resolver:
+        - stack-ghc-9.2.8.yaml
         - stack-ghc-9.4.5.yaml
-        - stack-cabal-3.10.yaml
+        - stack-ghc-9.6.2.yaml
         include:
         - os: macos-latest
-          stack-yaml: stack.yaml
+          resolver: stack-ghc-9.6.2.yaml
         - os: windows-latest
-          stack-yaml: stack.yaml
+          resolver: stack-ghc-9.6.2.yaml
     steps:
     - name: Clone project
       uses: actions/checkout@v3
@@ -38,7 +36,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-${{ matrix.stack-yaml }}
+        key: ${{ runner.os }}-${{ matrix.resolver }}
     - name: Cache dependencies on Windows
       if: startsWith(runner.os, 'Windows')
       uses: actions/cache@v3
@@ -46,12 +44,12 @@ jobs:
         path: |
            ~\AppData\Roaming\stack
            ~\AppData\Local\Programs\stack
-        key: ${{ runner.os }}-${{ matrix.stack-yaml }}
+        key: ${{ runner.os }}-${{ matrix.resolver }}
     - name: Build and run tests
       shell: bash
       run: |
         set -ex
-        stack test --stack-yaml ${{ matrix.stack-yaml }} --bench --no-run-benchmarks --haddock --no-haddock-deps
+        stack --resolver ${{ matrix.resolver }} test --bench --no-run-benchmarks --haddock --no-haddock-deps
   test-pretty-exceptions:
     name: Test build of test-pretty-exceptions
     runs-on: ${{ matrix.os }}
@@ -61,8 +59,8 @@ jobs:
         os:
         - ubuntu-latest
         - windows-latest
-        stack-yaml:
-        - stack.yaml # GHC 9.2.7
+        resolver:
+        - stack-ghc-9.4.5.yaml
     steps:
     - name: Clone project
       uses: actions/checkout@v3
@@ -71,7 +69,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-${{ matrix.stack-yaml }}-pretty
+        key: ${{ runner.os }}-${{ matrix.resolver }}-pretty
     - name: Cache dependencies on Windows
       if: startsWith(runner.os, 'Windows')
       uses: actions/cache@v3
@@ -79,9 +77,9 @@ jobs:
         path: |
            ~\AppData\Roaming\stack
            ~\AppData\Local\Programs\stack
-        key: ${{ runner.os }}-${{ matrix.stack-yaml }}-pretty
+        key: ${{ runner.os }}-${{ matrix.resolver }}-pretty
     - name: Build test-pretty-exceptions
       shell: bash
       run: |
         set -ex
-        stack --stack-yaml ${{ matrix.stack-yaml }} build --flag pantry:test-pretty-exceptions
+        stack --resolver ${{ matrix.resolver }} build --flag pantry:test-pretty-exceptions
