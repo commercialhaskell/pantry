@@ -1,5 +1,10 @@
 # Changelog for pantry
 
+## v0.9.2
+
+* Depend on `tar-conduit-0.4.0`, which will tolerate long filenames and
+  directory names in archives created by `git archive`.
+
 ## v0.9.1
 
 * Expose module `Pantry.SQLite`.

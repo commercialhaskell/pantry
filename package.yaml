@@ -1,5 +1,5 @@
 name:        pantry
-version:     0.9.1
+version:     0.9.2
 synopsis:    Content addressable Haskell package management
 description: Please see the README on GitHub at <https://github.com/commercialhaskell/pantry#readme>
 category:    Development
@@ -61,7 +61,7 @@ dependencies:
 - rio-orphans
 - rio-prettyprint
 - static-bytes
-- tar-conduit
+- tar-conduit >= 0.4.0
 - text
 - text-metrics
 - time

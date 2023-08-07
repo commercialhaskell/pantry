@@ -5,7 +5,7 @@ cabal-version: 2.0
 -- see: https://github.com/sol/hpack
 
 name:           pantry
-version:        0.9.1
+version:        0.9.2
 synopsis:       Content addressable Haskell package management
 description:    Please see the README on GitHub at <https://github.com/commercialhaskell/pantry#readme>
 category:       Development
@@ -92,7 +92,7 @@ library
     , rio-orphans
     , rio-prettyprint
     , static-bytes
-    , tar-conduit
+    , tar-conduit >=0.4.0
     , text
     , text-metrics
     , time
@@ -170,7 +170,7 @@ library internal
     , rio-orphans
     , rio-prettyprint
     , static-bytes
-    , tar-conduit
+    , tar-conduit >=0.4.0
     , text
     , text-metrics
     , time
@@ -236,7 +236,7 @@ executable test-pretty-exceptions
     , rio-orphans
     , rio-prettyprint
     , static-bytes
-    , tar-conduit
+    , tar-conduit >=0.4.0
     , text
     , text-metrics
     , time
@@ -337,7 +337,7 @@ test-suite spec
     , rio-orphans
     , rio-prettyprint
     , static-bytes
-    , tar-conduit
+    , tar-conduit >=0.4.0
     , text
     , text-metrics
     , time
