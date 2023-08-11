@@ -282,7 +282,7 @@ withPantryConfig ::
   -> Int
      -- ^ Maximum connection count
   -> CasaRepoPrefix
-     -- ^ The casa pull URL e.g. https://casa.fpcomplete.com/v1/pull.
+     -- ^ The casa pull URL e.g. https://casa.stackage.org/v1/pull.
   -> Int
      -- ^ Max casa keys to pull per request.
   -> (SnapName -> RawSnapshotLocation)
@@ -344,7 +344,7 @@ withPantryConfig' root pic he count mCasaConfig snapLoc inner = do
 --
 -- @since 0.1.1.1
 defaultCasaRepoPrefix :: CasaRepoPrefix
-defaultCasaRepoPrefix = $(thParserCasaRepo "https://casa.fpcomplete.com")
+defaultCasaRepoPrefix = $(thParserCasaRepo "https://casa.stackage.org")
 
 -- | Default max keys to pull per request.
 --
