@@ -344,7 +344,7 @@ withPantryConfig' root pic he count mCasaConfig snapLoc inner = do
 --
 -- @since 0.1.1.1
 defaultCasaRepoPrefix :: CasaRepoPrefix
-defaultCasaRepoPrefix = $(thParserCasaRepo "https://casa.fpcomplete.com")
+defaultCasaRepoPrefix = $(thParserCasaRepo "https://casa.stackage.org")
 
 -- | Default max keys to pull per request.
 --

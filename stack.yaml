@@ -1,1 +1,8 @@
-resolver: stack-ghc-9.4.5.yaml
+resolver: lts-18.28
+
+extra-deps:
+- rio-prettyprint-0.1.4.0@sha256:1f8eb3ead0ef33d3736d53e1de5e9b2c91a0c207cdca23321bd74c401e85f23a,1301
+- hpack-0.35.2
+- companion-0.1.0
+- static-bytes-0.1.0
+- aeson-warning-parser-0.1.0
