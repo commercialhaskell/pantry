@@ -2,6 +2,7 @@
 
 ## v0.9.2
 
+* Depend on `crypton` instead of `cryptonite`.
 * Depend on `tar-conduit-0.4.0`, which will tolerate long filenames and
   directory names in archives created by `git archive`.
 
