@@ -1,6 +1,9 @@
 # Snapshot specification for GHC 9.6.2.
 resolver: nightly-2023-08-06 # GHC 9.6.2
 
+packages:
+- tar-conduit-0.4.0@sha256:f333649770f5ec42a83a93b0d424cf6bb895d80dfbee05a54340395f81d036ae,3126
+
 flags:
   hackage-security:
     cabal-syntax: true
