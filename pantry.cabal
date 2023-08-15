@@ -59,23 +59,23 @@ library
     , ansi-terminal
     , base >=4.10 && <5
     , bytestring
-    , casa-client
+    , casa-client >=0.0.2
     , casa-types
     , companion
     , conduit
     , conduit-extra
     , containers
-    , cryptonite
-    , cryptonite-conduit
+    , crypton
+    , crypton-conduit
     , digest
     , filelock
     , generic-deriving
     , hackage-security
-    , hpack >=0.35.1
+    , hpack >=0.35.3
     , http-client
-    , http-client-tls
+    , http-client-tls >=0.3.6.2
     , http-conduit
-    , http-download
+    , http-download >=0.2.1.0
     , http-types
     , internal
     , memory
@@ -138,23 +138,23 @@ library internal
     , ansi-terminal
     , base >=4.10 && <5
     , bytestring
-    , casa-client
+    , casa-client >=0.0.2
     , casa-types
     , companion
     , conduit
     , conduit-extra
     , containers
-    , cryptonite
-    , cryptonite-conduit
+    , crypton
+    , crypton-conduit
     , digest
     , filelock
     , generic-deriving
     , hackage-security
-    , hpack >=0.35.1
+    , hpack >=0.35.3
     , http-client
-    , http-client-tls
+    , http-client-tls >=0.3.6.2
     , http-conduit
-    , http-download
+    , http-download >=0.2.1.0
     , http-types
     , memory
     , mtl
@@ -202,23 +202,23 @@ executable test-pretty-exceptions
     , ansi-terminal
     , base >=4.10 && <5
     , bytestring
-    , casa-client
+    , casa-client >=0.0.2
     , casa-types
     , companion
     , conduit
     , conduit-extra
     , containers
-    , cryptonite
-    , cryptonite-conduit
+    , crypton
+    , crypton-conduit
     , digest
     , filelock
     , generic-deriving
     , hackage-security
-    , hpack >=0.35.1
+    , hpack >=0.35.3
     , http-client
-    , http-client-tls
+    , http-client-tls >=0.3.6.2
     , http-conduit
-    , http-download
+    , http-download >=0.2.1.0
     , http-types
     , memory
     , mtl
@@ -299,26 +299,26 @@ test-suite spec
     , ansi-terminal
     , base >=4.10 && <5
     , bytestring
-    , casa-client
+    , casa-client >=0.0.2
     , casa-types
     , companion
     , conduit
     , conduit-extra
     , containers
-    , cryptonite
-    , cryptonite-conduit
+    , crypton
+    , crypton-conduit
     , digest
     , exceptions
     , filelock
     , generic-deriving
     , hackage-security
     , hedgehog
-    , hpack >=0.35.1
+    , hpack >=0.35.3
     , hspec
     , http-client
-    , http-client-tls
+    , http-client-tls >=0.3.6.2
     , http-conduit
-    , http-download
+    , http-download >=0.2.1.0
     , http-types
     , internal
     , memory
