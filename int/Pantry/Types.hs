@@ -311,7 +311,7 @@ data PantryConfig = PantryConfig
   , pcConnectionCount :: !Int
     -- ^ concurrently open downloads
   , pcCasaConfig :: !(Maybe (CasaRepoPrefix, Int))
-    -- ^ Optionally, the Casa pull URL e.g. @https://casa.fpcomplete.com@ and
+    -- ^ Optionally, the Casa pull URL e.g. @https://casa.stackage.org@ and
     -- the maximum number of Casa keys to pull per request.
   , pcSnapshotLocation :: SnapName -> RawSnapshotLocation
     -- ^ The location of snapshot synonyms

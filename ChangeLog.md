@@ -2,6 +2,8 @@
 
 ## v0.9.2
 
+* `defaultCasaRepoPrefix` references https://casa.stackage.org, instead of
+  https://casa.fpcomplete.com.
 * Depend on `crypton` instead of `cryptonite`.
 * Depend on `tar-conduit-0.4.0`, which will tolerate long filenames and
   directory names in archives created by `git archive`.
