@@ -365,22 +365,27 @@ data SimpleEntry = SimpleEntry
 --
 -- * The name inside the cabal file matches the name of the cabal file itself
 parseArchive ::
-     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+     forall env. (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => RawPackageLocationImmutable
   -> RawArchive
   -> FilePath -- ^ file holding the archive
   -> RIO env (Package, CachedTree)
 parseArchive rpli archive fp = do
   let loc = raLocation archive
+      archiveTypes :: [ArchiveType]
+      archiveTypes = [minBound .. maxBound]
+      getFiles :: [ArchiveType] -> RIO env (ArchiveType, Map FilePath MetaEntry)
       getFiles [] = throwIO $ UnknownArchiveType loc
       getFiles (at:ats) = do
-        eres <- tryAny $ foldArchive loc fp at id $ \m me -> pure $ m . (me:)
+        eres <- tryAny $
+          foldArchive loc fp at id $ \m me -> pure $ m . (me:)
         case eres of
           Left e -> do
             logDebug $ "parseArchive of " <> display at <> ": " <> displayShow e
             getFiles ats
-          Right files -> pure (at, Map.fromList $ map (mePath &&& id) $ files [])
-  (at :: ArchiveType, files :: Map FilePath MetaEntry) <- getFiles [minBound..maxBound]
+          Right files ->
+            pure (at, Map.fromList $ map (mePath &&& id) $ files [])
+  (at, files) <- getFiles archiveTypes
   let toSimple :: FilePath -> MetaEntry -> Either String (Map FilePath SimpleEntry)
       toSimple key me =
         case meType me of
@@ -466,7 +471,7 @@ parseArchive rpli archive fp = do
         Left e -> throwIO $ UnsupportedTarball loc $ T.pack e
         Right safeFiles -> do
           let toSave = Set.fromList $ map (seSource . snd) safeFiles
-          (blobs :: Map FilePath (BlobKey, BlobId))  <-
+          (blobs :: Map FilePath (BlobKey, BlobId)) <-
             foldArchive loc fp at mempty $ \m me ->
               if mePath me `Set.member` toSave
                 then do
@@ -474,12 +479,13 @@ parseArchive rpli archive fp = do
                   (blobId, blobKey) <- lift $ withStorage $ storeBlob bs
                   pure $ Map.insert (mePath me) (blobKey, blobId) m
                 else pure m
-          tree :: CachedTree <- fmap (CachedTreeMap . Map.fromList) $ for safeFiles $ \(sfp, se) ->
-            case Map.lookup (seSource se) blobs of
-              Nothing ->
-                error $ "Impossible: blob not found for: " ++ seSource se
-              Just (blobKey, blobId) ->
-                pure (sfp, (TreeEntry blobKey (seType se), blobId))
+          tree :: CachedTree <-
+            fmap (CachedTreeMap . Map.fromList) $ for safeFiles $ \(sfp, se) ->
+              case Map.lookup (seSource se) blobs of
+                Nothing ->
+                  error $ "Impossible: blob not found for: " ++ seSource se
+                Just (blobKey, blobId) ->
+                  pure (sfp, (TreeEntry blobKey (seType se), blobId))
           -- parse the cabal file and ensure it has the right name
           buildFile <- findCabalOrHpackFile rpli $ unCachedTree tree
           (buildFilePath, buildFileBlobKey, buildFileEntry) <- case buildFile of
