@@ -444,7 +444,8 @@ parseArchive rpli archive fp = do
                           ++ "See https://github.com/commercialhaskell/stack/issues/4579 \
                              \for further information."
                   pairs ->
-                    fmap fold $ for pairs $ \(suffix, me') -> toSimple (key ++ '/' : suffix) me'
+                    fmap fold $ for pairs $ \(suffix, me') ->
+                      toSimple (key ++ '/' : suffix) me'
               Just me' ->
                 case meType me' of
                   METNormal ->
