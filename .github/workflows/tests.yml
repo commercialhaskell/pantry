@@ -21,7 +21,7 @@ jobs:
         - ubuntu-latest
         resolver:
         - stack-ghc-9.2.8.yaml
-        - stack-ghc-9.4.5.yaml
+        - stack-ghc-9.4.6.yaml
         - stack-ghc-9.6.2.yaml
         include:
         - os: macos-latest
@@ -60,7 +60,7 @@ jobs:
         - ubuntu-latest
         - windows-latest
         resolver:
-        - stack-ghc-9.4.5.yaml
+        - stack-ghc-9.4.6.yaml
     steps:
     - name: Clone project
       uses: actions/checkout@v3
