@@ -1,5 +1,5 @@
 # Snapshot specification for GHC 9.6.2.
-resolver: nightly-2023-08-16 # GHC 9.6.2
+resolver: nightly-2023-08-29 # GHC 9.6.2
 
 flags:
   hackage-security:

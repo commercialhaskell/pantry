@@ -12,13 +12,6 @@ packages:
   original:
     hackage: aeson-warning-parser-0.1.0@sha256:f2c1c42b73aa35d352060abcbb867c410cbbf57d0cb0fed607bcd1e2a74954ad,1308
 - completed:
-    hackage: casa-client-0.0.2@sha256:1e27a6678c511b3372c4e97ab1a4a9eca4eca8a0a090eac103a1806ce7c8584d,888
-    pantry-tree:
-      sha256: c72d43eca832cc3c9a3074e86b39815de788cda6de966dfae4471194e9abd17d
-      size: 167
-  original:
-    hackage: casa-client-0.0.2@sha256:1e27a6678c511b3372c4e97ab1a4a9eca4eca8a0a090eac103a1806ce7c8584d,888
-- completed:
     hackage: companion-0.1.0@sha256:99f6de52c832d433639232a6d77d33abbca3b3037e49b7db6242fb9f569a8a2b,1093
     pantry-tree:
       sha256: 7d36c8a038ab4db197c0a395c63523b47beec9f6c72a64271bb0f6b112d1ebd1
@@ -104,7 +97,7 @@ packages:
     hackage: tls-1.7.1@sha256:3759864ce4452c31b7740ef181667dd3fdd3d136d7bdc01e0cf5200609973d5c,5566
 snapshots:
 - completed:
-    sha256: 23bb9bb355bfdb1635252e120a29b712f0d5e8a6c6a65c5ab5bd6692f46c438e
-    size: 640457
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/7.yaml
-  original: lts-21.7
+    sha256: 2fc12a405ab6f7eac73eb11a0ca5ccca0e956bd2848db780c140b7406ff9ebb5
+    size: 640035
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/9.yaml
+  original: lts-21.9
