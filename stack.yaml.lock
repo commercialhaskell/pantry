@@ -54,19 +54,19 @@ packages:
   original:
     hackage: crypton-x509-validation-1.6.12@sha256:85989721b64be4b90de9f66ef641c26f57575cffed1a50d707065fb60176f386,2227
 - completed:
-    hackage: hpack-0.35.4@sha256:171eaba080e308d26f16cb1b8f77d2b6a2899cf4ff98085912be167f8136ffef,5119
+    hackage: hpack-0.35.5@sha256:22b46f28b53ec6fb2d05517b569a74b8b3e5e8c2e89c6b7ca25b345af62f22fa,5119
     pantry-tree:
-      sha256: aae0dffd9b40acc51e77ef043c2f1d4d579753037357ccf55c8d50a98b7fe2ef
+      sha256: d129102d5c4a66111877f48f6f4ba93615df574eb85195faf185c53a3cb215bd
       size: 3742
   original:
-    hackage: hpack-0.35.4@sha256:171eaba080e308d26f16cb1b8f77d2b6a2899cf4ff98085912be167f8136ffef,5119
+    hackage: hpack-0.35.5@sha256:22b46f28b53ec6fb2d05517b569a74b8b3e5e8c2e89c6b7ca25b345af62f22fa,5119
 - completed:
-    hackage: http-client-tls-0.3.6.2@sha256:a9362782ddbc1d1f84a2919bbb1b224cefd2b24071b81c3aeb5c5c8d6a1fdb0f,2004
+    hackage: http-client-tls-0.3.6.3@sha256:a5909ce412ee65c141b8547f8fe22236f175186c95c708e86a46b5547394f910,2046
     pantry-tree:
-      sha256: 600dfa374198408aa466fdb483834a51a0e15a25fb095992f82b0f4f05adb3f7
+      sha256: a5659b6051a40039eec1db4b5350a232e2dced7a557917082a39623cfc605323
       size: 435
   original:
-    hackage: http-client-tls-0.3.6.2@sha256:a9362782ddbc1d1f84a2919bbb1b224cefd2b24071b81c3aeb5c5c8d6a1fdb0f,2004
+    hackage: http-client-tls-0.3.6.3@sha256:a5909ce412ee65c141b8547f8fe22236f175186c95c708e86a46b5547394f910,2046
 - completed:
     hackage: http-download-0.2.1.0@sha256:a97863e96f7d44efc3d0e3061db7fe2540b8374ca44ae90d0b56040140cb7506,1716
     pantry-tree:
@@ -89,15 +89,15 @@ packages:
   original:
     hackage: tar-conduit-0.4.0@sha256:f333649770f5ec42a83a93b0d424cf6bb895d80dfbee05a54340395f81d036ae,3126
 - completed:
-    hackage: tls-1.7.1@sha256:3759864ce4452c31b7740ef181667dd3fdd3d136d7bdc01e0cf5200609973d5c,5566
+    hackage: tls-1.8.0@sha256:0ea435fb1969384c76e6b6ba49c509cec55eec29f60dd2c335151d9c8a4e8b4f,5571
     pantry-tree:
-      sha256: 86f1b4c5d019628ceaa1a747af080a4ab43aba25ff7b7d9812ddbdf2a7dd8c00
+      sha256: 9adcea99bd0d277b8f4eeb03680b7b38bd8c903acfb6d9ed3b2f8016d02db749
       size: 4897
   original:
-    hackage: tls-1.7.1@sha256:3759864ce4452c31b7740ef181667dd3fdd3d136d7bdc01e0cf5200609973d5c,5566
+    hackage: tls-1.8.0@sha256:0ea435fb1969384c76e6b6ba49c509cec55eec29f60dd2c335151d9c8a4e8b4f,5571
 snapshots:
 - completed:
-    sha256: 2fc12a405ab6f7eac73eb11a0ca5ccca0e956bd2848db780c140b7406ff9ebb5
-    size: 640035
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/9.yaml
-  original: lts-21.9
+    sha256: 9313df78f49519315342f4c51ffc5da12659d3735f8ac3c54a1fb98ff874474e
+    size: 640036
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/12.yaml
+  original: lts-21.12
