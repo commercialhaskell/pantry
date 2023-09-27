@@ -1,6 +1,11 @@
 *~
 *.swp
 
-# Haskell build tool related
+# Haskell Tool Stack-related
 .stack-work/
+
+# Cabal (the tool)-related
 dist-newstyle/
+
+# Haskell Language Server-related
+hie.yaml
