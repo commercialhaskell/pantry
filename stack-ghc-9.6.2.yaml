@@ -1,6 +1,0 @@
-# Snapshot specification for GHC 9.6.2.
-resolver: nightly-2023-09-17 # GHC 9.6.2
-
-flags:
-  hackage-security:
-    cabal-syntax: true
