@@ -1,6 +1,6 @@
 cabal-version: 2.0
 
--- This file has been generated from package.yaml by hpack version 0.35.5.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -90,7 +90,7 @@ library
     , resourcet
     , rio
     , rio-orphans
-    , rio-prettyprint >=0.1.4.0
+    , rio-prettyprint >=0.1.7.0
     , static-bytes
     , tar-conduit >=0.4.0
     , text
@@ -168,7 +168,7 @@ library internal
     , resourcet
     , rio
     , rio-orphans
-    , rio-prettyprint >=0.1.4.0
+    , rio-prettyprint >=0.1.7.0
     , static-bytes
     , tar-conduit >=0.4.0
     , text
@@ -234,7 +234,7 @@ executable test-pretty-exceptions
     , resourcet
     , rio
     , rio-orphans
-    , rio-prettyprint >=0.1.4.0
+    , rio-prettyprint >=0.1.7.0
     , static-bytes
     , tar-conduit >=0.4.0
     , text
@@ -335,7 +335,7 @@ test-suite spec
     , resourcet
     , rio
     , rio-orphans
-    , rio-prettyprint >=0.1.4.0
+    , rio-prettyprint >=0.1.7.0
     , static-bytes
     , tar-conduit >=0.4.0
     , text
