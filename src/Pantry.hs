@@ -245,8 +245,9 @@ import           RIO.Directory ( getAppUserDataDirectory )
 import qualified RIO.FilePath as FilePath
 import qualified RIO.List as List
 import qualified RIO.Map as Map
-import           RIO.PrettyPrint
+import           RIO.PrettyPrint ( HasTerm (..) )
 import           RIO.PrettyPrint.StylesUpdate
+                   ( HasStylesUpdate (..), StylesUpdate )
 import           RIO.Process
 import qualified RIO.Set as Set
 import           RIO.Text ( unpack )

@@ -188,8 +188,8 @@ import qualified RIO.Text as T
 import           RIO.Time ( Day, UTCTime, toGregorian )
 import qualified RIO.Map as Map
 import           RIO.PrettyPrint
-                   ( bulletedList, fillSep, flow, hang, line, mkNarrativeList
-                   , parens, string, style
+                   ( blankLine, bulletedList, fillSep, flow, hang, line
+                   , mkNarrativeList, parens, string, style
                    )
 import           RIO.PrettyPrint.Types ( Style (..) )
 import           Text.PrettyPrint.Leijen.Extended ( Pretty (..), StyleDoc )
@@ -1961,9 +1961,6 @@ instance Pretty PantryException where
          ]
     <> blankLine
     <> string (displayException err)
-
-blankLine :: StyleDoc
-blankLine = line <> line
 
 data FuzzyResults
   = FRNameNotFound ![PackageName]

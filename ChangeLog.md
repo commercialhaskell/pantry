@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.9.2.1
+
+* Depend on `rio-prettyprint-0.1.7.0`.
+
 ## v0.9.2
 
 * `defaultCasaRepoPrefix` references https://casa.stackage.org, instead of
