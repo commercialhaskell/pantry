@@ -1,0 +1,18 @@
+# Experimental snapshot specification for GHC 9.8.1.
+resolver: nightly-2023-10-15 # GHC 9.6.3
+compiler: ghc-9.8.1
+
+packages:
+# Respecified, becaused pruned because text specified.
+- Cabal-3.10.1.0@sha256:6d11adf7847d9734e7b02785ff831b5a0d11536bfbcefd6634b2b08411c63c94,12316
+# Respecified, becaused pruned because text specified.
+- Cabal-syntax-3.10.1.0@sha256:bb835ebab577fd0f9c11dab96210dbb8d68ffc62652576f4b092563c345930e7,7434
+# Respecified, becaused pruned because text specified.
+- parsec-3.1.17.0@sha256:6cf18e59d9f1c5b40385457b82ab679dc18d3c5bd3c2c67b2f94e1e8732e6624,5119
+# GHC 9.8.1 comes with text-2.1, but aeson does not yet support it.
+- text-2.0.2@sha256:d495b2a2a53da7e66163477a5837d2109074f8818fc938739b9ecf27d506050a,9565
+- th-abstraction-0.6.0.0
+
+flags:
+  hackage-security:
+    cabal-syntax: true
