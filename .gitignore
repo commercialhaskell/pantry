@@ -9,3 +9,7 @@ dist-newstyle/
 
 # Haskell Language Server-related
 hie.yaml
+
+# Stan-related
+.hie
+stan.html
