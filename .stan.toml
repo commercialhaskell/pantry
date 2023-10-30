@@ -1,3 +1,19 @@
+# Partial: base/last
+# On Windows
+# To exclude .stack-work\dist\<hash>\build\internal\autogen\Paths_pantry.hs
+[[check]]
+  id = "STAN-0004"
+  directory = ".stack-work\\dist"
+  type = "Exclude"
+
+# Partial: base/last
+# On Unix-like operating systems
+# To exclude .stack-work/dist/<hash>/build/internal/autogen/Paths_pantry.hs
+[[check]]
+  id = "STAN-0004"
+  directory = ".stack-work/dist"
+  type = "Exclude"
+
 # Infinite: base/reverse
 # Usage of the 'reverse' function that hangs on infinite lists
 # Pantry uses Data.List.reverse in many places
