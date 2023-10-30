@@ -13,3 +13,6 @@ hie.yaml
 # Stan-related
 .hie
 stan.html
+
+# VS Code Counter (Visual Studio Code Extension)-related
+.VSCodeCounter
