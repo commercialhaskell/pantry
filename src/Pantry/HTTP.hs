@@ -8,7 +8,7 @@ module Pantry.HTTP
   , httpSinkChecked
   ) where
 
-import           Conduit
+import           Conduit ( ConduitT, ZipSink (..), await, getZipSink )
 import           Network.HTTP.Client as Export
                    ( BodyReader, HttpExceptionContent (StatusCodeException)
                    , parseRequest, parseUrlThrow
@@ -28,6 +28,8 @@ import           Network.HTTP.Types as Export
                    )
 import qualified Pantry.SHA256 as SHA256
 import           Pantry.Types
+                   ( FileSize (..), Mismatch (..), PantryException (..), SHA256
+                   )
 import           RIO
 import qualified RIO.ByteString as B
 import qualified RIO.Text as T

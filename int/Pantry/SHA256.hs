@@ -39,10 +39,10 @@ module Pantry.SHA256
   , toRaw
   ) where
 
-import           Conduit
+import           Conduit ( ConduitT )
 import qualified Crypto.Hash as Hash ( Digest, SHA256, hash, hashlazy )
 import qualified Crypto.Hash.Conduit as Hash ( hashFile, sinkHash )
-import           Data.Aeson
+import           Data.Aeson ( FromJSON (..), ToJSON (..), withText )
 import qualified Data.ByteArray
 import qualified Data.ByteArray.Encoding as Mem
 import           Data.StaticBytes

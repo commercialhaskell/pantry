@@ -15,6 +15,9 @@ module Pantry.Archive
 
 import qualified Codec.Archive.Zip as Zip
 import           Conduit
+                   ( ConduitT, (.|), runConduit, sinkHandle, sinkList
+                   , sourceHandle, sourceLazy, withSourceFile
+                   )
 import           Data.Bits ( (.&.), shiftR )
 import qualified Data.Conduit.Tar as Tar
 import           Data.Conduit.Zlib ( ungzip )
@@ -22,19 +25,33 @@ import qualified Data.Digest.CRC32 as CRC32
 import           Distribution.PackageDescription ( package, packageDescription )
 import qualified Hpack.Config as Hpack
 import           Pantry.HPack ( hpackVersion )
-import           Pantry.HTTP
+import           Pantry.HTTP ( httpSinkChecked )
 import           Pantry.Internal ( makeTarRelative, normalizeParents )
 import qualified Pantry.SHA256 as SHA256
-import           Pantry.Storage hiding
-                   ( Tree, TreeEntry, findOrGenerateCabalFile )
-import           Pantry.Tree
+import           Pantry.Storage
+                   ( BlobId, CachedTree (..), TreeId, hpackToCabal
+                   , loadArchiveCache, loadBlob, loadCabalBlobKey
+                   , loadCachedTree, loadPackageById, storeArchiveCache
+                   , storeBlob, storeHPack, storeTree, unCachedTree, withStorage
+                   )
+import           Pantry.Tree ( rawParseGPD )
 import           Pantry.Types
+                   ( Archive, ArchiveLocation (..), BlobKey, BuildFile (..)
+                   , FileSize (..), FileType (..), HasPantryConfig
+                   , Mismatch (..), Package (..), PackageCabal (..)
+                   , PackageIdentifier (..), PackageMetadata (..)
+                   , PantryException (..), PHpack (..), RawArchive (..)
+                   , RawPackageLocationImmutable (..), RawPackageMetadata (..)
+                   , ResolvedPath (..), SHA256, Tree (..), TreeEntry (..)
+                   , TreeKey, cabalFileName, hpackSafeFilePath, mkSafeFilePath
+                   , toRawArchive, toRawPM, unSafeFilePath
+                   )
 import           Path ( toFilePath )
 import           RIO
 import qualified RIO.ByteString.Lazy as BL
 import qualified RIO.List as List
 import qualified RIO.Map as Map
-import           RIO.Process
+import           RIO.Process ( HasProcessContext )
 import qualified RIO.Set as Set
 import qualified RIO.Text as T
 import qualified RIO.Text.Partial as T

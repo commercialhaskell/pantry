@@ -22,12 +22,20 @@ module Pantry.Hackage
   ) where
 
 import           Conduit
+                   ( ZipSink (..), (.|), getZipSink, runConduit, sinkLazy
+                   , sinkList, sourceHandle, takeC, takeCE
+                   )
 import           Data.Aeson
+                   ( FromJSON (..), Value (..),  (.:), eitherDecode'
+                   , withObject
+                   )
 import           Data.Conduit.Tar
+                   ( FileInfo (..), FileType (..), untar )
 import qualified Data.List.NonEmpty as NE
 import           Data.Text.Metrics (damerauLevenshtein)
 import           Data.Text.Unsafe ( unsafeTail )
 import           Data.Time ( getCurrentTime )
+import           Database.Persist.Sql ( SqlBackend )
 import           Distribution.PackageDescription ( GenericPackageDescription )
 import qualified Distribution.PackageDescription as Cabal
 import qualified Distribution.Text
@@ -40,13 +48,34 @@ import qualified Hackage.Security.Client.Repository.Remote as HS
 import qualified Hackage.Security.Util.Path as HS
 import qualified Hackage.Security.Util.Pretty as HS
 import           Network.URI ( parseURI )
-import           Pantry.Archive
-import           Pantry.Casa
+import           Pantry.Archive ( getArchive )
+import           Pantry.Casa ( casaLookupKey )
 import qualified Pantry.SHA256 as SHA256
-import           Pantry.Storage hiding
-                   ( PackageName, TreeEntry, Version, findOrGenerateCabalFile )
-import           Pantry.Tree
-import           Pantry.Types hiding ( FileType (..) )
+import           Pantry.Storage
+                   ( CachedTree (..), TreeId, BlobId, clearHackageRevisions
+                   , countHackageCabals, getBlobKey, loadBlobById, loadBlobBySHA
+                   , loadHackagePackageVersion, loadHackagePackageVersions
+                   , loadHackageTarballInfo, loadHackageTree, loadHackageTreeKey
+                   , loadLatestCacheUpdate, loadPreferredVersion
+                   , sinkHackagePackageNames, storeBlob, storeCacheUpdate
+                   , storeHackageRevision, storeHackageTarballInfo
+                   , storeHackageTree, storePreferredVersion, storeTree
+                   , unCachedTree, withStorage
+                   )
+import           Pantry.Tree ( rawParseGPD )
+import           Pantry.Types
+                   ( ArchiveLocation (..), BlobKey (..), BuildFile (..)
+                   , CabalFileInfo (..), FileSize (..), FuzzyResults (..)
+                   , HackageSecurityConfig (..), HasPantryConfig (..)
+                   , Mismatch (..), Package (..), PackageCabal (..)
+                   , PackageIdentifier (..), PackageIdentifierRevision (..)
+                   , PackageIndexConfig (..), PackageName, PantryConfig (..)
+                   , PantryException (..), RawArchive (..)
+                   , RawPackageLocationImmutable (..), RawPackageMetadata (..)
+                   , Revision, SHA256, Storage (..), TreeEntry (..), TreeKey
+                   , Version, cabalFileName, packageNameString, parsePackageName
+                   , unSafeFilePath
+                   )
 import           Path
                    ( Abs, Dir, File, Path, Rel, (</>), parseRelDir, parseRelFile
                    , toFilePath
@@ -55,7 +84,7 @@ import           RIO
 import qualified RIO.ByteString as B
 import qualified RIO.ByteString.Lazy as BL
 import qualified RIO.Map as Map
-import           RIO.Process
+import           RIO.Process ( HasProcessContext )
 import qualified RIO.Text as T
 #if !MIN_VERSION_rio(0,1,16)
 -- Now provided by RIO from the rio package. Resolvers before lts-15.16

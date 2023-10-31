@@ -10,15 +10,19 @@ module Hackage.Security.Client.Repository.HttpLib.HttpClient
   ( httpLib
   ) where
 
-import           Control.Exception
+import           Control.Exception ( handle )
 import           Control.Monad ( void )
 import           Data.ByteString ( ByteString )
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BS.C8
-import           Hackage.Security.Client hiding ( Header )
+import           Hackage.Security.Client ( SomeRemoteError (..) )
 import           Hackage.Security.Client.Repository.HttpLib
+                   ( BodyReader, HttpLib (..), HttpRequestHeader (..)
+                   , HttpResponseHeader (..), HttpStatus (..)
+                   )
 import           Hackage.Security.Util.Checked
-import           Network.URI
+                   ( Throws, handleChecked, throwChecked )
+import           Network.URI ( URI )
 import qualified Pantry.HTTP as HTTP
 
 {-------------------------------------------------------------------------------

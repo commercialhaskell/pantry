@@ -16,9 +16,20 @@ module Pantry.Repo
   ) where
 
 import           Database.Persist ( Entity (..) )
-import           Pantry.Archive
-import           Pantry.Storage hiding ( findOrGenerateCabalFile )
+import           Pantry.Archive ( getArchivePackage )
+import           Pantry.Storage
+                   ( getTreeForKey, loadPackageById, loadRepoCache
+                   , storeRepoCache, withStorage
+                   )
 import           Pantry.Types
+                   ( AggregateRepo (..), ArchiveLocation (..), HasPantryConfig
+                   , Package (..), PackageMetadata (..), PantryException (..)
+                   , RawArchive (..), RawPackageLocationImmutable (..)
+                   , RawPackageMetadata (..), RelFilePath (..), Repo (..)
+                   , RepoType (..), ResolvedPath (..), SimpleRepo (..)
+                   , TreeKey (..), arToSimpleRepo, rToSimpleRepo
+                   , toAggregateRepos, toRawPM
+                   )
 import           Path.IO ( resolveFile' )
 import           RIO
 import           RIO.ByteString ( isInfixOf )
@@ -27,6 +38,10 @@ import           RIO.Directory ( doesDirectoryExist )
 import           RIO.FilePath ( (</>) )
 import qualified RIO.Map as Map
 import           RIO.Process
+                   ( ExitCodeException (..), HasProcessContext, proc
+                   , readProcess, readProcess_, withModifyEnvVars
+                   , withWorkingDir
+                   )
 import qualified RIO.Text as T
 import           System.Console.ANSI ( hSupportsANSIWithoutEmulation )
 import           System.IsWindows ( osIsWindows )

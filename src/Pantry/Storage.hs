@@ -102,11 +102,26 @@ module Pantry.Storage
   , unCachedTree
   ) where
 
-import           Conduit
+import           Conduit ( ConduitT, (.|), concatMapMC, mapC, runConduit )
 import           Data.Acquire ( with )
-import           Database.Persist
-import           Database.Persist.Sqlite
+import           Database.Persist ( ( !=.), (=.), (==.), (>.) )
+import           Database.Persist.Class.PersistEntity
+                   ( Entity (..), EntityField, Filter (..), Key, SelectOpt (..)
+                   , Unique
+                   )
+import           Database.Persist.Class.PersistField ( PersistField (..) )
+import           Database.Persist.Class.PersistQuery
+                   ( count, deleteWhere, selectFirst, selectKeysList, selectList
+                   , selectSource, selectSourceRes, updateWhere
+                   )
+import           Database.Persist.Class.PersistStore
+                   ( get, getJust, insert, insert_, update,  )
+import           Database.Persist.Class.PersistUnique ( getBy, insertBy )
+import           Database.Persist.Sql ( Single (..), rawExecute, rawSql )
+import           Database.Persist.SqlBackend ( SqlBackend )
 import           Database.Persist.TH
+                   ( mkMigrate, mkPersist, persistLowerCase, share, sqlSettings
+                   )
 import           Pantry.HPack ( hpack, hpackVersion )
 import qualified Pantry.SHA256 as SHA256
 import qualified Pantry.SQLite as SQLite
@@ -133,7 +148,7 @@ import qualified RIO.FilePath as FilePath
 import qualified RIO.List as List
 import qualified RIO.Map as Map
 import           RIO.Orphans ( HasResourceMap )
-import           RIO.Process
+import           RIO.Process ( HasProcessContext )
 import qualified RIO.Text as T
 import           RIO.Time ( UTCTime, getCurrentTime )
 

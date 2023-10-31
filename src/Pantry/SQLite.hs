@@ -11,6 +11,10 @@ module Pantry.SQLite
 import           Control.Concurrent.Companion
                    ( Companion, onCompanionDone, withCompanion )
 import           Database.Persist.Sqlite
+                   ( Migration, extraPragmas, fkEnabled, mkSqliteConnectionInfo
+                   , runMigrationSilent, runSqlConn, walEnabled
+                   , withSqliteConnInfo
+                   )
 import           Pantry.Types
                    ( PantryException (MigrationFailure), Storage (..) )
 import           Path ( Abs, File, Path, parent, toFilePath )

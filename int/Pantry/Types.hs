@@ -125,11 +125,13 @@ module Pantry.Types
   ) where
 
 import           Casa.Client ( CasaRepoPrefix )
-import           Database.Persist
-import           Database.Persist.Sql
+import           Database.Persist.Class.PersistField ( PersistField (..) )
+import           Database.Persist.PersistValue ( PersistValue (..) )
+import           Database.Persist.Sql ( PersistFieldSql (..), SqlBackend )
 #if MIN_VERSION_persistent(2, 13, 0)
 import           Database.Persist.SqlBackend.Internal ( connRDBMS )
 #endif
+import           Database.Persist.Types ( SqlType (..) )
 import           Data.Aeson.Encoding.Internal ( unsafeToEncoding )
 import           Data.Aeson.Types
                    ( FromJSON (..), FromJSONKey (..), FromJSONKeyFunction (..)
