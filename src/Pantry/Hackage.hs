@@ -131,8 +131,8 @@ data HackageTarballResult = HackageTarballResult
 -- sanity. See the return value to find out if it happened.
 --
 -- @since 0.1.0.0
-updateHackageIndex
-  :: (HasPantryConfig env, HasLogFunc env)
+updateHackageIndex ::
+     (HasPantryConfig env, HasLogFunc env)
   => Maybe Utf8Builder -- ^ reason for updating, if any
   -> RIO env DidUpdateOccur
 updateHackageIndex = updateHackageIndexInternal False
@@ -142,15 +142,15 @@ updateHackageIndex = updateHackageIndexInternal False
 -- sure the database is in sync with the locally downloaded tarball
 --
 -- @since 0.1.0.0
-forceUpdateHackageIndex
-  :: (HasPantryConfig env, HasLogFunc env)
+forceUpdateHackageIndex ::
+     (HasPantryConfig env, HasLogFunc env)
   => Maybe Utf8Builder
   -> RIO env DidUpdateOccur
 forceUpdateHackageIndex = updateHackageIndexInternal True
 
 
-updateHackageIndexInternal
-  :: (HasPantryConfig env, HasLogFunc env)
+updateHackageIndexInternal ::
+     (HasPantryConfig env, HasLogFunc env)
   => Bool -- ^ Force the database update.
   -> Maybe Utf8Builder -- ^ reason for updating, if any
   -> RIO env DidUpdateOccur

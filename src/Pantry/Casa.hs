@@ -13,6 +13,10 @@ import qualified Data.HashMap.Strict as HM
 import qualified Pantry.SHA256 as SHA256
 import           Pantry.Storage ( storeBlob, withStorage )
 import           Pantry.Types as P
+                   ( BlobKey (..), FileSize (..), HasPantryConfig (..)
+                   , PantryConfig (..), PantryException (..), Tree, TreeKey (..)
+                   , parseTreeM
+                   )
 import           RIO
 import qualified RIO.ByteString as B
 

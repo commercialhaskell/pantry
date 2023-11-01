@@ -37,8 +37,8 @@ import qualified RIO.Text as T
 setUserAgent :: Request -> Request
 setUserAgent = setRequestHeader "User-Agent" ["Haskell pantry package"]
 
-withResponse
-  :: MonadUnliftIO m
+withResponse ::
+     MonadUnliftIO m
   => HTTP.Request
   -> (Response BodyReader -> m a)
   -> m a
@@ -46,15 +46,15 @@ withResponse req inner = withRunInIO $ \run -> do
   manager <- getGlobalManager
   HTTP.withResponse (setUserAgent req) manager (run . inner)
 
-httpSink
-  :: MonadUnliftIO m
+httpSink ::
+     MonadUnliftIO m
   => Request
   -> (Response () -> ConduitT ByteString Void m a)
   -> m a
 httpSink req = HTTP.httpSink (setUserAgent req)
 
-httpSinkChecked
-  :: MonadUnliftIO m
+httpSinkChecked ::
+     MonadUnliftIO m
   => Text
   -> Maybe SHA256
   -> Maybe FileSize
