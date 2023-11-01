@@ -3,10 +3,8 @@
 
 module Pantry.BuildPlanSpec where
 
-import           Control.Monad.Catch ( MonadThrow )
 import           Data.Aeson.WarningParser ( WithJSONWarnings(..) )
 import qualified Data.ByteString.Char8 as S8
-import           Data.List.NonEmpty ( NonEmpty )
 import           Data.Yaml ( decodeThrow )
 import           Pantry
 import           RIO

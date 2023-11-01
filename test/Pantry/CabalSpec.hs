@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Pantry.CabalSpec
@@ -32,8 +33,7 @@ spec = describe "wrong cabal file" $ do
         version2 = mkVersion [0, 2]
         version3 = mkVersion [0, 3]
         size = FileSize 597
-    go `shouldThrow'` \e ->
-      case e of
+    go `shouldThrow'` \case
         MismatchedPackageMetadata rpli' rpm _tree ident ->
           rpli == rpli' &&
           rpm == RawPackageMetadata
@@ -64,8 +64,7 @@ spec = describe "wrong cabal file" $ do
         go = loadCabalFileRawImmutable rpli
         acmeMissiles = mkPackageName "acme-missiles"
         version2 = mkVersion [0, 2]
-    go `shouldThrow'` \e ->
-      case e of
+    go `shouldThrow'` \case
         MismatchedPackageMetadata rpli' rpm' _treeKey ident ->
           rpli == rpli' &&
           rpm == rpm' &&
@@ -94,8 +93,7 @@ spec = describe "wrong cabal file" $ do
         yesodAuth = mkPackageName "yesod-auth"
         version = mkVersion [1, 6, 4, 1]
         badVersion = mkVersion [1, 6, 4, 0]
-    go `shouldThrow'` \e ->
-      case e of
+    go `shouldThrow'` \case
         MismatchedPackageMetadata rpli' rpm' _treeKey ident ->
           rpli == rpli' &&
           rpm == rpm' &&

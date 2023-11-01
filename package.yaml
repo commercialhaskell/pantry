@@ -1,13 +1,13 @@
-name:        pantry
-version:     0.9.2
-synopsis:    Content addressable Haskell package management
+name: pantry
+version: 0.9.2
+synopsis: Content addressable Haskell package management
 description: Please see the README on GitHub at <https://github.com/commercialhaskell/pantry#readme>
-category:    Development
-author:      Michael Snoyman
-maintainer:  michael@snoyman.com
-copyright:   2018-2022 FP Complete
-license:     BSD3
-github:      commercialhaskell/pantry
+category: Development
+author: Michael Snoyman
+maintainer: michael@snoyman.com
+copyright: 2018-2022 FP Complete
+license: BSD3
+github: commercialhaskell/pantry
 
 extra-source-files:
 - README.md
@@ -79,9 +79,9 @@ when:
   dependencies: network >= 3.1.2.9
 
 ghc-options:
-  - -fwrite-ide-info
-  - -hiedir=.hie
-  - -Wall
+- -fwrite-ide-info
+- -hiedir=.hie
+- -Wall
 
 # For testing
 internal-libraries:
