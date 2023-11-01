@@ -66,11 +66,11 @@ data Args =
 
 unliftio_0_2_12 :: Args
 unliftio_0_2_12 =
-  let cabalHash = (either
+  let cabalHash = either
                      (error . show)
                      id
                      (fromHexText
-                        "b089fbc2ff2628a963c2c4b12143f2020874e3e5144ffd6c62b25639a0ca1483"))
+                        "b089fbc2ff2628a963c2c4b12143f2020874e3e5144ffd6c62b25639a0ca1483")
       cabalLen = FileSize 3325
       cabalFileHash =
         CFIHash

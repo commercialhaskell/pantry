@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Pantry.HackageSpec
@@ -16,8 +17,7 @@ spec = do
   it "fuzzy lookup kicks in" $ do
     let pir = PackageIdentifierRevision "thisisnot-tobe-foundon-hackage-please" (mkVersion [1..3]) CFILatest
     runPantryApp (loadPackageRaw (RPLIHackage pir Nothing))
-      `shouldThrow` \e ->
-        case e of
+      `shouldThrow` \case
           UnknownHackagePackage pir' _  -> pir == pir'
           _ -> False
   -- Flaky test, can be broken by new packages on Hackage.

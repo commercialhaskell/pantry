@@ -258,16 +258,15 @@ treeKeyExample :: TreeKey
 treeKeyExample = TreeKey blobKeyExample
 
 rawPackageLocationImmutableExamples :: [RawPackageLocationImmutable]
-rawPackageLocationImmutableExamples = concat
-  [ [ RPLIHackage packageIdentifierRevision treeKey
-    | packageIdentifierRevision <- packageIdentifierRevisionExamples
-    , treeKey <- [Nothing, Just treeKeyExample]
-    ]
+rawPackageLocationImmutableExamples =
+     [ RPLIHackage packageIdentifierRevision treeKey
+     | packageIdentifierRevision <- packageIdentifierRevisionExamples
+     , treeKey <- [Nothing, Just treeKeyExample]
+     ]
 --, RPLIArchive
-  , [ RPLIRepo repoExample rawPackageMetadata
-    | rawPackageMetadata <- rawPackageMetadataExamples
-    ]
-  ]
+  <> [ RPLIRepo repoExample rawPackageMetadata
+     | rawPackageMetadata <- rawPackageMetadataExamples
+     ]
 
 safeFilePathExamples :: [SafeFilePath]
 safeFilePathExamples =
@@ -286,8 +285,8 @@ wantedCompilerExamples =
   , WCGhcjs versionExample versionExample
   ]
 
-data ExceptionExample
-  = ExceptionExample !Text
+newtype ExceptionExample
+  = ExceptionExample Text
   deriving (Show, Typeable)
 
 instance Exception ExceptionExample where
@@ -400,7 +399,7 @@ packageNameExamples =
 
 duplicatePackageNamesExamples :: [(PackageName, [RawPackageLocationImmutable])]
 duplicatePackageNamesExamples = map
-  ((, rawPackageLocationImmutableExamples))
+  (, rawPackageLocationImmutableExamples)
   packageNameExamples
 
 descriptionExample :: Text

@@ -34,7 +34,7 @@ hh name p = it name $ do
   unless result $ throwString "Hedgehog property failed" :: IO ()
 
 genBlobKey :: Gen BlobKey
-genBlobKey = BlobKey <$> genSha256 <*> (FileSize <$> (Gen.word (Range.linear 1 10000)))
+genBlobKey = BlobKey <$> genSha256 <*> (FileSize <$> Gen.word (Range.linear 1 10000))
 
 genSha256 :: Gen SHA256
 genSha256 = SHA256.hashBytes <$> Gen.bytes (Range.linear 1 500)
@@ -109,13 +109,13 @@ spec = do
       RawSnapshotLayer{..} <- parseSl $
         "name: 'test'\n" ++
         "resolver: lts-2.10\n"
-      rslParent `shouldBe` (RSLSynonym $ LTS 2 10)
+      rslParent `shouldBe` RSLSynonym (LTS 2 10)
 
     it "parses snapshot using 'snapshot'" $ do
       RawSnapshotLayer{..} <- parseSl $
         "name: 'test'\n" ++
         "snapshot: lts-2.10\n"
-      rslParent `shouldBe` (RSLSynonym $ LTS 2 10)
+      rslParent `shouldBe` RSLSynonym (LTS 2 10)
 
     it "throws if both 'resolver' and 'snapshot' are present" $ do
       let go = parseSl $
@@ -190,7 +190,7 @@ spec = do
         Right sha' -> pure sha'
         _ -> fail "parseHackagetext: failed decoding the sha256"
       let Right (pkgIdentifier, blobKey) = parseHackageText txt
-      blobKey `shouldBe` (BlobKey sha (FileSize 5058))
+      blobKey `shouldBe` BlobKey sha (FileSize 5058)
       pkgIdentifier `shouldBe`
           PackageIdentifier
               (mkPackageName "persistent")

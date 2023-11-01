@@ -1,0 +1,9 @@
+# Not considered useful hints
+- ignore:
+    name: "Use camelCase"
+    within:
+    - System.Terminal
+- ignore:
+    name: "Use fewer imports"
+    within:
+    - Pantry.Types
