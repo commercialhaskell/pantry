@@ -69,7 +69,7 @@ module Pantry
   , CabalFileInfo (..)
   , Revision (..)
   , PackageIdentifierRevision (..)
-  , UsePreferredVersions (..)
+  , UsePreferredVersions
 
     -- ** Archives
   , RawArchive (..)
@@ -180,7 +180,7 @@ module Pantry
     -- * Hackage index
   , updateHackageIndex
   , DidUpdateOccur (..)
-  , RequireHackageIndex (..)
+  , RequireHackageIndex
   , hackageIndexTarballL
   , getHackagePackageVersions
   , getLatestHackageVersion
@@ -196,7 +196,7 @@ module Pantry
   ) where
 
 import           Casa.Client ( CasaRepoPrefix, thParserCasaRepo )
-import           Conduit
+import           Conduit ( (.|), mapC, mapMC, runConduitRes, sinkList, sumC )
 import           Control.Applicative ( empty )
 import           Control.Arrow ( right )
 import           Control.Monad.State.Strict ( State, execState, get, modify' )
@@ -214,7 +214,7 @@ import           Data.Monoid ( Endo (..) )
 import           Data.Time ( diffUTCTime, getCurrentTime )
 import qualified Data.Yaml as Yaml
 import           Data.Yaml.Include ( decodeFileWithWarnings )
-import           Database.Persist ( entityKey )
+import           Database.Persist.Class.PersistEntity ( entityKey )
 import           Distribution.PackageDescription
                    ( FlagName, GenericPackageDescription )
 import qualified Distribution.PackageDescription as D
@@ -223,17 +223,66 @@ import qualified Hpack
 import qualified Hpack.Config as Hpack
 import           Hpack.Error ( formatHpackError )
 import           Hpack.Yaml ( formatWarning )
-import           Network.HTTP.Download
+import           Network.HTTP.Download ( download, redownload )
 import           Pantry.Archive
-import           Pantry.Casa
-import           Pantry.HTTP
+                   ( fetchArchives, findCabalOrHpackFile, getArchive
+                   , getArchiveKey, getArchivePackage
+                   )
+import           Pantry.Casa ( casaBlobSource, casaLookupKey, casaLookupTree )
+import           Pantry.HTTP ( httpSinkChecked, parseRequest )
 import           Pantry.Hackage
+                   ( DidUpdateOccur (..), RequireHackageIndex
+                   , UsePreferredVersions, getHackageCabalFile
+                   , getHackagePackageVersionRevisions
+                   , getHackagePackageVersions, getHackageTarball
+                   , getHackageTarballKey, getHackageTypoCorrections
+                   , hackageIndexTarballL, htrPackage, updateHackageIndex
+                   )
 import           Pantry.Repo
+                   ( fetchRepos, fetchReposRaw, getRepo, getRepoKey, withRepo )
 import qualified Pantry.SHA256 as SHA256
-import           Pantry.Storage hiding
-                   ( TreeEntry, PackageName, Version, findOrGenerateCabalFile )
-import           Pantry.Tree
+import           Pantry.Storage
+                   ( getSnapshotCacheByHash, getSnapshotCacheId, getTreeForKey
+                   , initStorage, loadBlob, loadCachedTree
+                   , loadExposedModulePackages, loadPackageById, loadURLBlob
+                   , storeSnapshotModuleCache, storeTree, storeURLBlob
+                   , withStorage
+                   )
+import           Pantry.Tree ( rawParseGPD, unpackTree )
 import           Pantry.Types as P
+                   ( Archive (..), ArchiveLocation (..), BlobKey (..)
+                   , CabalFileInfo (..), CabalString (..), FileSize (..)
+                   , FuzzyResults (..), HackageSecurityConfig (..)
+                   , HasPantryConfig (..), HpackExecutable (..), Mismatch (..)
+                   , ModuleName, Package (..), PackageCabal (..)
+                   , PackageIdentifier (..), PackageIdentifierRevision (..)
+                   , PackageIndexConfig (..), PackageLocation (..)
+                   , PackageLocationImmutable (..), PackageMetadata (..)
+                   , PackageName, PantryConfig (..), PantryException (..)
+                   , PHpack (..), PrintWarnings (..), RawArchive (..)
+                   , RawPackageLocation (..), RawPackageLocationImmutable (..)
+                   , RawPackageMetadata (..), RawSnapshot (..)
+                   , RawSnapshotLayer (..), RawSnapshotLocation (..)
+                   , RawSnapshotPackage (..), RelFilePath (..), Repo (..)
+                   , RepoType (..), ResolvedPath (..), Revision (..)
+                   , SafeFilePath, SHA256, SimpleRepo (..), SnapName (..)
+                   , Snapshot (..), SnapshotCacheHash (..), SnapshotLayer (..)
+                   , SnapshotLocation (..), SnapshotPackage (..), Tree (..)
+                   , TreeEntry (..), TreeKey (..), Unresolved, Version
+                   , WantedCompiler (..), bsToBlobKey, cabalFileName
+                   , defaultHackageSecurityConfig, defaultSnapshotLocation
+                   , flagNameString, getGlobalHintsFile, mkSafeFilePath
+                   , moduleNameString, packageIdentifierString
+                   , packageNameString, parseFlagName, parseHackageText
+                   , parsePackageIdentifier, parsePackageIdentifierRevision
+                   , parsePackageName, parsePackageNameThrowing
+                   , parseRawSnapshotLocation, parseSnapName, parseTreeM
+                   , parseVersion, parseVersionThrowing, parseWantedCompiler
+                   , pirForHash, resolvePaths, snapshotLocation
+                   , toCabalStringMap, toRawPL, toRawPLI, toRawPM, toRawSL
+                   , toRawSnapshotLayer, unCabalStringMap, unSafeFilePath
+                   , versionString, warnMissingCabalFile
+                   )
 import           Path
                    ( Abs, Dir, File, Path, (</>), filename, parent, parseAbsDir
                    , parseRelFile, toFilePath
@@ -249,6 +298,7 @@ import           RIO.PrettyPrint ( HasTerm (..) )
 import           RIO.PrettyPrint.StylesUpdate
                    ( HasStylesUpdate (..), StylesUpdate )
 import           RIO.Process
+                   ( HasProcessContext (..), proc, runProcess_, withWorkingDir )
 import qualified RIO.Set as Set
 import           RIO.Text ( unpack )
 import qualified RIO.Text as T
@@ -992,7 +1042,7 @@ tryLoadPackageRawViaCasa rlpi treeKey' = runMaybeT $ do
   lift $ fetchTreeKeys [rlpi]
   tryViaLocalDb treeKey'' <|> warn treeKey''
  where
-  tryViaLocalDb = MaybeT . (tryLoadPackageRawViaLocalDb rlpi)
+  tryViaLocalDb = MaybeT . tryLoadPackageRawViaLocalDb rlpi
   warn treeKey'' = do
     lift $ logWarn $
          "Did not find tree key in DB after pulling it from Casa: "

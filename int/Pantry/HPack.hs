@@ -13,11 +13,17 @@ import           Data.Char ( isDigit, isSpace )
 import qualified Hpack
 import qualified Hpack.Config as Hpack
 import           Pantry.Types
+                   ( HasPantryConfig, HpackExecutable (..), PantryConfig (..)
+                   , Version, pantryConfigL, parseVersionThrowing
+                   )
 import           Path
                    ( Abs, Dir, Path, (</>), filename, parseRelFile, toFilePath )
 import           Path.IO ( doesFileExist )
 import           RIO
 import           RIO.Process
+                   ( HasProcessContext, proc, readProcessStdout_, runProcess_
+                   , withWorkingDir
+                   )
 
 hpackVersion ::
      (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
