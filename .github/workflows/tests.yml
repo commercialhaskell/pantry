@@ -30,7 +30,7 @@ jobs:
           resolver: stack-ghc-9.6.3.yaml
     steps:
     - name: Clone project
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Cache dependencies on Unix-like OS
       if: startsWith(runner.os, 'Linux') || startsWith(runner.os, 'macOS')
       uses: actions/cache@v3
@@ -63,7 +63,7 @@ jobs:
         - stack-ghc-9.4.7.yaml
     steps:
     - name: Clone project
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Cache dependencies on Unix-like OS
       if: startsWith(runner.os, 'Linux') || startsWith(runner.os, 'macOS')
       uses: actions/cache@v3
