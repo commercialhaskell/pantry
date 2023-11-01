@@ -15,7 +15,7 @@ module Pantry.Repo
   , withRepo
   ) where
 
-import           Database.Persist ( Entity (..) )
+import           Database.Persist.Class.PersistEntity ( Entity (..) )
 import           Pantry.Archive ( getArchivePackage )
 import           Pantry.Storage
                    ( getTreeForKey, loadPackageById, loadRepoCache

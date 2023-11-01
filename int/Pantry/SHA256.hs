@@ -47,7 +47,10 @@ import qualified Data.ByteArray
 import qualified Data.ByteArray.Encoding as Mem
 import           Data.StaticBytes
                    ( Bytes32, StaticBytesException, toStaticExact )
-import           Database.Persist.Sql
+import           Database.Persist.Class.PersistField ( PersistField (..) )
+import           Database.Persist.PersistValue ( PersistValue (..) )
+import           Database.Persist.Sql ( PersistFieldSql (..) )
+import           Database.Persist.Types ( SqlType (..) )
 import           RIO
 import qualified RIO.Text as T
 
