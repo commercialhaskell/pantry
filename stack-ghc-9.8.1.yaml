@@ -1,5 +1,5 @@
 # Experimental snapshot specification for GHC 9.8.1.
-resolver: nightly-2023-11-01 # GHC 9.6.3
+resolver: nightly-2023-11-02 # GHC 9.6.3
 compiler: ghc-9.8.1
 
 packages:
@@ -8,6 +8,7 @@ packages:
 - http-api-data-0.6@sha256:fb724ab5d42656b1f0f982ffb73ccb457ef73c6d6461f6a1b2b0a70d41d05d6e,3257
 - tagged-0.8.8@sha256:c4fdbd3e1c423af0ccf8eb9e9962620106c34e32ed8e0cc647fb06899a703e04,2880
 - th-abstraction-0.6.0.0@sha256:d8959fa6a2812afcdd5f6f255fd6be8b3e0ca01e425586a554544fcb70b0ec7c,2303
+- unliftio-core-0.2.1.0@sha256:28800633b20e0f7bfbdda1248c28022749aa0935aea10b1e3fc9c88cbebb06de,1004
 
 flags:
   hackage-security:
