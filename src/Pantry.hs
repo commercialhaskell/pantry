@@ -69,7 +69,7 @@ module Pantry
   , CabalFileInfo (..)
   , Revision (..)
   , PackageIdentifierRevision (..)
-  , UsePreferredVersions
+  , UsePreferredVersions (..)
 
     -- ** Archives
   , RawArchive (..)
@@ -180,7 +180,7 @@ module Pantry
     -- * Hackage index
   , updateHackageIndex
   , DidUpdateOccur (..)
-  , RequireHackageIndex
+  , RequireHackageIndex (..)
   , hackageIndexTarballL
   , getHackagePackageVersions
   , getLatestHackageVersion
@@ -231,8 +231,8 @@ import           Pantry.Archive
 import           Pantry.Casa ( casaBlobSource, casaLookupKey, casaLookupTree )
 import           Pantry.HTTP ( httpSinkChecked, parseRequest )
 import           Pantry.Hackage
-                   ( DidUpdateOccur (..), RequireHackageIndex
-                   , UsePreferredVersions, getHackageCabalFile
+                   ( DidUpdateOccur (..), RequireHackageIndex (..)
+                   , UsePreferredVersions (..), getHackageCabalFile
                    , getHackagePackageVersionRevisions
                    , getHackagePackageVersions, getHackageTarball
                    , getHackageTarballKey, getHackageTypoCorrections
