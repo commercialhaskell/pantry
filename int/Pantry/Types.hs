@@ -1080,6 +1080,7 @@ data PantryException
   | DownloadTooLarge !Text !(Mismatch FileSize)
   -- ^ Different from 'DownloadInvalidSize' since 'mismatchActual' is
   -- a lower bound on the size from the server.
+  | LocalNoArchiveFileFound !(Path Abs File)
   | LocalInvalidSHA256 !(Path Abs File) !(Mismatch SHA256)
   | LocalInvalidSize !(Path Abs File) !(Mismatch FileSize)
   | UnknownArchiveType !ArchiveLocation
@@ -1186,8 +1187,9 @@ instance Display PantryException where
     <> "is not the package name."
   display (NoLocalPackageDirFound dir) =
     "Error: [S-395]\n"
-    <> "Stack looks for packages in the directories configured in\n"
-    <> "the 'packages' and 'extra-deps' fields defined in your stack.yaml\n"
+    <> "Stack looks for packages in the directories configured in the\n"
+    <> "'packages' and 'extra-deps' fields defined in its project-level\n"
+    <> "configuration file (usually stack.yaml)\n"
     <> "The current entry points to "
     <> fromString (toFilePath dir)
     <> ",\nbut no such directory could be found. If, alternatively, a package\n"
@@ -1195,8 +1197,9 @@ instance Display PantryException where
     <> "specified as an extra-dep."
   display (NoCabalFileFound dir) =
     "Error: [S-636]\n"
-    <> "Stack looks for packages in the directories configured in\n"
-    <> "the 'packages' and 'extra-deps' fields defined in your stack.yaml\n"
+    <> "Stack looks for packages in the directories configured in the\n"
+    <> "'packages' and 'extra-deps' fields defined in its project-level\n"
+    <> "configuration file (usually stack.yaml)\n"
     <> "The current entry points to "
     <> fromString (toFilePath dir)
     <> ",\nbut no .cabal or package.yaml file could be found there."
@@ -1300,6 +1303,14 @@ instance Display PantryException where
     <> display mismatchExpected
     <> ", stopped after receiving: "
     <> display mismatchActual
+  display (LocalNoArchiveFileFound path) =
+    "Error: [S-628]\n"
+    <> "Stack looks for packages in the archive files configured in the\n"
+    <> "'extra-deps' field defined in its project-level configuration file\n"
+    <> "(usually stack.yaml)\n"
+    <> "An entry points to "
+    <> fromString (toFilePath path)
+    <> ",\nbut no such archive file could be found."
   display (LocalInvalidSHA256 path Mismatch {..}) =
     "Error: [S-834]\n"
     <> "Mismatched SHA256 hash from "
@@ -1541,8 +1552,8 @@ instance Pretty PantryException where
          , style Shell "packages"
          , "and"
          , style Shell "extra-deps"
-         , flow "fields defined in your"
-         , style File "stack.yaml" <> "."
+         , flow "fields defined in its project-level configuration file"
+         , parens (fillSep ["usually", style File "stack.yaml"]) <> "."
          , flow "The current entry points to"
          , pretty dir
          , flow "but no such directory could be found. If, alternatively, a"
@@ -1557,8 +1568,8 @@ instance Pretty PantryException where
          , style Shell "packages"
          , "and"
          , style Shell "extra-deps"
-         , flow "fields defined in your"
-         , style File "stack.yaml" <> "."
+         , flow "fields defined in its project-level configuration file"
+         , parens (fillSep ["usually", style File "stack.yaml"]) <> "."
          , flow "The current entry points to"
          , pretty dir
          , flow "but no Cabal file or"
@@ -1728,6 +1739,19 @@ instance Pretty PantryException where
          , fromString . T.unpack $ textDisplay mismatchExpected <> ","
          , flow "stopped after receiving:"
          , fromString . T.unpack $ textDisplay mismatchActual <> "."
+         ]
+  pretty (LocalNoArchiveFileFound path) =
+    "[S-628]"
+    <> line
+    <> fillSep
+         [ flow "Stack looks for packages in the archive files configured in"
+         , "the"
+         , style Shell "extra-deps"
+         , flow "field defined in its project-level configuration file"
+         , parens (fillSep ["usually", style File "stack.yaml"]) <> "."
+         , flow "An entry points to"
+         , pretty path
+         , flow "but no such archive file could be found."
          ]
   pretty (LocalInvalidSHA256 path Mismatch {..}) =
     "[S-834]"
