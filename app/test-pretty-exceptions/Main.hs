@@ -161,6 +161,7 @@ examples = concat
   , [ DownloadInvalidSHA256 urlExample (Mismatch sha256Example sha256Example) ]
   , [ DownloadInvalidSize urlExample (Mismatch fileSizeExample fileSizeExample) ]
   , [ DownloadTooLarge urlExample (Mismatch fileSizeExample fileSizeExample) ]
+  , [ LocalNoArchiveFileFound pathAbsFileExample ]
   , [ LocalInvalidSHA256 pathAbsFileExample (Mismatch sha256Example sha256Example) ]
   , [ LocalInvalidSize pathAbsFileExample (Mismatch fileSizeExample fileSizeExample) ]
   , [ UnknownArchiveType archiveLocation

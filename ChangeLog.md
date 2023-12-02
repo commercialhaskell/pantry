@@ -1,7 +1,8 @@
 # Changelog for pantry
 
-## v0.9.2.1
+## v0.9.3
 
+* Add error S-628 (`LocalNoArchiveFileFound`).
 * Depend on `rio-prettyprint-0.1.7.0`.
 
 ## v0.9.2

@@ -47,6 +47,7 @@ import           Pantry.Types
                    , toRawArchive, toRawPM, unSafeFilePath
                    )
 import           Path ( toFilePath )
+import           Path.IO ( doesFileExist )
 import           RIO
 import qualified RIO.ByteString.Lazy as BL
 import qualified RIO.List as List
@@ -236,7 +237,8 @@ checkPackageMetadata pl pm pa = do
    in if and tests then Right pa else Left err
 
 -- | Provide a local file with the contents of the archive, regardless of where
--- it comes from. Perform SHA256 and file size validation if downloading.
+-- it comes from. If not downloading, checks that the archive file exists.
+-- Performs SHA256 and file size validation.
 withArchiveLoc ::
      HasLogFunc env
   => RawArchive
@@ -245,6 +247,9 @@ withArchiveLoc ::
 withArchiveLoc (RawArchive (ALFilePath resolved) msha msize _subdir) f = do
   let abs' = resolvedAbsolute resolved
       fp = toFilePath abs'
+  archiveExists <- doesFileExist abs'
+  unless archiveExists $
+    throwIO $ LocalNoArchiveFileFound abs'
   (sha, size) <- withBinaryFile fp ReadMode $ \h -> do
     size <- FileSize . fromIntegral <$> hFileSize h
     for_ msize $ \size' ->
