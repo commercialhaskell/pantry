@@ -1,5 +1,5 @@
 name: pantry
-version: 0.9.3
+version: 0.9.3.1
 synopsis: Content addressable Haskell package management
 description: Please see the README on GitHub at <https://github.com/commercialhaskell/pantry#readme>
 category: Development
@@ -23,9 +23,9 @@ flags:
     manual: false
 
 dependencies:
-- base >=4.10 && < 5
+- base >= 4.10 && < 5
 - aeson
-- aeson-warning-parser
+- aeson-warning-parser >= 0.1.1
 - ansi-terminal
 - bytestring
 - Cabal >= 3 && < 3.11

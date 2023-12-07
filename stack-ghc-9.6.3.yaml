@@ -1,5 +1,8 @@
 # Snapshot specification for GHC 9.6.3.
-resolver: nightly-2023-11-01 # GHC 9.6.3
+resolver: nightly-2023-12-07 # GHC 9.6.3
+
+packages:
+- aeson-warning-parser-0.1.1@sha256:e5b81492d39bfe5de99fdc838e54e0fc0f2e290eb9fcfd4531cabf24baeada76,1353
 
 flags:
   hackage-security:

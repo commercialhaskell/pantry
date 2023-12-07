@@ -1,24 +1,24 @@
 # Snapshot specification for GHC 9.4.8.
-resolver: lts-21.22 # GHC 9.4.8
+resolver: lts-21.23 # GHC 9.4.8
 
 packages:
-- aeson-warning-parser-0.1.0@sha256:f2c1c42b73aa35d352060abcbb867c410cbbf57d0cb0fed607bcd1e2a74954ad,1308
+- aeson-warning-parser-0.1.1@sha256:e5b81492d39bfe5de99fdc838e54e0fc0f2e290eb9fcfd4531cabf24baeada76,1353
 - companion-0.1.0@sha256:99f6de52c832d433639232a6d77d33abbca3b3037e49b7db6242fb9f569a8a2b,1093
 - crypton-connection-0.3.1@sha256:4d0958537197956b536ea91718b1749949757022532f50b8f683290056a19021,1581
 - crypton-x509-1.7.6@sha256:c567657a705b6d6521f9dd2de999bf530d618ec00f3b939df76a41fb0fe94281,2339
 - crypton-x509-store-1.6.9@sha256:422b9b9f87a7382c66385d047615b16fc86a68c08ea22b1e0117c143a2d44050,1750
 - crypton-x509-system-1.6.7@sha256:023ed573d82983bc473a37a89e0434a085b413be9f68d07e085361056afd4637,1532
 - crypton-x509-validation-1.6.12@sha256:85989721b64be4b90de9f66ef641c26f57575cffed1a50d707065fb60176f386,2227
-# lts-21.22 provides hpack-0.35.2
+# lts-21.23 provides hpack-0.35.2
 - hpack-0.36.0@sha256:c2daa6556afc57367a5d1dbd878bf515d442d201e24b27473051359abd47ed08,5187
-# lts-21.22 provides http-client-tls-0.3.6.1
+# lts-21.23 provides http-client-tls-0.3.6.1
 - http-client-tls-0.3.6.3@sha256:a5909ce412ee65c141b8547f8fe22236f175186c95c708e86a46b5547394f910,2046
-# lts-21.22 provides http-download-0.2.0.0
+# lts-21.23 provides http-download-0.2.0.0
 - http-download-0.2.1.0@sha256:a97863e96f7d44efc3d0e3061db7fe2540b8374ca44ae90d0b56040140cb7506,1716
 - static-bytes-0.1.0@sha256:35dbf30f617baa0151682c97687042516be07872a39984f9fe31f78125b962bf,1627
-# lts-21.22 provides tar-conduit-0.3.2.1
+# lts-21.23 provides tar-conduit-0.3.2.1
 - tar-conduit-0.4.0@sha256:f333649770f5ec42a83a93b0d424cf6bb895d80dfbee05a54340395f81d036ae,3126
-# crypton-connection-0.3.1 requires tls >= 1.7. lts-21.22 provides tls-1.6.0
+# crypton-connection-0.3.1 requires tls >= 1.7. lts-21.23 provides tls-1.6.0
 - tls-1.8.0@sha256:0ea435fb1969384c76e6b6ba49c509cec55eec29f60dd2c335151d9c8a4e8b4f,5571
 
 flags:
