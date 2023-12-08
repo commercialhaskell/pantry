@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.9.3.1
+
+* Depend on `aeson-warning-parser-0.1.1`.
+
 ## v0.9.3
 
 * Add error S-628 (`LocalNoArchiveFileFound`).
