@@ -1,10 +1,9 @@
 # Experimental snapshot specification for GHC 9.8.1.
-resolver: nightly-2023-12-07 # GHC 9.6.3
+resolver: nightly-2023-12-08 # GHC 9.6.3
 compiler: ghc-9.8.1
 
 packages:
 - aeson-2.2.1.0@sha256:a23a61aada8233e10573e1612c0b2efe5a1aba0d59b05dbe2f63301822f136cb,6582
-- aeson-warning-parser-0.1.1@sha256:e5b81492d39bfe5de99fdc838e54e0fc0f2e290eb9fcfd4531cabf24baeada76,1353
 - attoparsec-aeson-2.2.0.1@sha256:00026bb205aaa087215a4c3a65a62c4561c3fb58e882778c9607c63e2aa960e9,1593
 - http-api-data-0.6@sha256:fb724ab5d42656b1f0f982ffb73ccb457ef73c6d6461f6a1b2b0a70d41d05d6e,3257
 - tagged-0.8.8@sha256:c4fdbd3e1c423af0ccf8eb9e9962620106c34e32ed8e0cc647fb06899a703e04,2880
