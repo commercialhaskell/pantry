@@ -10,6 +10,7 @@ license: BSD3
 github: commercialhaskell/pantry
 
 extra-source-files:
+- CONTRIBUTING.md
 - README.md
 - ChangeLog.md
 - attic/hpack-0.1.2.3.tar.gz
