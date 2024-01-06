@@ -7,7 +7,7 @@ on:
     - master
   workflow_dispatch:
 
-# As of 18 December 2023, ubuntu-latest, windows-latest and macos-latest come
+# As of 6 January 2024, ubuntu-latest, windows-latest and macos-latest come
 # with Stack 2.13.1.
 
 jobs:
@@ -20,14 +20,14 @@ jobs:
         os:
         - ubuntu-latest
         resolver:
-        - stack-ghc-9.2.8.yaml
         - stack-ghc-9.4.8.yaml
         - stack-ghc-9.6.3.yaml
+        - stack-ghc-9.8.1.yaml
         include:
         - os: macos-latest
-          resolver: stack-ghc-9.6.3.yaml
+          resolver: stack-ghc-9.8.1.yaml
         - os: windows-latest
-          resolver: stack-ghc-9.6.3.yaml
+          resolver: stack-ghc-9.8.1.yaml
     steps:
     - name: Clone project
       uses: actions/checkout@v4
@@ -60,7 +60,7 @@ jobs:
         - ubuntu-latest
         - windows-latest
         resolver:
-        - stack-ghc-9.6.3.yaml
+        - stack-ghc-9.8.1.yaml
     steps:
     - name: Clone project
       uses: actions/checkout@v4

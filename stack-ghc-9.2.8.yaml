@@ -23,7 +23,7 @@ packages:
 - rio-prettyprint-0.1.7.0@sha256:4f0f2dabcbc3be1f9871de7c2ff3d090b82462ca5924afa24f7b2540c5511d84,1428
 - static-bytes-0.1.0@sha256:35dbf30f617baa0151682c97687042516be07872a39984f9fe31f78125b962bf,1627
 # lts-20.26 provides tar-conduit-0.3.2
-- tar-conduit-0.4.0@sha256:f333649770f5ec42a83a93b0d424cf6bb895d80dfbee05a54340395f81d036ae,3126
+- tar-conduit-0.4.1@sha256:112d28118eb71901ea9e224e1b174c648b378256729669c2739b8b803d25b43a,3126
 # crypton-connection-0.3.1 requires tls >= 1.7. lts-20.26 provides tls-1.5.8
 - tls-1.8.0@sha256:0ea435fb1969384c76e6b6ba49c509cec55eec29f60dd2c335151d9c8a4e8b4f,5571
 
