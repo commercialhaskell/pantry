@@ -58,7 +58,7 @@ library
     , aeson
     , aeson-warning-parser >=0.1.1
     , ansi-terminal
-    , base >=4.10 && <5
+    , base >=4.13 && <5
     , bytestring
     , casa-client >=0.0.2
     , casa-types
@@ -137,7 +137,7 @@ library internal
     , aeson
     , aeson-warning-parser >=0.1.1
     , ansi-terminal
-    , base >=4.10 && <5
+    , base >=4.13 && <5
     , bytestring
     , casa-client >=0.0.2
     , casa-types
@@ -201,7 +201,7 @@ executable test-pretty-exceptions
     , aeson
     , aeson-warning-parser >=0.1.1
     , ansi-terminal
-    , base >=4.10 && <5
+    , base >=4.13 && <5
     , bytestring
     , casa-client >=0.0.2
     , casa-types
@@ -298,7 +298,7 @@ test-suite spec
     , aeson
     , aeson-warning-parser >=0.1.1
     , ansi-terminal
-    , base >=4.10 && <5
+    , base >=4.13 && <5
     , bytestring
     , casa-client >=0.0.2
     , casa-types
