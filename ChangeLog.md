@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.9.3.2
+
+* Support `ansi-terminal-1.0.2`.
+
 ## v0.9.3.1
 
 * Depend on `aeson-warning-parser-0.1.1`.
