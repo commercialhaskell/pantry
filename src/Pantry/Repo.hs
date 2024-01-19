@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
@@ -43,7 +44,11 @@ import           RIO.Process
                    , withWorkingDir
                    )
 import qualified RIO.Text as T
+#if MIN_VERSION_ansi_terminal(1, 0, 2)
+import           System.Console.ANSI ( hNowSupportsANSI )
+#else
 import           System.Console.ANSI ( hSupportsANSIWithoutEmulation )
+#endif
 import           System.IsWindows ( osIsWindows )
 
 data TarType = Gnu | Bsd
@@ -311,7 +316,12 @@ withRepo sr@SimpleRepo{..} action =
           -- that command clears, but does not then restore, the
           -- ENABLE_VIRTUAL_TERMINAL_PROCESSING flag for native terminals. The
           -- following hack re-enables the lost ANSI-capability.
-          when osIsWindows $ void $ liftIO $ hSupportsANSIWithoutEmulation stdout
+          when osIsWindows $ void $ liftIO $
+#if MIN_VERSION_ansi_terminal(1, 0, 2)
+            hNowSupportsANSI stdout
+#else
+            hSupportsANSIWithoutEmulation stdout
+#endif
     logInfo $ "Cloning " <> display sRepoCommit <> " from " <> display sRepoUrl
     runCommand ["clone", repoUrl, dir]
     fixANSIForWindows

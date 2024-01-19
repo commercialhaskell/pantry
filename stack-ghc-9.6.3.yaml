@@ -1,10 +1,5 @@
 # Snapshot specification for GHC 9.6.3.
-resolver: lts-22.4 # GHC 9.6.3
-
-packages:
-# lts-22.4 provides tar-conduit-0.4.0
-- tar-conduit-0.4.1@sha256:112d28118eb71901ea9e224e1b174c648b378256729669c2739b8b803d25b43a,3126
-
+resolver: lts-22.6 # GHC 9.6.3
 
 flags:
   hackage-security:
