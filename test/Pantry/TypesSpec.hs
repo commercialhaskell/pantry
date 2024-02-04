@@ -24,7 +24,7 @@ import           Pantry.Types
                    ( Tree (..), TreeEntry (..), parseTree, renderTree )
 import           RIO
 import qualified RIO.Text as T
-import           RIO.Time ( Day (..) )
+import           RIO.Time ( Day (..), fromGregorian )
 import           Test.Hspec
 import           Text.RawString.QQ
 
@@ -108,20 +108,20 @@ spec = do
     it "parses snapshot using 'resolver'" $ do
       RawSnapshotLayer{..} <- parseSl $
         "name: 'test'\n" ++
-        "resolver: lts-2.10\n"
-      rslParent `shouldBe` RSLSynonym (LTS 2 10)
+        "resolver: lts-22.9\n"
+      rslParent `shouldBe` RSLSynonym (LTS 22 9)
 
     it "parses snapshot using 'snapshot'" $ do
       RawSnapshotLayer{..} <- parseSl $
         "name: 'test'\n" ++
-        "snapshot: lts-2.10\n"
-      rslParent `shouldBe` RSLSynonym (LTS 2 10)
+        "snapshot: lts-22.9\n"
+      rslParent `shouldBe` RSLSynonym (LTS 22 9)
 
     it "throws if both 'resolver' and 'snapshot' are present" $ do
       let go = parseSl $
                 "name: 'test'\n" ++
-                "resolver: lts-2.10\n" ++
-                "snapshot: lts-2.10\n"
+                "resolver: lts-22.9\n" ++
+                "snapshot: lts-22.9\n"
       go `shouldThrow` anyException
 
     it "throws if both 'snapshot' and 'compiler' are not present" $ do
@@ -131,8 +131,8 @@ spec = do
     it "works if no 'snapshot' specified" $ do
       RawSnapshotLayer{..} <- parseSl $
         "name: 'test'\n" ++
-        "compiler: ghc-8.0.1\n"
-      rslParent `shouldBe` RSLCompiler (WCGhc (mkVersion [8, 0, 1]))
+        "compiler: ghc-9.6.4\n"
+      rslParent `shouldBe` RSLCompiler (WCGhc (mkVersion [9, 6, 4]))
 
     hh "rendering the name of an LTS to JSON" $ property $ do
       (major, minor) <- forAll $ (,)
@@ -211,14 +211,14 @@ spec = do
           txt `shouldBe` txt''
         sameUrl _ _ _ = liftIO $ error "Snapshot synonym did not complete as expected"
 
-    it "default location for nightly-2020-01-01" $ do
-      let sn = Nightly $ ModifiedJulianDay 58849
+    it "default location for nightly-2024-02-04" $ do
+      let sn = Nightly $ fromGregorian 2024 2 4
       loc <- runPantryAppClean $ completeSnapshotLocation $ RSLSynonym sn
       sameUrl loc (defaultSnapshotLocation sn)
-        "https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2020/1/1.yaml"
+        "https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2024/2/4.yaml"
 
-    it "default location for lts-15.1" $ do
-      let sn = LTS 15 1
+    it "default location for lts-22.9" $ do
+      let sn = LTS 22 9
       loc <- runPantryAppClean $ completeSnapshotLocation $ RSLSynonym sn
       sameUrl loc (defaultSnapshotLocation sn)
-        "https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/15/1.yaml"
+        "https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/9.yaml"

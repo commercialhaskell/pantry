@@ -19,18 +19,18 @@ jobs:
       matrix:
         os:
         - ubuntu-latest
-        resolver:
+        snapshot:
         - stack-ghc-9.4.8.yaml
         - stack-ghc-9.6.4.yaml
         - stack-ghc-9.8.1.yaml
         include:
         - os: macos-latest
-          resolver: stack-ghc-9.8.1.yaml
+          snapshot: stack-ghc-9.8.1.yaml
         # macos-14 provides macOS/AArch64 (M1)
         - os: macos-14
-          resolver: stack-ghc-9.8.1.yaml
+          snapshot: stack-ghc-9.8.1.yaml
         - os: windows-latest
-          resolver: stack-ghc-9.8.1.yaml
+          snapshot: stack-ghc-9.8.1.yaml
     steps:
     - name: Clone project
       uses: actions/checkout@v4
@@ -39,7 +39,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.resolver }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.snapshot }}
     - name: Cache dependencies on Windows
       if: startsWith(runner.os, 'Windows')
       uses: actions/cache@v4
@@ -47,7 +47,7 @@ jobs:
         path: |
            ~\AppData\Roaming\stack
            ~\AppData\Local\Programs\stack
-        key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.resolver }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.snapshot }}
     - name: Build and run tests
       shell: bash
       run: |
@@ -59,7 +59,7 @@ jobs:
           curl -sSL https://get.haskellstack.org/ | sh
         fi
 
-        stack --resolver ${{ matrix.resolver }} test --bench --no-run-benchmarks --haddock --no-haddock-deps
+        stack --resolver ${{ matrix.snapshot }} test --bench --no-run-benchmarks --haddock --no-haddock-deps
   test-pretty-exceptions:
     name: Test build of test-pretty-exceptions
     runs-on: ${{ matrix.os }}
@@ -69,7 +69,7 @@ jobs:
         os:
         - ubuntu-latest
         - windows-latest
-        resolver:
+        snapshot:
         - stack-ghc-9.8.1.yaml
     steps:
     - name: Clone project
@@ -79,7 +79,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.resolver }}-pretty
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.snapshot }}-pretty
     - name: Cache dependencies on Windows
       if: startsWith(runner.os, 'Windows')
       uses: actions/cache@v4
@@ -87,9 +87,9 @@ jobs:
         path: |
            ~\AppData\Roaming\stack
            ~\AppData\Local\Programs\stack
-        key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.resolver }}-pretty
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.snapshot }}-pretty
     - name: Build test-pretty-exceptions
       shell: bash
       run: |
         set -ex
-        stack --resolver ${{ matrix.resolver }} build --flag pantry:test-pretty-exceptions
+        stack --resolver ${{ matrix.snapshot }} build --flag pantry:test-pretty-exceptions
