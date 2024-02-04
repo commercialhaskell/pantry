@@ -7,3 +7,7 @@
     name: "Use fewer imports"
     within:
     - Pantry.Types
+- ignore:
+    name: "Functor law"
+    within:
+    - Pantry.Types

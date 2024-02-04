@@ -1,6 +1,0 @@
-# Snapshot specification for GHC 9.6.3.
-resolver: lts-22.6 # GHC 9.6.3
-
-flags:
-  hackage-security:
-    cabal-syntax: true

@@ -14,10 +14,10 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Cache dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-${{ hashFiles('stack.yaml') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('stack.yaml') }}
 
     - name: Install stan
       run: |
@@ -33,7 +33,7 @@ jobs:
       run: .bin/stan report --cabal-file-path=pantry.cabal
 
     - name: Upload HTML report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Stan_report
         path: stan.html
