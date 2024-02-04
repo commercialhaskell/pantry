@@ -1225,7 +1225,7 @@ instance Display PantryException where
     <> displayShow (toFilePath dir)
   display (InvalidOverrideCompiler x y) =
     "Error: [S-287]\n"
-    <> "Specified compiler for a resolver ("
+    <> "Specified compiler for a snapshot ("
     <> display x
     <> "), but also specified an override compiler ("
     <> display y
@@ -1605,7 +1605,7 @@ instance Pretty PantryException where
     "[S-287]"
     <> line
     <> fillSep
-         [ flow "Specified compiler for a resolver"
+         [ flow "Specified compiler for a snapshot"
          , parens (style Shell (fromString . T.unpack $ textDisplay x))
          , flow "but also specified an override compiler"
          , parens (style Shell (fromString . T.unpack $ textDisplay y)) <> "."
@@ -3225,17 +3225,17 @@ instance ToJSON RawSnapshotLayer where
 instance FromJSON (WithJSONWarnings (Unresolved RawSnapshotLayer)) where
   parseJSON = withObjectWarnings "Snapshot" $ \o -> do
     _ :: Maybe Text <- o ..:? "name" -- avoid warnings for old snapshot format
-    mcompiler <- o ..:? "compiler"
-    mresolver <- jsonSubWarningsT $ o ...:? ["snapshot", "resolver"]
+    mCompiler <- o ..:? "compiler"
+    mSnapshot <- jsonSubWarningsT $ o ...:? ["snapshot", "resolver"]
     unresolvedSnapshotParent <-
-      case (mcompiler, mresolver) of
-        (Nothing, Nothing) -> fail "Snapshot must have either resolver or compiler"
+      case (mCompiler, mSnapshot) of
+        (Nothing, Nothing) -> fail "Snapshot must have either a compiler or a snapshot"
         (Just compiler, Nothing) -> pure $ pure (RSLCompiler compiler, Nothing)
         (_, Just (Unresolved usl)) -> pure $ Unresolved $ \mdir -> do
           sl <- usl mdir
-          case (sl, mcompiler) of
+          case (sl, mCompiler) of
             (RSLCompiler c1, Just c2) -> throwIO $ InvalidOverrideCompiler c1 c2
-            _ -> pure (sl, mcompiler)
+            _ -> pure (sl, mCompiler)
 
     unresolvedLocs <- jsonSubWarningsT (o ..:? "packages" ..!= [])
     rslDropPackages <- Set.map unCabalString <$> (o ..:? "drop-packages" ..!= Set.empty)
