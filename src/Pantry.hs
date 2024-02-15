@@ -1833,7 +1833,31 @@ getTreeKey (PLIRepo _ pm) = pmTreeKey pm
 -- using 'withPantryConfig' or 'withPantryConfig'' directly. Uses basically sane
 -- settings, like sharing a pantry directory with Stack.
 --
--- You can use 'runPantryApp' to use this.
+-- You can use 'runPantryApp' to use this. A simple example is:
+--
+-- > {-# LANGUAGE OverloadedStrings #-}
+-- >
+-- > module Main (main) where
+-- >
+-- > -- From package Cabal-syntax
+-- > import Distribution.Types.Version ( mkVersion )
+-- > -- From package pantry
+-- > import Pantry
+-- >          ( CabalFileInfo (..), PackageIdentifierRevision (..), PantryApp
+-- >          , RawPackageLocationImmutable (..), loadPackageRaw, runPantryApp
+-- >          )
+-- > -- From package rio
+-- > import RIO ( RIO, liftIO )
+-- >
+-- > main :: IO ()
+-- > main = runPantryApp myPantryApp
+-- >
+-- > myPantryApp :: RIO PantryApp ()
+-- > myPantryApp = loadPackageRaw baseLocation >>= liftIO . print
+-- >  where
+-- >   baseVersion = mkVersion [4, 19, 0, 0]
+-- >   basePkgId = PackageIdentifierRevision "base" baseVersion CFILatest
+-- >   baseLocation = RPLIHackage basePkgId Nothing
 --
 -- @since 0.1.0.0
 data PantryApp = PantryApp
