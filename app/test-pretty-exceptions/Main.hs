@@ -145,6 +145,8 @@ examples = concat
   , [ InvalidSnapshot rawSnapshotLocation someExceptionExample
     | rawSnapshotLocation <- rawSnapshotLocationExamples
     ]
+  , [ InvalidGlobalHintsLocation pathAbsDirExample rawPathExample ]
+  , [ InvalidFilePathGlobalHints rawPathExample ]
   , [ MismatchedPackageMetadata rawPackageLocationImmutable rawPackageMetadata treeKey packageIdentifierExample
     | rawPackageLocationImmutable <- rawPackageLocationImmutableExamples
     , rawPackageMetadata <- rawPackageMetadataExamples

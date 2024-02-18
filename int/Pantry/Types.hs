@@ -98,6 +98,8 @@ module Pantry.Types
   --, resolveSnapshotLocation
   , snapshotLocation
   , defaultSnapshotLocation
+  , globalHintsLocation
+  , defaultGlobalHintsLocation
   , SnapName (..)
   , parseSnapName
   , RawSnapshotLocation (..)
@@ -112,6 +114,8 @@ module Pantry.Types
   , Snapshot (..)
   , RawSnapshotPackage (..)
   , SnapshotPackage (..)
+  , GlobalHintsLocation (..)
+  , parseGlobalHintsLocation
   , parseWantedCompiler
   , RawPackageMetadata (..)
   , PackageMetadata (..)
@@ -317,6 +321,8 @@ data PantryConfig = PantryConfig
     -- the maximum number of Casa keys to pull per request.
   , pcSnapshotLocation :: SnapName -> RawSnapshotLocation
     -- ^ The location of snapshot synonyms
+  , pcGlobalHintsLocation :: WantedCompiler -> GlobalHintsLocation
+    -- ^ The location of global hints
   }
 
 -- | Get the location of a snapshot synonym from the 'PantryConfig'.
@@ -329,6 +335,17 @@ snapshotLocation ::
 snapshotLocation name = do
   loc <- view $ pantryConfigL.to pcSnapshotLocation
   pure $ loc name
+
+-- | Get the location of global hints from the 'PantryConfig'.
+--
+-- @since 0.9.4
+globalHintsLocation ::
+     HasPantryConfig env
+  => WantedCompiler
+  -> RIO env GlobalHintsLocation
+globalHintsLocation wc = do
+  loc <- view $ pantryConfigL.to pcGlobalHintsLocation
+  pure $ loc wc
 
 -- | Should we print warnings when loading a cabal file?
 --
@@ -1066,6 +1083,8 @@ data PantryException
   | InvalidOverrideCompiler !WantedCompiler !WantedCompiler
   | InvalidFilePathSnapshot !Text
   | InvalidSnapshot !RawSnapshotLocation !SomeException
+  | InvalidGlobalHintsLocation !(Path Abs Dir) !Text
+  | InvalidFilePathGlobalHints !Text
   | MismatchedPackageMetadata
       !RawPackageLocationImmutable
       !RawPackageMetadata
@@ -1241,6 +1260,17 @@ instance Display PantryException where
     <> display loc
     <> ":\n"
     <> displayShow err
+  display (InvalidGlobalHintsLocation dir t) =
+    "Error: [S-926]\n"
+    <> "Invalid global hints location "
+    <> displayShow t
+    <> " relative to directory "
+    <> displayShow (toFilePath dir)
+  display (InvalidFilePathGlobalHints t) =
+    "Error: [S-832]\n"
+    <> "Specified global hints as file path with "
+    <> displayShow t
+    <> ", but not reading from a local file"
   display (MismatchedPackageMetadata loc pm mtreeKey foundIdent) =
     "Error: [S-427]\n"
     <> "Mismatched package metadata for "
@@ -1627,6 +1657,23 @@ instance Pretty PantryException where
          ]
     <> blankLine
     <> string (displayException err)
+  pretty (InvalidGlobalHintsLocation dir t) =
+    "[S-926]"
+    <> line
+    <> fillSep
+         [ flow "Invalid global hints location"
+         , style Current (fromString $ T.unpack t)
+         , flow "relative to directory"
+         , pretty dir <> "."
+         ]
+  pretty (InvalidFilePathGlobalHints t) =
+    "[S-832]"
+    <> line
+    <> fillSep
+         [ flow "Specified global hints as file path with"
+         , style File (fromString $ T.unpack t) <> ","
+         , flow "but not reading from a local file."
+         ]
   pretty (MismatchedPackageMetadata loc pm mtreeKey foundIdent) =
     "[S-427]"
     <> line
@@ -2895,31 +2942,75 @@ parseRawSnapshotLocation t0 = fromMaybe (parseRawSnapshotLocationPath t0) $
 
   parseUrl = parseRequest (T.unpack t0) $> pure (RSLUrl t0 Nothing)
 
-parseRawSnapshotLocationPath :: Text -> Unresolved RawSnapshotLocation
-parseRawSnapshotLocationPath t =
+parseLocationPath ::
+     (Text -> PantryException)
+  -> (Path Abs Dir -> Text -> PantryException)
+  -> (ResolvedPath File -> a)
+  -> Text
+  -> Unresolved a
+parseLocationPath invalidPath invalidLocation resolver t =
   Unresolved $ \case
-    Nothing -> throwIO $ InvalidFilePathSnapshot t
+    Nothing -> throwIO $ invalidPath t
     Just dir -> do
-      abs' <- resolveFile dir (T.unpack t) `catchAny` \_ -> throwIO (InvalidSnapshotLocation dir t)
-      pure $ RSLFilePath $ ResolvedPath (RelFilePath t) abs'
+      abs' <- resolveFile dir (T.unpack t) `catchAny`
+                \_ -> throwIO (invalidLocation dir t)
+      pure $ resolver $ ResolvedPath (RelFilePath t) abs'
+
+parseRawSnapshotLocationPath :: Text -> Unresolved RawSnapshotLocation
+parseRawSnapshotLocationPath = parseLocationPath
+  InvalidFilePathSnapshot
+  InvalidSnapshotLocation
+  RSLFilePath
+
+githubLocation :: Text -> Text -> Text -> Text
+githubLocation user repo path =T.concat
+  [ "https://raw.githubusercontent.com/"
+  , user
+  , "/"
+  , repo
+  , "/master/"
+  , path
+  ]
 
 githubSnapshotLocation :: Text -> Text -> Text -> RawSnapshotLocation
 githubSnapshotLocation user repo path =
-  let url = T.concat
-        [ "https://raw.githubusercontent.com/"
-        , user
-        , "/"
-        , repo
-        , "/master/"
-        , path
-        ]
-  in  RSLUrl url Nothing
+  RSLUrl (githubLocation user repo path) Nothing
+
+-- | Parse a 'Text' into an 'Unresolved' 'GlobalHintsLocation'.
+--
+-- @since 0.9.4
+parseGlobalHintsLocation :: Text -> Unresolved GlobalHintsLocation
+parseGlobalHintsLocation t0 = fromMaybe (parseGlobalHintsLocationPath t0) $
+  parseGitHub <|> parseUrl
+ where
+  parseGitHub = do
+    t1 <- T.stripPrefix "github:" t0
+    let (user, t2) = T.break (== '/') t1
+    t3 <- T.stripPrefix "/" t2
+    let (repo, t4) = T.break (== ':') t3
+    path <- T.stripPrefix ":" t4
+    Just $ pure $ githubGlobalHintsLocation user repo path
+
+  parseUrl = parseRequest (T.unpack t0) $> pure (GHLUrl t0)
+
+parseGlobalHintsLocationPath :: Text -> Unresolved GlobalHintsLocation
+parseGlobalHintsLocationPath = parseLocationPath
+  InvalidFilePathGlobalHints
+  InvalidGlobalHintsLocation
+  GHLFilePath
+
+githubGlobalHintsLocation :: Text -> Text -> Text -> GlobalHintsLocation
+githubGlobalHintsLocation user repo path =
+  GHLUrl (githubLocation user repo path)
 
 defUser :: Text
 defUser = "commercialhaskell"
 
 defRepo :: Text
 defRepo = "stackage-snapshots"
+
+defGlobalHintsRepo :: Text
+defGlobalHintsRepo = "stackage-content"
 
 -- | Default location of snapshot synonyms, i.e. commercialhaskell's GitHub
 -- repository.
@@ -2944,6 +3035,17 @@ defaultSnapshotLocation (Nightly date) =
   <> ".yaml"
  where
   (year, month, day) = toGregorian date
+
+-- | Default location of global hints, i.e. commercialhaskell's GitHub
+-- repository.
+--
+-- @since 0.9.4
+defaultGlobalHintsLocation ::
+     WantedCompiler
+  -> GlobalHintsLocation
+defaultGlobalHintsLocation _ =
+  githubGlobalHintsLocation defUser defGlobalHintsRepo $
+    utf8BuilderToText "stack/global-hints.yaml"
 
 -- | A snapshot synonym. It is expanded according to the field
 -- 'snapshotLocation' of a 'PantryConfig'.
@@ -3361,3 +3463,44 @@ warnMissingCabalFile loc =
     <> "This usage is deprecated; please see "
     <> "https://github.com/commercialhaskell/stack/issues/5210.\n"
     <> "Support for this workflow will be removed in the future.\n"
+
+-- | Where to load global hints from.
+--
+-- @since 0.9.4
+data GlobalHintsLocation
+  = GHLUrl !Text
+    -- ^ Download the global hints from the given URL.
+  | GHLFilePath !(ResolvedPath File)
+    -- ^ Global hints at a local file path.
+  deriving (Show, Eq, Ord, Generic)
+
+instance NFData GlobalHintsLocation
+
+instance Display GlobalHintsLocation where
+  display (GHLUrl url) = display url
+  display (GHLFilePath resolved) = display (resolvedRelative resolved)
+
+instance Pretty GlobalHintsLocation where
+  pretty (GHLUrl url) = style Url (fromString $ T.unpack url)
+  pretty (GHLFilePath resolved) =
+    style File (fromString . T.unpack $ textDisplay (resolvedRelative resolved))
+
+instance ToJSON GlobalHintsLocation where
+  toJSON (GHLUrl url) = object ["url" .= url]
+  toJSON (GHLFilePath resolved) =
+    object ["filepath" .= resolvedRelative resolved]
+
+instance FromJSON (WithJSONWarnings (Unresolved GlobalHintsLocation)) where
+  parseJSON v = file v <|> url v
+   where
+    file = withObjectWarnings "GHLFilepath" $ \o -> do
+      ufp <- o ..: "filepath"
+      pure $ Unresolved $ \case
+        Nothing -> throwIO $ InvalidFilePathGlobalHints ufp
+        Just dir -> do
+          absolute <- resolveFile dir (T.unpack ufp)
+          let fp = ResolvedPath (RelFilePath ufp) absolute
+          pure $ GHLFilePath fp
+    url = withObjectWarnings "GHLUrl" $ \o -> do
+      url' <- o ..: "url"
+      pure $ Unresolved $ \_ -> pure $ GHLUrl url'
