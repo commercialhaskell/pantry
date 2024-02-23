@@ -1,5 +1,11 @@
 # Changelog for pantry
 
+## v0.9.3.3
+
+* `loadPackageRaw` supports cloning of repositories with submodules in
+  PowerShell.
+* Drop support for `git` versions before 2.11.0.
+
 ## v0.9.3.2
 
 * Support `ansi-terminal-1.0.2`.

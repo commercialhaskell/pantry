@@ -34,14 +34,15 @@ import           Pantry.Types
 import           Path.IO ( resolveFile' )
 import           RIO
 import           RIO.ByteString ( isInfixOf )
-import           RIO.ByteString.Lazy ( toStrict )
+import qualified RIO.ByteString.Lazy as BL
 import           RIO.Directory ( doesDirectoryExist )
 import           RIO.FilePath ( (</>) )
 import qualified RIO.Map as Map
 import           RIO.Process
-                   ( ExitCodeException (..), HasProcessContext, proc
-                   , readProcess, readProcess_, withModifyEnvVars
-                   , withWorkingDir
+                   ( ExitCodeException (..), HasProcessContext, ProcessConfig
+                   , byteStringInput, proc, readProcess, readProcess_
+                   , readProcessStdout_, runProcess_, setStdin
+                   , withModifyEnvVars, withWorkingDir
                    )
 import qualified RIO.Text as T
 #if MIN_VERSION_ansi_terminal(1, 0, 2)
@@ -53,21 +54,10 @@ import           System.IsWindows ( osIsWindows )
 
 data TarType = Gnu | Bsd
 
-getGitTarType :: (HasProcessContext env, HasLogFunc env) => RIO env TarType
-getGitTarType = if osIsWindows
-  then do
-    (_, stdoutBS, _) <- proc "git" ["--version"] readProcess
-    let bs = toStrict stdoutBS
-    -- If using Git for Windows, then assume that the tar type within
-    -- `git submodule foreach <command>` is the Git-supplied\MSYS2-supplied
-    -- GNU tar
-    if "windows" `isInfixOf` bs then pure Gnu else getTarType
-  else getTarType
-
 getTarType :: (HasProcessContext env, HasLogFunc env) => RIO env TarType
 getTarType = do
   (_, stdoutBS, _) <- proc "tar" ["--version"] readProcess
-  let bs = toStrict stdoutBS
+  let bs = BL.toStrict stdoutBS
   pure $ if "GNU" `isInfixOf` bs then Gnu else Bsd
 
 -- | Like 'fetchRepos', except with 'RawPackageMetadata' instead of
@@ -216,9 +206,25 @@ runGitCommand ::
      (HasLogFunc env, HasProcessContext env)
   => [String] -- ^ args
   -> RIO env ()
-runGitCommand args =
-  withModifyEnvVars go $
-  void $ proc "git" args readProcess_
+runGitCommand = runGitProcess runProcess_
+
+-- | Run a git command, setting appropriate environment variable settings. See
+-- <https://github.com/commercialhaskell/stack/issues/3748>.
+runGitCommandStdout ::
+     (HasLogFunc env, HasProcessContext env)
+  => [String] -- ^ args
+  -> RIO env BL.ByteString
+runGitCommandStdout = runGitProcess readProcessStdout_
+
+-- | Run a git command, setting appropriate environment variable settings. See
+-- <https://github.com/commercialhaskell/stack/issues/3748>.
+runGitProcess ::
+     (HasLogFunc env, HasProcessContext env)
+  => (ProcessConfig () () () -> RIO env a)
+  -> [String] -- ^ args
+  -> RIO env a
+runGitProcess inner args =
+  withModifyEnvVars go $ proc "git" args inner
  where
   go = Map.delete "GIT_DIR"
      . Map.delete "GIT_CEILING_DIRECTORIES"
@@ -227,40 +233,6 @@ runGitCommand args =
      . Map.delete "GIT_OBJECT_DIRECTORY" -- possible optimization: set this to something Pantry controls
      . Map.delete "GIT_ALTERNATE_OBJECT_DIRECTORIES"
 
--- Include submodules files into the archive: use `git submodule foreach` to
--- execute `git archive` in each submodule and generate tar archive. With bsd
--- tar, the generated archive is extracted to a temporary folder and the files
--- in them are added to the tarball referenced by the variable tarball in the
--- haskell code. This is done in GNU tar with -A option.
-archiveSubmodules ::
-     (HasLogFunc env, HasProcessContext env)
-  => FilePath
-  -> RIO env ()
-archiveSubmodules tarball = do
-  tarType <- getGitTarType
-  let forceLocal =
-          if osIsWindows
-          then " --force-local "
-          else mempty
-  case tarType of
-    Gnu -> runGitCommand
-      [ "submodule"
-      , "foreach"
-      , "--recursive"
-      , "git -c core.autocrlf=false archive --prefix=$displaypath/ -o bar.tar HEAD; "
-        <> "tar" <> forceLocal <> " -Af " <> tarball <> " bar.tar"
-      ]
-    Bsd -> runGitCommand
-      [ "submodule"
-      , "foreach"
-      , "--recursive"
-      , "git -c core.autocrlf=false archive --prefix=$displaypath/ -o bar.tar HEAD; "
-        <> "rm -rf temp; mkdir temp; mv bar.tar temp/; "
-        <> "tar -C temp -xf temp/bar.tar; "
-        <> "rm temp/bar.tar; "
-        <> "tar -C temp -rf " <> tarball <> " . ;"
-      ]
-
 -- | Run an hg command
 runHgCommand ::
      (HasLogFunc env, HasProcessContext env)
@@ -268,25 +240,38 @@ runHgCommand ::
   -> RIO env ()
 runHgCommand args = void $ proc "hg" args readProcess_
 
--- | Create a tarball containing files from a repository
+-- | Create a tarball containing files from a repository.
+--
+-- For a Git repository, the files will be archived with @core.autocrlf=false@
+-- and @core.eol=lf@. That is, files marked as text in the respository will have
+-- LF line endings unless a different line ending in the working tree is
+-- specified for the file in the repository.
 createRepoArchive ::
      forall env. (HasLogFunc env, HasProcessContext env)
   => SimpleRepo
   -> FilePath -- ^ Output tar archive filename
   -> RIO env ()
 createRepoArchive sr tarball = do
-  withRepo sr $
+  withRepo' True sr $
     case sRepoType sr of
       RepoGit -> do
-        runGitCommand
-          ["-c", "core.autocrlf=false", "archive", "-o", tarball, "HEAD"]
-        archiveSubmodules tarball
+        tarType <- getTarType
+        let (addForceLocal, addVerbatimFilesFrom) = case tarType of
+              Gnu ->
+                ( if osIsWindows then ("--force-local" :) else id
+                , ("--verbatim-files-from" :)
+                )
+              Bsd -> (id, id)
+            tarArgs =
+              addForceLocal $ "-caf" : tarball : addVerbatimFilesFrom ["-T-"]
+        files <- runGitCommandStdout [ "ls-files", "--recurse-submodules" ]
+        proc "tar" tarArgs $ runProcess_ . setStdin (byteStringInput files)
       RepoHg -> runHgCommand ["archive", tarball, "-X", ".hg_archival.txt"]
-
 
 -- | Clone the repository (and, in the case of Git and if necessary, fetch the
 -- specific commit) and execute the action with the working directory set to the
--- repository root.
+-- repository root. For Git repositories, respects the @core.autocrlf@ and
+-- @core.eol@ settings.
 --
 -- @since 0.1.0.0
 withRepo ::
@@ -294,23 +279,44 @@ withRepo ::
   => SimpleRepo
   -> RIO env a
   -> RIO env a
-withRepo sr@SimpleRepo{..} action =
+withRepo = withRepo' False
+
+-- | Clone the repository (and, in the case of Git and if necessary, fetch the
+-- specific commit) and execute the action with the working directory set to the
+-- repository root.
+--
+-- @since 0.1.0.0
+withRepo' ::
+     forall env a. (HasLogFunc env, HasProcessContext env)
+  => Bool
+     -- ^ When using Git, pass @-c core.autocrlf=false@ and @-c core.eol=lf@
+     -- when cloning the respository?
+  -> SimpleRepo
+  -> RIO env a
+  -> RIO env a
+withRepo' disableAutoCrLf sr@SimpleRepo{..} action =
   withSystemTempDirectory "with-repo" $ \tmpDir -> do
     let repoUrl = T.unpack sRepoUrl
         repoCommit = T.unpack sRepoCommit
         dir = tmpDir </> "cloned"
-        (runCommand, resetArgs) =
+        (runCommand, cloneArgs, resetArgs) =
           case sRepoType of
             RepoGit ->
               ( runGitCommand
-              , ["reset", "--hard", repoCommit]
+              , lineEndingsArgs <> ["clone", repoUrl, dir]
+              , lineEndingsArgs <> ["reset", "--hard", repoCommit]
               )
             RepoHg ->
               ( runHgCommand
+              , ["clone", repoUrl, dir]
               , ["update", "-C", repoCommit]
               )
         fetchCommit = ["fetch", repoUrl, repoCommit]
-        submoduleArgs = ["submodule", "update", "--init", "--recursive"]
+        lineEndingsArgs = if disableAutoCrLf
+          then ["-c", "core.autocrlf=false", "-c", "core.eol=lf"]
+          else []
+        submoduleArgs =
+          lineEndingsArgs <> ["submodule", "update", "--init", "--recursive"]
         fixANSIForWindows =
           -- On Windows 10, an upstream issue with the `git clone` command means
           -- that command clears, but does not then restore, the
@@ -323,7 +329,7 @@ withRepo sr@SimpleRepo{..} action =
             hSupportsANSIWithoutEmulation stdout
 #endif
     logInfo $ "Cloning " <> display sRepoCommit <> " from " <> display sRepoUrl
-    runCommand ["clone", repoUrl, dir]
+    runCommand cloneArgs
     fixANSIForWindows
     created <- doesDirectoryExist dir
     unless created $ throwIO $ FailedToCloneRepo sr
