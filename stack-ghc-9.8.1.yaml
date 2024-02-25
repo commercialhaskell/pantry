@@ -1,8 +1,5 @@
 # Snapshot specification for GHC 9.8.1.
-snapshot: nightly-2024-02-04 # GHC 9.8.1
-
-packages:
-- hedgehog-1.4@sha256:47633efec27b49fe5a21d51f3b9fce428ca4b945d39eaa163b2b6a1d3e1465be,4724
+snapshot: nightly-2024-02-24 # GHC 9.8.1
 
 flags:
   hackage-security:
