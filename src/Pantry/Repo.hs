@@ -243,13 +243,19 @@ archiveSubmodules tarball = do
           then " --force-local "
           else mempty
   case tarType of
-    Gnu -> runGitCommand
-      [ "submodule"
-      , "foreach"
-      , "--recursive"
-      , "git -c core.autocrlf=false archive --prefix=$displaypath/ -o bar.tar HEAD; "
-        <> "tar" <> forceLocal <> " -Af " <> tarball <> " bar.tar"
-      ]
+    Gnu -> do
+      -- Single quotation marks are required around tarball because otherwise,
+      -- in the foreach environment, the \ character in absolute paths on
+      -- Windows will be interpreted as escaping the following character.
+      let foreachCommand =
+            "git -c core.autocrlf=false archive --prefix=$displaypath/ -o bar.tar HEAD; "
+            <> "tar" <> forceLocal <> " -Af '" <> tarball <> "' bar.tar"
+      runGitCommand
+        [ "submodule"
+        , "foreach"
+        , "--recursive"
+        , foreachCommand
+        ]
     Bsd -> runGitCommand
       [ "submodule"
       , "foreach"

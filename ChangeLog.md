@@ -1,5 +1,10 @@
 # Changelog for pantry
 
+## v0.9.3.3
+
+* Bug fix: On Windows, `loadPackageRaw` supports repositories with submodules,
+  as intended.
+
 ## v0.9.3.2
 
 * Support `ansi-terminal-1.0.2`.
