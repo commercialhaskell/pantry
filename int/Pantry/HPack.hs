@@ -51,10 +51,13 @@ hpack pkgDir = do
   whenM (doesFileExist hpackFile) $ do
     logDebug $ "Running hpack on " <> fromString (toFilePath hpackFile)
     he <- view $ pantryConfigL.to pcHpackExecutable
+    hpackForce <- view $ pantryConfigL.to pcHpackForce
     case he of
       HpackBundled -> do
         r <- liftIO $ Hpack.hpackResult $ Hpack.setProgramName "stack" $
-          Hpack.setTarget (toFilePath hpackFile) Hpack.defaultOptions
+          Hpack.setTarget
+            (toFilePath hpackFile)
+            Hpack.defaultOptions { Hpack.optionsForce = hpackForce }
         forM_ (Hpack.resultWarnings r) (logWarn . fromString)
         let cabalFile = fromString . Hpack.resultCabalFile $ r
         case Hpack.resultStatus r of
@@ -82,6 +85,8 @@ hpack pkgDir = do
             <> fromString (toFilePath (filename hpackFile))
             <> " file instead of the Cabal file,\n"
             <> "then please delete the Cabal file."
-      HpackCommand command ->
-        withWorkingDir (toFilePath pkgDir) $
-        proc command [] runProcess_
+      HpackCommand command -> do
+        let hpackArgs = case hpackForce of
+              Hpack.Force -> ["--force"]
+              Hpack.NoForce -> []
+        withWorkingDir (toFilePath pkgDir) $ proc command hpackArgs runProcess_

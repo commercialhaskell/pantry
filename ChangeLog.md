@@ -7,6 +7,10 @@
   hints to be specified.
 * `GlobalHintsLocation`, `defaultGlobalHintsLocation`, `globalHintsLocation` and
   `parseGlobalHintsLocation` added.
+* `withPantryConfig'` now requires the specification of whether or not Hpack's
+  `--force` flag is to be applied.
+* Expose `hpackForceL`, a lens to view or modify the `Force` (Hpack) of a
+  `PantryConfig`.
 
 ## v0.9.3.2
 

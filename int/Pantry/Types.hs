@@ -175,6 +175,7 @@ import           Distribution.Types.PackageName
                    ( PackageName, mkPackageName, unPackageName )
 import           Distribution.Types.Version ( Version, mkVersion, nullVersion )
 import           Distribution.Types.VersionRange ( VersionRange )
+import qualified Hpack
 import qualified Hpack.Config as Hpack
 import           Network.HTTP.Client ( parseRequest )
 import           Network.HTTP.Types ( Status, statusCode )
@@ -289,6 +290,7 @@ data Storage = Storage
 data PantryConfig = PantryConfig
   { pcPackageIndex :: !PackageIndexConfig
   , pcHpackExecutable :: !HpackExecutable
+  , pcHpackForce :: !Hpack.Force
   , pcRootDir :: !(Path Abs Dir)
   , pcStorage :: !Storage
   , pcUpdateRef :: !(MVar Bool)
