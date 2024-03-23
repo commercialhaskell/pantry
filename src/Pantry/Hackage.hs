@@ -98,8 +98,14 @@ hackageRelDir = either impureThrow id $ parseRelDir "hackage"
 hackageDirL :: HasPantryConfig env => SimpleGetter env (Path Abs Dir)
 hackageDirL = pantryConfigL.to ((</> hackageRelDir) . pcRootDir)
 
+-- | The name of the tar file that is part of the local cache of the package
+-- index is determined by this package's use of 'HS.cabalCacheLayout' as the
+-- layout of the local cache.
 indexRelFile :: Path Rel File
-indexRelFile = either impureThrow id $ parseRelFile "00-index.tar"
+indexRelFile = either impureThrow id $ parseRelFile indexTar
+ where
+  indexTar' = HS.cacheLayoutIndexTar HS.cabalCacheLayout
+  indexTar = HS.toUnrootedFilePath $ HS.unrootPath indexTar'
 
 -- | Where does pantry download its 01-index.tar file from Hackage?
 --

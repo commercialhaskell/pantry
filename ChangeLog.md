@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.9.3.3
+
+* Name of tar file of local cache of package index is not hard coded.
+
 ## v0.9.3.2
 
 * Support `ansi-terminal-1.0.2`.
