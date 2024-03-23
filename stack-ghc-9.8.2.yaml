@@ -1,0 +1,6 @@
+# Snapshot specification for GHC 9.8.2.
+snapshot: nightly-2024-03-20 # GHC 9.8.2
+
+flags:
+  hackage-security:
+    cabal-syntax: true
