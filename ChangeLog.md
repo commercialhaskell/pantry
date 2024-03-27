@@ -1,8 +1,12 @@
 # Changelog for pantry
 
-## v0.9.3.3
+## v0.10.0
 
 * Name of tar file of local cache of package index is not hard coded.
+* `withPantryConfig` and `withPantryConfig'` require the location of global
+  hints to be specified.
+* `GlobalHintsLocation`, `defaultGlobalHintsLocation`, `globalHintsLocation` and
+  `parseGlobalHintsLocation` added.
 
 ## v0.9.3.2
 

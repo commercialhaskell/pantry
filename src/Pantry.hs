@@ -22,6 +22,7 @@ module Pantry
   , defaultCasaRepoPrefix
   , defaultCasaMaxPerRequest
   , defaultSnapshotLocation
+  , defaultGlobalHintsLocation
   , HasPantryConfig (..)
   , withPantryConfig
   , withPantryConfig'
@@ -105,6 +106,9 @@ module Pantry
   , WantedCompiler (..)
   , SnapName (..)
   , snapshotLocation
+
+    -- ** Global hints
+  , GlobalHintsLocation (..)
 
     -- * Loading values
   , resolvePaths
@@ -252,49 +256,54 @@ import           Pantry.Tree ( rawParseGPD, unpackTree )
 import           Pantry.Types as P
                    ( Archive (..), ArchiveLocation (..), BlobKey (..)
                    , CabalFileInfo (..), CabalString (..), FileSize (..)
-                   , FuzzyResults (..), HackageSecurityConfig (..)
-                   , HasPantryConfig (..), HpackExecutable (..), Mismatch (..)
-                   , ModuleName, Package (..), PackageCabal (..)
-                   , PackageIdentifier (..), PackageIdentifierRevision (..)
-                   , PackageIndexConfig (..), PackageLocation (..)
-                   , PackageLocationImmutable (..), PackageMetadata (..)
-                   , PackageName, PantryConfig (..), PantryException (..)
-                   , PHpack (..), PrintWarnings (..), RawArchive (..)
-                   , RawPackageLocation (..), RawPackageLocationImmutable (..)
-                   , RawPackageMetadata (..), RawSnapshot (..)
-                   , RawSnapshotLayer (..), RawSnapshotLocation (..)
-                   , RawSnapshotPackage (..), RelFilePath (..), Repo (..)
-                   , RepoType (..), ResolvedPath (..), Revision (..)
-                   , SafeFilePath, SHA256, SimpleRepo (..), SnapName (..)
-                   , Snapshot (..), SnapshotCacheHash (..), SnapshotLayer (..)
+                   , FuzzyResults (..), GlobalHintsLocation (..)
+                   , HackageSecurityConfig (..), HasPantryConfig (..)
+                   , HpackExecutable (..), Mismatch (..), ModuleName
+                   , Package (..), PackageCabal (..), PackageIdentifier (..)
+                   , PackageIdentifierRevision (..), PackageIndexConfig (..)
+                   , PackageLocation (..), PackageLocationImmutable (..)
+                   , PackageMetadata (..), PackageName, PantryConfig (..)
+                   , PantryException (..), PHpack (..), PrintWarnings (..)
+                   , RawArchive (..), RawPackageLocation (..)
+                   , RawPackageLocationImmutable (..), RawPackageMetadata (..)
+                   , RawSnapshot (..), RawSnapshotLayer (..)
+                   , RawSnapshotLocation (..), RawSnapshotPackage (..)
+                   , RelFilePath (..), Repo (..), RepoType (..)
+                   , ResolvedPath (..), Revision (..), SafeFilePath, SHA256
+                   , SimpleRepo (..), SnapName (..), Snapshot (..)
+                   , SnapshotCacheHash (..), SnapshotLayer (..)
                    , SnapshotLocation (..), SnapshotPackage (..), Tree (..)
                    , TreeEntry (..), TreeKey (..), Unresolved, Version
                    , WantedCompiler (..), bsToBlobKey, cabalFileName
-                   , defaultHackageSecurityConfig, defaultSnapshotLocation
-                   , flagNameString, getGlobalHintsFile, mkSafeFilePath
-                   , moduleNameString, packageIdentifierString
-                   , packageNameString, parseFlagName, parseHackageText
-                   , parsePackageIdentifier, parsePackageIdentifierRevision
-                   , parsePackageName, parsePackageNameThrowing
-                   , parseRawSnapshotLocation, parseSnapName, parseTreeM
-                   , parseVersion, parseVersionThrowing, parseWantedCompiler
-                   , pirForHash, resolvePaths, snapshotLocation
-                   , toCabalStringMap, toRawPL, toRawPLI, toRawPM, toRawSL
-                   , toRawSnapshotLayer, unCabalStringMap, unSafeFilePath
-                   , versionString, warnMissingCabalFile
+                   , defaultGlobalHintsLocation, defaultHackageSecurityConfig
+                   , defaultSnapshotLocation, flagNameString, getGlobalHintsFile
+                   , globalHintsLocation, mkSafeFilePath, moduleNameString
+                   , packageIdentifierString, packageNameString, parseFlagName
+                   , parseHackageText, parsePackageIdentifier
+                   , parsePackageIdentifierRevision, parsePackageName
+                   , parsePackageNameThrowing, parseRawSnapshotLocation
+                   , parseSnapName, parseTreeM, parseVersion
+                   , parseVersionThrowing, parseWantedCompiler, pirForHash
+                   , resolvePaths, snapshotLocation, toCabalStringMap, toRawPL
+                   , toRawPLI, toRawPM, toRawSL, toRawSnapshotLayer
+                   , unCabalStringMap, unSafeFilePath, versionString
+                   , warnMissingCabalFile
                    )
 import           Path
                    ( Abs, Dir, File, Path, (</>), filename, parent, parseAbsDir
                    , parseRelFile, toFilePath
                    )
-import           Path.IO ( doesFileExist, listDir, resolveDir' )
+import           Path.IO ( copyFile, doesFileExist, listDir, resolveDir' )
 import           RIO
 import qualified RIO.ByteString as B
 import           RIO.Directory ( getAppUserDataDirectory )
 import qualified RIO.FilePath as FilePath
 import qualified RIO.List as List
 import qualified RIO.Map as Map
-import           RIO.PrettyPrint ( HasTerm (..) )
+import           RIO.PrettyPrint
+                   ( HasTerm (..), blankLine, flow, line, pretty, prettyDebugL
+                   , prettyError, prettyInfoL, string
+                   )
 import           RIO.PrettyPrint.StylesUpdate
                    ( HasStylesUpdate (..), StylesUpdate )
 import           RIO.Process
@@ -349,6 +358,8 @@ withPantryConfig ::
      -- ^ Max casa keys to pull per request.
   -> (SnapName -> RawSnapshotLocation)
      -- ^ The location of snapshot synonyms
+  -> (WantedCompiler -> GlobalHintsLocation)
+     -- ^ The location of global hints
   -> (PantryConfig -> RIO env a)
      -- ^ What to do with the config
   -> RIO env a
@@ -378,29 +389,41 @@ withPantryConfig'
   -- maximum number of Casa keys to pull per request.
   -> (SnapName -> RawSnapshotLocation)
   -- ^ The location of snapshot synonyms
+  -> (WantedCompiler -> GlobalHintsLocation)
+  -- ^ The location of global hints
   -> (PantryConfig -> RIO env a)
   -- ^ What to do with the config
   -> RIO env a
-withPantryConfig' root pic he count mCasaConfig snapLoc inner = do
-  env <- ask
-  pantryRelFile <- parseRelFile "pantry.sqlite3"
-  -- Silence persistent's logging output, which is really noisy
-  runRIO (mempty :: LogFunc) $ initStorage (root </> pantryRelFile) $ \storage -> runRIO env $ do
-    ur <- newMVar True
-    ref1 <- newIORef mempty
-    ref2 <- newIORef mempty
-    inner PantryConfig
-      { pcPackageIndex = pic
-      , pcHpackExecutable = he
-      , pcRootDir = root
-      , pcStorage = storage
-      , pcUpdateRef = ur
-      , pcConnectionCount = count
-      , pcParsedCabalFilesRawImmutable = ref1
-      , pcParsedCabalFilesMutable = ref2
-      , pcCasaConfig = mCasaConfig
-      , pcSnapshotLocation = snapLoc
-      }
+withPantryConfig'
+    root
+    pic
+    he
+    count
+    mCasaConfig
+    snapLoc
+    globalHintsLoc
+    inner
+  = do
+    env <- ask
+    pantryRelFile <- parseRelFile "pantry.sqlite3"
+    -- Silence persistent's logging output, which is really noisy
+    runRIO (mempty :: LogFunc) $ initStorage (root </> pantryRelFile) $ \storage -> runRIO env $ do
+      ur <- newMVar True
+      ref1 <- newIORef mempty
+      ref2 <- newIORef mempty
+      inner PantryConfig
+        { pcPackageIndex = pic
+        , pcHpackExecutable = he
+        , pcRootDir = root
+        , pcStorage = storage
+        , pcUpdateRef = ur
+        , pcConnectionCount = count
+        , pcParsedCabalFilesRawImmutable = ref1
+        , pcParsedCabalFilesMutable = ref2
+        , pcCasaConfig = mCasaConfig
+        , pcSnapshotLocation = snapLoc
+        , pcGlobalHintsLocation = globalHintsLoc
+        }
 
 -- | Default pull URL for Casa.
 --
@@ -1925,6 +1948,7 @@ runPantryAppWith maxConnCount casaRepoPrefix casaMaxPerRequest f = runSimpleApp 
     maxConnCount
     (Just (casaRepoPrefix, casaMaxPerRequest))
     defaultSnapshotLocation
+    defaultGlobalHintsLocation
     $ \pc ->
       runRIO
         PantryApp
@@ -1952,6 +1976,7 @@ runPantryAppClean f =
       8
       (Just (defaultCasaRepoPrefix, defaultCasaMaxPerRequest))
       defaultSnapshotLocation
+      defaultGlobalHintsLocation
       $ \pc ->
         runRIO
           PantryApp
@@ -1963,46 +1988,72 @@ runPantryAppClean f =
             }
           f
 
--- | Load the global hints from GitHub.
+-- | Load the global hints.
 --
--- @since 0.1.0.0
+-- @since 9.4.0
 loadGlobalHints ::
      (HasTerm env, HasPantryConfig env)
   => WantedCompiler
   -> RIO env (Maybe (Map PackageName Version))
-loadGlobalHints wc =
-    inner False
+loadGlobalHints wc = do
+  dest <- getGlobalHintsFile
+  loc <- globalHintsLocation wc
+  inner dest loc False
  where
-  inner alreadyDownloaded = do
-    dest <- getGlobalHintsFile
-    req <- parseRequest "https://raw.githubusercontent.com/commercialhaskell/stackage-content/master/stack/global-hints.yaml"
-    downloaded <- download req dest
-    eres <- tryAny (inner2 dest)
-    mres <-
-      case eres of
-        Left e -> Nothing <$ logError
-                               ( "Error: [S-912]\n"
-                                 <> "Error when parsing global hints: "
-                                 <> displayShow e
-                               )
-        Right x -> pure x
-    case mres of
-      Nothing | not alreadyDownloaded && not downloaded -> do
-        logInfo $
-          "Could not find local global hints for " <>
-          RIO.display wc <>
-          ", forcing a redownload"
-        x <- redownload req dest
-        if x
-          then inner True
-          else do
-            logInfo "Redownload didn't happen"
-            pure Nothing
-      _ -> pure mres
-
-  inner2 dest = liftIO $
-        Map.lookup wc . fmap (fmap unCabalString . unCabalStringMap)
-    <$> Yaml.decodeFileThrow (toFilePath dest)
+  inner dest loc alreadyDownloaded = case loc of
+    GHLUrl url -> do
+      req <- parseRequest $ T.unpack url
+      downloaded <- download req dest
+      mres <- tryParseYaml dest
+      case mres of
+        Nothing | not alreadyDownloaded && not downloaded -> do
+          prettyInfoL
+            [ flow "Could not find local global hints for"
+            , string (T.unpack $ RIO.textDisplay wc) <> ","
+            , flow "forcing a redownload."
+            ]
+          redownloaded <- redownload req dest
+          if redownloaded
+            then inner dest loc True
+            else do
+              logInfo "Redownload didn't happen"
+              pure Nothing
+        _ -> pure mres
+    GHLFilePath fp -> do
+      let source = resolvedAbsolute fp
+      mres <- tryParseYaml source
+      case mres of
+        Nothing -> do
+          prettyInfoL
+            [ flow "Could not find local global hints for"
+            , string (T.unpack $ RIO.textDisplay wc)
+            , "in"
+            , pretty source <> "."
+            ]
+          pure Nothing
+        _ -> do
+          liftIO $ copyFile source dest
+          prettyDebugL
+            [ flow "Installed global hints from"
+            , pretty source
+            ]
+          pure mres
+  inner2 fp = liftIO $ do
+    allGlobalHints <- Yaml.decodeFileThrow (toFilePath fp)
+    let globalHints = Map.lookup wc allGlobalHints
+    pure $ fmap (fmap unCabalString . unCabalStringMap) globalHints
+  tryParseYaml fp = do
+    eres <- tryAny (inner2 fp)
+    case eres of
+      Left e -> do
+        prettyError $
+          "[S-912]"
+          <> line
+          <> flow "Error when parsing global hints:"
+          <> blankLine
+          <> string (displayException e)
+        pure Nothing
+      Right x -> pure x
 
 -- | Partition a map of global packages with its versions into a Set of replaced
 -- packages and its dependencies and a map of remaining (untouched) packages.
