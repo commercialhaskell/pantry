@@ -34,6 +34,7 @@ module Pantry
   , runPantryAppClean
   , runPantryAppWith
   , hpackExecutableL
+  , hpackForceL
 
     -- * Types
 
@@ -47,6 +48,9 @@ module Pantry
   , Version
   , FlagName
   , PackageIdentifier (..)
+
+    -- ** Hpack types
+  , Hpack.Force (..)
 
     -- ** Files
   , FileSize (..)
@@ -333,7 +337,8 @@ formatYamlParseError file e =
   <> displayException e
 
 -- | Create a new 'PantryConfig' with the given settings. For a version where
--- the use of Casa (content-addressable storage archive) is optional, see
+-- Hpack's approach to overwriting Cabal files is configurable and the use of
+-- Casa (content-addressable storage archive) is optional, see
 -- 'withPantryConfig''.
 --
 -- For something easier to use in simple cases, see 'runPantryApp'.
@@ -364,7 +369,7 @@ withPantryConfig ::
      -- ^ What to do with the config
   -> RIO env a
 withPantryConfig root pic he count pullURL maxPerRequest =
-  withPantryConfig' root pic he count (Just (pullURL, maxPerRequest))
+  withPantryConfig' root pic he Hpack.NoForce count (Just (pullURL, maxPerRequest))
 
 -- | Create a new 'PantryConfig' with the given settings.
 --
@@ -374,30 +379,36 @@ withPantryConfig root pic he count pullURL maxPerRequest =
 withPantryConfig'
   :: HasLogFunc env
   => Path Abs Dir
-  -- ^ pantry root directory, where the SQLite database and Hackage
-  -- downloads are kept.
+     -- ^ pantry root directory, where the SQLite database and Hackage
+     -- downloads are kept.
   -> PackageIndexConfig
-  -- ^ Package index configuration. You probably want
-  -- 'defaultPackageIndexConfig'.
+     -- ^ Package index configuration. You probably want
+     -- 'defaultPackageIndexConfig'.
   -> HpackExecutable
-  -- ^ When converting an hpack @package.yaml@ file to a cabal file,
-  -- what version of hpack should we use?
+     -- ^ When converting an hpack @package.yaml@ file to a cabal file,
+     -- what version of hpack should we use?
+  -> Hpack.Force
+     -- ^ Should Hpack force the overwriting of a Cabal file that has been
+     -- modified manually?
+     --
+     -- @since 0.10.0
   -> Int
-  -- ^ Maximum connection count
+     -- ^ Maximum connection count
   -> Maybe (CasaRepoPrefix, Int)
-  -- ^ Optionally, the Casa pull URL e.g. @https://casa.fpcomplete.com@ and the
-  -- maximum number of Casa keys to pull per request.
+     -- ^ Optionally, the Casa pull URL e.g. @https://casa.fpcomplete.com@ and
+     -- the maximum number of Casa keys to pull per request.
   -> (SnapName -> RawSnapshotLocation)
-  -- ^ The location of snapshot synonyms
+     -- ^ The location of snapshot synonyms
   -> (WantedCompiler -> GlobalHintsLocation)
-  -- ^ The location of global hints
+     -- ^ The location of global hints
   -> (PantryConfig -> RIO env a)
-  -- ^ What to do with the config
+     -- ^ What to do with the config
   -> RIO env a
 withPantryConfig'
     root
     pic
     he
+    hpackForce
     count
     mCasaConfig
     snapLoc
@@ -414,6 +425,7 @@ withPantryConfig'
       inner PantryConfig
         { pcPackageIndex = pic
         , pcHpackExecutable = he
+        , pcHpackForce = hpackForce
         , pcRootDir = root
         , pcStorage = storage
         , pcUpdateRef = ur
@@ -893,17 +905,19 @@ hpack progName pkgDir = do
   when exists $ do
     logDebug $ "Running Hpack on " <> fromString (toFilePath hpackFile)
     he <- view $ pantryConfigL.to pcHpackExecutable
+    hpackForce <- view $ pantryConfigL.to pcHpackForce
     case he of
       HpackBundled ->
-                  liftIO
-                     ( Hpack.hpackResultWithError
-                     $ mHpackProgName
-                     $ Hpack.setDecode decodeYaml
-                     $ Hpack.setFormatYamlParseError formatYamlParseError
-                     $ Hpack.setTarget
-                         (toFilePath hpackFile) Hpack.defaultOptions
-                     )
-                   >>= \ case
+        liftIO
+           ( Hpack.hpackResultWithError
+           $ mHpackProgName
+           $ Hpack.setDecode decodeYaml
+           $ Hpack.setFormatYamlParseError formatYamlParseError
+           $ Hpack.setTarget
+               (toFilePath hpackFile)
+               Hpack.defaultOptions { Hpack.optionsForce = hpackForce }
+           )
+         >>= \ case
         Left err -> throwIO (HpackLibraryException hpackFile $ formatHpackError (fromMaybe "hpack" progName) err)
         Right r -> do
           forM_ (Hpack.resultWarnings r) (logWarn . fromString)
@@ -932,11 +946,15 @@ hpack progName pkgDir = do
               <> fromString (toFilePath (filename hpackFile))
               <> " file instead of the Cabal file,\n"
               <> "then please delete the Cabal file."
-      HpackCommand command -> catchAny
-        ( withWorkingDir (toFilePath pkgDir) $
-          proc command [] runProcess_
-        )
-        ( throwIO . HpackExeException command pkgDir)
+      HpackCommand command -> do
+        let hpackArgs = case hpackForce of
+              Hpack.Force -> ["--force"]
+              Hpack.NoForce -> []
+        catchAny
+          ( withWorkingDir (toFilePath pkgDir) $
+            proc command hpackArgs runProcess_
+          )
+          ( throwIO . HpackExeException command pkgDir)
 
 -- | Get the 'PackageIdentifier' from a 'GenericPackageDescription'.
 --
@@ -1894,12 +1912,21 @@ data PantryApp = PantryApp
 simpleAppL :: Lens' PantryApp SimpleApp
 simpleAppL = lens paSimpleApp (\x y -> x { paSimpleApp = y })
 
--- | Lens to view or modify the 'HpackExecutable' of a 'PantryConfig'
+-- | Lens to view or modify the 'HpackExecutable' of a 'PantryConfig'.
 --
 -- @since 0.1.0.0
 hpackExecutableL :: Lens' PantryConfig HpackExecutable
 hpackExecutableL k pconfig =
   fmap (\hpExe -> pconfig { pcHpackExecutable = hpExe }) (k (pcHpackExecutable pconfig))
+
+-- | Lens to view or modify the 'Hpack.Force' of a 'PantryConfig'.
+--
+-- @since 0.10.0
+hpackForceL :: Lens' PantryConfig Hpack.Force
+hpackForceL k pconfig =
+  fmap
+    (\hpackForce -> pconfig { pcHpackForce = hpackForce })
+    (k (pcHpackForce pconfig))
 
 instance HasLogFunc PantryApp where
   logFuncL = simpleAppL.logFuncL
@@ -1945,6 +1972,7 @@ runPantryAppWith maxConnCount casaRepoPrefix casaMaxPerRequest f = runSimpleApp 
     root
     defaultPackageIndexConfig
     HpackBundled
+    Hpack.NoForce
     maxConnCount
     (Just (casaRepoPrefix, casaMaxPerRequest))
     defaultSnapshotLocation
@@ -1973,6 +2001,7 @@ runPantryAppClean f =
       root
       defaultPackageIndexConfig
       HpackBundled
+      Hpack.NoForce
       8
       (Just (defaultCasaRepoPrefix, defaultCasaMaxPerRequest))
       defaultSnapshotLocation
