@@ -7,8 +7,8 @@ on:
     - master
   workflow_dispatch:
 
-# As of 4 February 2024, ubuntu-latest, windows-latest and macos-latest come
-# with Stack 2.13.1. However, macos-14 does not come with Haskell tools.
+# As of 23 March 2024, ubuntu-latest, windows-latest and macos-latest come
+# with Stack 2.13.3. However, macos-14 does not come with Haskell tools.
 
 jobs:
   build:
@@ -22,15 +22,15 @@ jobs:
         snapshot:
         - stack-ghc-9.4.8.yaml
         - stack-ghc-9.6.4.yaml
-        - stack-ghc-9.8.1.yaml
+        - stack-ghc-9.8.2.yaml
         include:
         - os: macos-latest
-          snapshot: stack-ghc-9.8.1.yaml
+          snapshot: stack-ghc-9.8.2.yaml
         # macos-14 provides macOS/AArch64 (M1)
         - os: macos-14
-          snapshot: stack-ghc-9.8.1.yaml
+          snapshot: stack-ghc-9.8.2.yaml
         - os: windows-latest
-          snapshot: stack-ghc-9.8.1.yaml
+          snapshot: stack-ghc-9.8.2.yaml
     steps:
     - name: Clone project
       uses: actions/checkout@v4
@@ -55,7 +55,7 @@ jobs:
 
         if [[ "${{ matrix.os }}" == "macos-14" ]]
         then
-          # macos-14 does not include Haskell tools as at 2024-02-04.
+          # macos-14 does not include Haskell tools as at 2024-03-23.
           curl -sSL https://get.haskellstack.org/ | sh
         fi
 
@@ -70,7 +70,7 @@ jobs:
         - ubuntu-latest
         - windows-latest
         snapshot:
-        - stack-ghc-9.8.1.yaml
+        - stack-ghc-9.8.2.yaml
     steps:
     - name: Clone project
       uses: actions/checkout@v4
