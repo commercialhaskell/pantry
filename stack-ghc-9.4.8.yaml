@@ -20,11 +20,3 @@ packages:
 - tar-conduit-0.4.1@sha256:112d28118eb71901ea9e224e1b174c648b378256729669c2739b8b803d25b43a,3126
 # crypton-connection-0.3.1 requires tls >= 1.7. lts-21.25 provides tls-1.6.0
 - tls-1.8.0@sha256:0ea435fb1969384c76e6b6ba49c509cec55eec29f60dd2c335151d9c8a4e8b4f,5571
-
-flags:
-  ansi-terminal:
-    win32-2-13-1: false
-  hackage-security:
-    cabal-syntax: true
-  mintty:
-    win32-2-13-1: false
