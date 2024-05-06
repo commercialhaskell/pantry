@@ -1,6 +1,0 @@
-# Snapshot specification for GHC 9.6.4.
-snapshot: lts-22.13 # GHC 9.6.4
-
-flags:
-  hackage-security:
-    cabal-syntax: true
