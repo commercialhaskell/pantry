@@ -6,9 +6,8 @@
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TupleSections       #-}
 
--- | Content addressable Haskell package management, providing for
--- secure, reproducible acquisition of Haskell package contents and
--- metadata.
+-- | Content addressable Haskell package management, providing for secure,
+-- reproducible acquisition of Haskell package contents and metadata.
 --
 -- @since 0.1.0.0
 module Pantry
@@ -520,7 +519,8 @@ getLatestHackageRevision req name version = do
     Nothing -> pure Nothing
     Just (revision, cfKey@(BlobKey sha size)) -> do
       let cfi = CFIHash sha (Just size)
-      treeKey' <- getHackageTarballKey (PackageIdentifierRevision name version cfi)
+      treeKey' <-
+        getHackageTarballKey (PackageIdentifierRevision name version cfi)
       pure $ Just (revision, cfKey, treeKey')
 
 -- | Fetch keys and blobs and insert into the database where possible.
@@ -647,7 +647,8 @@ fetchPackages pls = do
   archives = run archivesE
   repos = run reposE
 
-  go (PLIHackage ident cfHash tree) = (s (toPir ident cfHash, Just tree), mempty, mempty)
+  go (PLIHackage ident cfHash tree) =
+    (s (toPir ident cfHash, Just tree), mempty, mempty)
   go (PLIArchive archive pm) = (mempty, s (archive, pm), mempty)
   go (PLIRepo repo pm) = (mempty, mempty, s (repo, pm))
 
@@ -693,10 +694,11 @@ loadCabalFileImmutable loc = withCache $ do
   (_warnings, gpd) <- rawParseGPD (Left $ toRawPLI loc) bs
   let pm =
         case loc of
-          PLIHackage (PackageIdentifier name version) _cfHash mtree -> PackageMetadata
-            { pmIdent = PackageIdentifier name version
-            , pmTreeKey = mtree
-            }
+          PLIHackage (PackageIdentifier name version) _cfHash mtree ->
+            PackageMetadata
+              { pmIdent = PackageIdentifier name version
+              , pmTreeKey = mtree
+              }
           PLIArchive _ pm' -> pm'
           PLIRepo _ pm' -> pm'
   let exc = MismatchedPackageMetadata (toRawPLI loc) (toRawPM pm) Nothing
@@ -736,11 +738,12 @@ loadCabalFileRawImmutable loc = withCache $ do
   (_warnings, gpd) <- rawParseGPD (Left loc) bs
   let rpm =
         case loc of
-          RPLIHackage (PackageIdentifierRevision name version _cfi) mtree -> RawPackageMetadata
-            { rpmName = Just name
-            , rpmVersion = Just version
-            , rpmTreeKey = mtree
-            }
+          RPLIHackage (PackageIdentifierRevision name version _cfi) mtree ->
+            RawPackageMetadata
+              { rpmName = Just name
+              , rpmVersion = Just version
+              , rpmTreeKey = mtree
+              }
           RPLIArchive _ rpm' -> rpm'
           RPLIRepo _ rpm' -> rpm'
   let exc = MismatchedPackageMetadata loc rpm Nothing (gpdPackageIdentifier gpd)
@@ -815,41 +818,41 @@ loadCabalFilePath progName dir = do
       let gpdio = run . getGPD cabalfp gpdRef
           triple = (gpdio, name, cabalfp)
       atomicModifyIORef' ref $ \m -> (Map.insert dir triple m, triple)
-  where
-    getGPD cabalfp gpdRef printWarnings = do
-      mpair <- readIORef gpdRef
-      (warnings0, gpd) <-
-        case mpair of
-          Just pair -> pure pair
-          Nothing -> do
-            bs <- liftIO $ B.readFile $ toFilePath cabalfp
-            (warnings0, gpd) <- rawParseGPD (Right cabalfp) bs
-            checkCabalFileName (gpdPackageName gpd) cabalfp
-            pure (warnings0, gpd)
-      warnings <-
-        case printWarnings of
-          YesPrintWarnings -> mapM_ (logWarn . toPretty cabalfp) warnings0 $> []
-          NoPrintWarnings -> pure warnings0
-      writeIORef gpdRef $ Just (warnings, gpd)
-      pure gpd
+ where
+  getGPD cabalfp gpdRef printWarnings = do
+    mpair <- readIORef gpdRef
+    (warnings0, gpd) <-
+      case mpair of
+        Just pair -> pure pair
+        Nothing -> do
+          bs <- liftIO $ B.readFile $ toFilePath cabalfp
+          (warnings0, gpd) <- rawParseGPD (Right cabalfp) bs
+          checkCabalFileName (gpdPackageName gpd) cabalfp
+          pure (warnings0, gpd)
+    warnings <-
+      case printWarnings of
+        YesPrintWarnings -> mapM_ (logWarn . toPretty cabalfp) warnings0 $> []
+        NoPrintWarnings -> pure warnings0
+    writeIORef gpdRef $ Just (warnings, gpd)
+    pure gpd
 
-    toPretty :: Path Abs File -> PWarning -> Utf8Builder
-    toPretty src (PWarning _type pos msg) =
-      "Cabal file warning in " <>
-      fromString (toFilePath src) <> "@" <>
-      fromString (showPos pos) <> ": " <>
-      fromString msg
+  toPretty :: Path Abs File -> PWarning -> Utf8Builder
+  toPretty src (PWarning _type pos msg) =
+    "Cabal file warning in " <>
+    fromString (toFilePath src) <> "@" <>
+    fromString (showPos pos) <> ": " <>
+    fromString msg
 
-    -- | Check if the given name in the @Package@ matches the name of the .cabal
-    -- file
-    checkCabalFileName :: MonadThrow m => PackageName -> Path Abs File -> m ()
-    checkCabalFileName name cabalfp = do
-      -- Previously, we just use parsePackageNameFromFilePath. However, that can
-      -- lead to confusing error messages. See:
-      -- https://github.com/commercialhaskell/stack/issues/895
-      let expected = T.unpack $ unSafeFilePath $ cabalFileName name
-      when (expected /= toFilePath (filename cabalfp)) $
-        throwM $ MismatchedCabalName cabalfp name
+  -- | Check if the given name in the @Package@ matches the name of the .cabal
+  -- file
+  checkCabalFileName :: MonadThrow m => PackageName -> Path Abs File -> m ()
+  checkCabalFileName name cabalfp = do
+    -- Previously, we just use parsePackageNameFromFilePath. However, that can
+    -- lead to confusing error messages. See:
+    -- https://github.com/commercialhaskell/stack/issues/895
+    let expected = T.unpack $ unSafeFilePath $ cabalFileName name
+    when (expected /= toFilePath (filename cabalfp)) $
+      throwM $ MismatchedCabalName cabalfp name
 
 -- | Get the file name for the Cabal file in the given directory.
 --
@@ -1489,10 +1492,16 @@ warnUnusedAddPackagesConfig ::
   => Utf8Builder -- ^ source
   -> AddPackagesConfig
   -> RIO env ()
-warnUnusedAddPackagesConfig source (AddPackagesConfig _drops flags hiddens options) = do
-  unless (null ls) $ do
-    logWarn $ "Some warnings discovered when adding packages to snapshot (" <> source <> ")"
-    traverse_ logWarn ls
+warnUnusedAddPackagesConfig
+    source
+    (AddPackagesConfig _drops flags hiddens options)
+  = do
+    unless (null ls) $ do
+      logWarn $
+           "Some warnings discovered when adding packages to snapshot ("
+        <> source
+        <> ")"
+      traverse_ logWarn ls
  where
   ls = concat [flags', hiddens', options']
 
@@ -1536,39 +1545,46 @@ addPackagesToSnapshot ::
   -> AddPackagesConfig
   -> Map PackageName RawSnapshotPackage -- ^ packages from parent
   -> RIO env (Map PackageName RawSnapshotPackage, AddPackagesConfig)
-addPackagesToSnapshot source newPackages (AddPackagesConfig drops flags hiddens options) old = do
-  new' <- for newPackages $ \loc -> do
-    name <- getPackageLocationName loc
-    pure (name, RawSnapshotPackage
-      { rspLocation = loc
-      , rspFlags = Map.findWithDefault mempty name flags
-      , rspHidden = Map.findWithDefault False name hiddens
-      , rspGhcOptions = Map.findWithDefault [] name options
-      })
-  let (newSingles, newMultiples)
-        = partitionEithers
-        $ map sonToEither
-        $ Map.toList
-        $ Map.fromListWith (<>)
-        $ map (second Single) new'
-  unless (null newMultiples) $ throwIO $
-    DuplicatePackageNames source $ map (second (map rspLocation)) newMultiples
-  let new = Map.fromList newSingles
-      allPackages0 = new `Map.union` (old `Map.difference` Map.fromSet (const ()) drops)
-      allPackages = flip Map.mapWithKey allPackages0 $ \name rsp ->
-        rsp
-          { rspFlags = Map.findWithDefault (rspFlags rsp) name flags
-          , rspHidden = Map.findWithDefault (rspHidden rsp) name hiddens
-          , rspGhcOptions = Map.findWithDefault (rspGhcOptions rsp) name options
-          }
+addPackagesToSnapshot
+    source
+    newPackages
+    (AddPackagesConfig drops flags hiddens options)
+    old
+  = do
+    new' <- for newPackages $ \loc -> do
+      name <- getPackageLocationName loc
+      pure (name, RawSnapshotPackage
+        { rspLocation = loc
+        , rspFlags = Map.findWithDefault mempty name flags
+        , rspHidden = Map.findWithDefault False name hiddens
+        , rspGhcOptions = Map.findWithDefault [] name options
+        })
+    let (newSingles, newMultiples)
+          = partitionEithers
+          $ map sonToEither
+          $ Map.toList
+          $ Map.fromListWith (<>)
+          $ map (second Single) new'
+    unless (null newMultiples) $ throwIO $
+      DuplicatePackageNames source $ map (second (map rspLocation)) newMultiples
+    let new = Map.fromList newSingles
+        allPackages0 =
+          new `Map.union` (old `Map.difference` Map.fromSet (const ()) drops)
+        allPackages = flip Map.mapWithKey allPackages0 $ \name rsp ->
+          rsp
+            { rspFlags = Map.findWithDefault (rspFlags rsp) name flags
+            , rspHidden = Map.findWithDefault (rspHidden rsp) name hiddens
+            , rspGhcOptions =
+                Map.findWithDefault (rspGhcOptions rsp) name options
+            }
 
-      unused = AddPackagesConfig
-        (drops `Set.difference` Map.keysSet old)
-        (flags `Map.difference` allPackages)
-        (hiddens `Map.difference` allPackages)
-        (options `Map.difference` allPackages)
+        unused = AddPackagesConfig
+          (drops `Set.difference` Map.keysSet old)
+          (flags `Map.difference` allPackages)
+          (hiddens `Map.difference` allPackages)
+          (options `Map.difference` allPackages)
 
-  pure (allPackages, unused)
+    pure (allPackages, unused)
 
 cachedSnapshotCompletePackageLocation ::
      (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
@@ -1607,56 +1623,62 @@ addAndCompletePackagesToSnapshot ::
   -> RIO
        env
        (Map PackageName SnapshotPackage, [CompletedPLI], AddPackagesConfig)
-addAndCompletePackagesToSnapshot loc cachedPL newPackages (AddPackagesConfig drops flags hiddens options) old = do
-  let source = display loc
-      addPackage ::
-           (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-        => ([(PackageName, SnapshotPackage)],[CompletedPLI])
-        -> RawPackageLocationImmutable
-        -> RIO env ([(PackageName, SnapshotPackage)], [CompletedPLI])
-      addPackage (ps, completed) rawLoc = do
-        mcomplLoc <- cachedSnapshotCompletePackageLocation cachedPL rawLoc
-        case mcomplLoc of
-          Nothing -> do
-            warnMissingCabalFile rawLoc
-            pure (ps, completed)
-          Just complLoc -> do
-            let PackageIdentifier name _ = packageLocationIdent complLoc
-                p = (name, SnapshotPackage
-                  { spLocation = complLoc
-                  , spFlags = Map.findWithDefault mempty name flags
-                  , spHidden = Map.findWithDefault False name hiddens
-                  , spGhcOptions = Map.findWithDefault [] name options
-                  })
-                completed' = if toRawPLI complLoc == rawLoc
-                             then completed
-                             else CompletedPLI rawLoc complLoc:completed
-            pure (p:ps, completed')
-  (revNew, revCompleted) <- foldM addPackage ([], []) newPackages
-  let (newSingles, newMultiples)
-        = partitionEithers
-        $ map sonToEither
-        $ Map.toList
-        $ Map.fromListWith (<>)
-        $ map (second Single) (reverse revNew)
-  unless (null newMultiples) $ throwIO $
-    DuplicatePackageNames source $ map (second (map (toRawPLI . spLocation))) newMultiples
-  let new = Map.fromList newSingles
-      allPackages0 = new `Map.union` (old `Map.difference` Map.fromSet (const ()) drops)
-      allPackages = flip Map.mapWithKey allPackages0 $ \name sp ->
-        sp
-          { spFlags = Map.findWithDefault (spFlags sp) name flags
-          , spHidden = Map.findWithDefault (spHidden sp) name hiddens
-          , spGhcOptions = Map.findWithDefault (spGhcOptions sp) name options
-          }
+addAndCompletePackagesToSnapshot
+    loc
+    cachedPL
+    newPackages
+    (AddPackagesConfig drops flags hiddens options)
+    old
+  = do
+    let source = display loc
+        addPackage ::
+             (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+          => ([(PackageName, SnapshotPackage)],[CompletedPLI])
+          -> RawPackageLocationImmutable
+          -> RIO env ([(PackageName, SnapshotPackage)], [CompletedPLI])
+        addPackage (ps, completed) rawLoc = do
+          mcomplLoc <- cachedSnapshotCompletePackageLocation cachedPL rawLoc
+          case mcomplLoc of
+            Nothing -> do
+              warnMissingCabalFile rawLoc
+              pure (ps, completed)
+            Just complLoc -> do
+              let PackageIdentifier name _ = packageLocationIdent complLoc
+                  p = (name, SnapshotPackage
+                    { spLocation = complLoc
+                    , spFlags = Map.findWithDefault mempty name flags
+                    , spHidden = Map.findWithDefault False name hiddens
+                    , spGhcOptions = Map.findWithDefault [] name options
+                    })
+                  completed' = if toRawPLI complLoc == rawLoc
+                               then completed
+                               else CompletedPLI rawLoc complLoc:completed
+              pure (p:ps, completed')
+    (revNew, revCompleted) <- foldM addPackage ([], []) newPackages
+    let (newSingles, newMultiples)
+          = partitionEithers
+          $ map sonToEither
+          $ Map.toList
+          $ Map.fromListWith (<>)
+          $ map (second Single) (reverse revNew)
+    unless (null newMultiples) $ throwIO $
+      DuplicatePackageNames source $ map (second (map (toRawPLI . spLocation))) newMultiples
+    let new = Map.fromList newSingles
+        allPackages0 = new `Map.union` (old `Map.difference` Map.fromSet (const ()) drops)
+        allPackages = flip Map.mapWithKey allPackages0 $ \name sp ->
+          sp
+            { spFlags = Map.findWithDefault (spFlags sp) name flags
+            , spHidden = Map.findWithDefault (spHidden sp) name hiddens
+            , spGhcOptions = Map.findWithDefault (spGhcOptions sp) name options
+            }
 
-      unused = AddPackagesConfig
-        (drops `Set.difference` Map.keysSet old)
-        (flags `Map.difference` allPackages)
-        (hiddens `Map.difference` allPackages)
-        (options `Map.difference` allPackages)
+        unused = AddPackagesConfig
+          (drops `Set.difference` Map.keysSet old)
+          (flags `Map.difference` allPackages)
+          (hiddens `Map.difference` allPackages)
+          (options `Map.difference` allPackages)
 
-  pure (allPackages, reverse revCompleted, unused)
+    pure (allPackages, reverse revCompleted, unused)
 
 -- | Parse a 'SnapshotLayer' value from a 'SnapshotLocation'.
 --
@@ -1679,7 +1701,8 @@ loadRawSnapshotLayer rsl@(RSLUrl url blob) =
 loadRawSnapshotLayer rsl@(RSLFilePath fp) =
   handleAny (throwIO . InvalidSnapshot rsl) $ do
     value <- Yaml.decodeFileThrow $ toFilePath $ resolvedAbsolute fp
-    snapshot <- warningsParserHelperRaw rsl value $ Just $ parent $ resolvedAbsolute fp
+    snapshot <-
+      warningsParserHelperRaw rsl value $ Just $ parent $ resolvedAbsolute fp
     pure $ Right (snapshot, CompletedSL rsl (SLFilePath fp))
 loadRawSnapshotLayer rsl@(RSLSynonym syn) = do
   loc <- snapshotLocation syn
@@ -1709,7 +1732,8 @@ loadSnapshotLayer sl@(SLUrl url blob) =
 loadSnapshotLayer sl@(SLFilePath fp) =
   handleAny (throwIO . InvalidSnapshot (toRawSL sl)) $ do
     value <- Yaml.decodeFileThrow $ toFilePath $ resolvedAbsolute fp
-    snapshot <- warningsParserHelper sl value $ Just $ parent $ resolvedAbsolute fp
+    snapshot <-
+      warningsParserHelper sl value $ Just $ parent $ resolvedAbsolute fp
     pure $ Right snapshot
 
 loadFromURL ::
@@ -1740,8 +1764,11 @@ loadUrlViaCasaOrWithCheck url blobKey = do
   case mblobFromCasa of
     Just blob -> do
       logDebug
-        ("Loaded snapshot from Casa (" <> display blobKey <> ") for URL: " <>
-         display url)
+        (  "Loaded snapshot from Casa ("
+        <> display blobKey
+        <> ") for URL: "
+        <> display url
+        )
       pure blob
     Nothing -> loadWithCheck url (Just blobKey)
 
@@ -1827,19 +1854,22 @@ getRawPackageLocationIdent ::
      (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => RawPackageLocationImmutable
   -> RIO env PackageIdentifier
-getRawPackageLocationIdent (RPLIHackage (PackageIdentifierRevision name version _) _) =
-  pure $ PackageIdentifier name version
-getRawPackageLocationIdent (RPLIRepo _ RawPackageMetadata { rpmName = Just name, rpmVersion = Just version }) =
-  pure $ PackageIdentifier name version
-getRawPackageLocationIdent (RPLIArchive _ RawPackageMetadata { rpmName = Just name, rpmVersion = Just version }) =
-  pure $ PackageIdentifier name version
+getRawPackageLocationIdent
+  (RPLIHackage (PackageIdentifierRevision name version _) _) =
+    pure $ PackageIdentifier name version
+getRawPackageLocationIdent
+  (RPLIRepo _ RawPackageMetadata { rpmName = Just name, rpmVersion = Just version }) =
+    pure $ PackageIdentifier name version
+getRawPackageLocationIdent
+  (RPLIArchive _ RawPackageMetadata { rpmName = Just name, rpmVersion = Just version }) =
+    pure $ PackageIdentifier name version
 getRawPackageLocationIdent rpli = packageIdent <$> loadPackageRaw rpli
 
 -- | Get the 'TreeKey' of the package at the given location.
 --
 -- @since 0.1.0.0
-getRawPackageLocationTreeKey
-  :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+getRawPackageLocationTreeKey ::
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => RawPackageLocationImmutable
   -> RIO env TreeKey
 getRawPackageLocationTreeKey pl =
@@ -1854,8 +1884,8 @@ getRawPackageLocationTreeKey pl =
 -- | Get the 'TreeKey' of the package at the given location.
 --
 -- @since 0.1.0.0
-getPackageLocationTreeKey
-  :: (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+getPackageLocationTreeKey ::
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
   => PackageLocationImmutable
   -> RIO env TreeKey
 getPackageLocationTreeKey pl = pure $ getTreeKey pl
@@ -1917,7 +1947,9 @@ simpleAppL = lens paSimpleApp (\x y -> x { paSimpleApp = y })
 -- @since 0.1.0.0
 hpackExecutableL :: Lens' PantryConfig HpackExecutable
 hpackExecutableL k pconfig =
-  fmap (\hpExe -> pconfig { pcHpackExecutable = hpExe }) (k (pcHpackExecutable pconfig))
+  fmap
+    (\hpExe -> pconfig { pcHpackExecutable = hpExe })
+    (k (pcHpackExecutable pconfig))
 
 -- | Lens to view or modify the 'Hpack.Force' of a 'PantryConfig'.
 --
@@ -1964,29 +1996,34 @@ runPantryAppWith ::
   -> Int
   -> RIO PantryApp a
   -> m a
-runPantryAppWith maxConnCount casaRepoPrefix casaMaxPerRequest f = runSimpleApp $ do
-  sa <- ask
-  stack <- getAppUserDataDirectory "stack"
-  root <- parseAbsDir $ stack FilePath.</> "pantry"
-  withPantryConfig'
-    root
-    defaultPackageIndexConfig
-    HpackBundled
-    Hpack.NoForce
+runPantryAppWith
     maxConnCount
-    (Just (casaRepoPrefix, casaMaxPerRequest))
-    defaultSnapshotLocation
-    defaultGlobalHintsLocation
-    $ \pc ->
-      runRIO
-        PantryApp
-          { paSimpleApp = sa
-          , paPantryConfig = pc
-          , paTermWidth = 100
-          , paUseColor = True
-          , paStylesUpdate = mempty
-          }
-        f
+    casaRepoPrefix
+    casaMaxPerRequest
+    f
+  = runSimpleApp $ do
+    sa <- ask
+    stack <- getAppUserDataDirectory "stack"
+    root <- parseAbsDir $ stack FilePath.</> "pantry"
+    withPantryConfig'
+      root
+      defaultPackageIndexConfig
+      HpackBundled
+      Hpack.NoForce
+      maxConnCount
+      (Just (casaRepoPrefix, casaMaxPerRequest))
+      defaultSnapshotLocation
+      defaultGlobalHintsLocation
+      $ \pc ->
+        runRIO
+          PantryApp
+            { paSimpleApp = sa
+            , paPantryConfig = pc
+            , paTermWidth = 100
+            , paUseColor = True
+            , paStylesUpdate = mempty
+            }
+          f
 
 -- | Like 'runPantryApp', but uses an empty pantry directory instead of sharing
 -- with Stack. Useful for testing.
