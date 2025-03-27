@@ -1,4 +1,4 @@
 snapshot: stack-ghc-9.8.4.yaml
 
-# Added to allow testing of snapshot: stack-ghc-9.12.1.yaml:
+# Added to allow testing of snapshot: stack-ghc-9.12.2.yaml:
 allow-newer: true
