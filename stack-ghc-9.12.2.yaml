@@ -1,0 +1,7 @@
+# Snapshot specification for GHC 9.12.2.
+snapshot: nightly-2025-03-27 # GHC 9.10.1
+compiler: ghc-9.12.2
+
+flags:
+  path:
+    os-string: true

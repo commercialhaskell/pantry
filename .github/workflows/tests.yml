@@ -7,8 +7,8 @@ on:
     - master
   workflow_dispatch:
 
-# As of 15 February 2025, ubuntu-latest and windows-latest come with
-# Stack 3.1.1. However, macos-13 and macos-latest do not come with Haskell
+# As of 27 March 2025, ubuntu-latest and windows-latest come with
+# Stack 3.3.1. However, macos-13 and macos-latest do not come with Haskell
 # tools.
 
 jobs:
@@ -21,10 +21,10 @@ jobs:
         os:
         - ubuntu-latest
         snapshot:
-        - stack-ghc-9.6.6.yaml
+        - stack-ghc-9.6.7.yaml
         - stack-ghc-9.8.4.yaml
         - stack-ghc-9.10.1.yaml
-        - stack-ghc-9.12.1.yaml
+        - stack-ghc-9.12.2.yaml
         include:
         - os: macos-13
           snapshot: stack-ghc-9.8.4.yaml
