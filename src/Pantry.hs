@@ -141,6 +141,7 @@ module Pantry
   , parseSnapName
   , parseRawSnapshotLocation
   , parsePackageIdentifierRevision
+  , parseRawPackageLocationImmutables
   , parseHackageText
 
     -- ** Cabal values
@@ -284,13 +285,13 @@ import           Pantry.Types as P
                    , packageIdentifierString, packageNameString, parseFlagName
                    , parseHackageText, parsePackageIdentifier
                    , parsePackageIdentifierRevision, parsePackageName
-                   , parsePackageNameThrowing, parseRawSnapshotLocation
-                   , parseSnapName, parseTreeM, parseVersion
-                   , parseVersionThrowing, parseWantedCompiler, pirForHash
-                   , resolvePaths, snapshotLocation, toCabalStringMap, toRawPL
-                   , toRawPLI, toRawPM, toRawSL, toRawSnapshotLayer
-                   , unCabalStringMap, unSafeFilePath, versionString
-                   , warnMissingCabalFile
+                   , parsePackageNameThrowing, parseRawPackageLocationImmutables
+                   , parseRawSnapshotLocation, parseSnapName, parseTreeM
+                   , parseVersion, parseVersionThrowing, parseWantedCompiler
+                   , pirForHash, resolvePaths, snapshotLocation
+                   , toCabalStringMap, toRawPL, toRawPLI, toRawPM, toRawSL
+                   , toRawSnapshotLayer, unCabalStringMap, unSafeFilePath
+                   , versionString, warnMissingCabalFile
                    )
 import           Path
                    ( Abs, Dir, File, Path, (</>), filename, parent, parseAbsDir
