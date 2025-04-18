@@ -89,6 +89,7 @@ module Pantry.Types
   , toCabalStringMap
   , unCabalStringMap
   , parsePackageIdentifierRevision
+  , parseRawPackageLocationImmutables
   , Mismatch (..)
   , PantryException (..)
   , FuzzyResults (..)
@@ -144,9 +145,10 @@ import           Data.Aeson.Types
                    , toJSONKeyText, withObject, withText
                    )
 import           Data.Aeson.WarningParser
-                   ( WarningParser, WithJSONWarnings, (..:), (..:?), (..!=)
-                   , (.:), (...:?), jsonSubWarnings, jsonSubWarningsT
-                   , noJSONWarnings, tellJSONField, withObjectWarnings
+                   ( JSONWarning (..), WarningParser, WithJSONWarnings (..)
+                   , (..:), (..:?), (..!=), (.:), (...:?), jsonSubWarnings
+                   , jsonSubWarningsT, noJSONWarnings, tellJSONField
+                   , withObjectWarnings
                    )
 import           Data.ByteString.Builder
                    ( byteString, toLazyByteString, wordDec )
@@ -154,6 +156,7 @@ import qualified Data.Conduit.Tar as Tar
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map ( mapKeysMonotonic )
 import           Data.Text.Read ( decimal )
+import           Data.Yaml ( decodeEither' )
 import           Distribution.CabalSpecVersion ( cabalSpecLatest )
 #if MIN_VERSION_Cabal(3,4,0)
 import           Distribution.CabalSpecVersion ( cabalSpecToVersionDigits )
@@ -481,6 +484,21 @@ instance Pretty RawPackageLocationImmutable where
           , style Dir (fromString $ T.unpack (repoSubdir repo))
           ]
     ]
+
+-- | Parse, 'Unresolved', one or more 'RawPackageLocationImmutable' from a valid
+-- YAML value. Alternatively, yields an exception if the given text cannot be
+-- decoded as a YAML value or it is decoded but with warnings.
+--
+-- @since 0.10.1
+parseRawPackageLocationImmutables ::
+     Text
+     -- ^ A YAML value.
+  -> Either PantryException (Unresolved (NonEmpty RawPackageLocationImmutable))
+parseRawPackageLocationImmutables t = case decodeEither' $ encodeUtf8 t of
+  Left err -> Left $ RawPackageLocationImmutableParseFail t (SomeException err)
+  Right (WithJSONWarnings unresolved warnings) -> case warnings of
+    [] -> Right unresolved
+    _ -> Left $ RawPackageLocationImmutableParseWarnings t warnings
 
 -- | Location for remote packages or archives assumed to be immutable.
 --
@@ -1069,6 +1087,8 @@ data Mismatch a = Mismatch
 -- @since 0.1.0.0
 data PantryException
   = PackageIdentifierRevisionParseFail !Text
+  | RawPackageLocationImmutableParseFail !Text !SomeException
+  | RawPackageLocationImmutableParseWarnings !Text ![JSONWarning]
   | InvalidCabalFile
       !(Either RawPackageLocationImmutable (Path Abs File))
       !(Maybe Version)
@@ -1153,6 +1173,24 @@ instance Display PantryException where
     "Error: [S-360]\n"
     <> "Invalid package identifier (with optional revision): "
     <> display text
+  display (RawPackageLocationImmutableParseFail text err) =
+    "Error: [S-925]\n"
+    <> "Invalid raw immutable package location: "
+    <> display text
+    <> "\n\n"
+    <> "The error encountered was:\n\n"
+    <> fromString (displayException err)
+  display (RawPackageLocationImmutableParseWarnings text warnings) =
+    "Error: [S-775]\n"
+    <> "Invalid raw immutable package location: "
+    <> display text
+    <> "\n\n"
+    <> "The warnings encountered were:\n\n"
+    <> fold
+         ( intersperse
+             "\n"
+             (map (\warning -> "- " <> display warning) warnings)
+         )
   display (InvalidCabalFile loc mversion errs warnings) =
     "Error: [S-242]\n"
     <> "Unable to parse cabal file from package "
@@ -1509,6 +1547,26 @@ instance Pretty PantryException where
          [ flow "Invalid package identifier (with optional revision):"
          , fromString $ T.unpack text
          ]
+  pretty (RawPackageLocationImmutableParseFail text err) =
+    "[S-925]"
+    <> line
+    <> fillSep
+         [ flow "Invalid raw immutable package location:"
+         , fromString $ T.unpack text <> "."
+         , flow "The error encountered was:"
+         ]
+    <> blankLine
+    <> string (displayException err)
+  pretty (RawPackageLocationImmutableParseWarnings text warnings) =
+    "[S-775]"
+    <> line
+    <> fillSep
+         [ flow "Invalid raw immutable package location:"
+         , fromString $ T.unpack text <> "."
+         , flow "The warnings encountered were:"
+         ]
+    <> line
+    <> bulletedList (map (fromString . show) warnings)
   pretty (InvalidCabalFile loc mversion errs warnings) =
     "[S-242]"
     <> line

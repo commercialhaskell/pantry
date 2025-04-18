@@ -8,6 +8,7 @@ module Main
  ( main
  ) where
 
+import           Data.Aeson.WarningParser ( JSONWarning (..) )
 import qualified Data.Conduit.Tar as Tar
 import           Data.Maybe ( fromJust )
 import qualified Data.Text as T
@@ -122,6 +123,8 @@ mainInTerminal terminalWidth Options{..} = do
 examples :: [PantryException]
 examples = concat
   [ [ PackageIdentifierRevisionParseFail hackageMsg ]
+  , [ RawPackageLocationImmutableParseFail "example text" someExceptionExample ]
+  , [ RawPackageLocationImmutableParseWarnings "example text" jsonWarningsExample]
   , [ InvalidCabalFile loc version pErrorExamples pWarningExamples
     | loc <- map Left rawPackageLocationImmutableExamples <> [Right pathAbsFileExample]
     , version <- [Nothing, Just versionExample]
@@ -416,3 +419,17 @@ rawSnapNameExample = "<raw-snapshot-name>"
 
 hpackCommandExample :: FilePath
 hpackCommandExample = "<path-to-hpack>/hpack"
+
+jsonWarningsExample :: [JSONWarning]
+jsonWarningsExample =
+  [ jsonUnrecognizedFieldsExample
+  , jsonGeneralWarningExample
+  ]
+
+jsonUnrecognizedFieldsExample :: JSONWarning
+jsonUnrecognizedFieldsExample = JSONUnrecognizedFields
+  "UnresolvedPackageLocationImmutable.UPLIHackage"
+  ["field1", "field2", "field3"]
+
+jsonGeneralWarningExample :: JSONWarning
+jsonGeneralWarningExample = JSONGeneralWarning "A general JSON warning."

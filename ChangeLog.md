@@ -1,5 +1,11 @@
 # Changelog for pantry
 
+## v0.10.1
+
+* Expose new `parseRawPackageLocationImmutables`.
+* Add errors S-925 (`RawPackageLocationImmutableParseFail`) and S-775
+  (`RawPackageLocationImmutableParseWarnings`).
+
 ## v0.10.0
 
 * Name of tar file of local cache of package index is not hard coded.
