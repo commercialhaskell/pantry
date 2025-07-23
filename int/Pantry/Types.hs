@@ -784,6 +784,8 @@ defaultHackageSecurityConfig = HackageSecurityConfig
         "51f0161b906011b52c6613376b1ae937670da69322113a246a09f807c62f6921"
       , -- Joachim Breitner (5iUgwqZCWrCJktqMx0bBMIuoIyT4A1RYGozzchRN9rA=)
         "d26e46f3b631aae1433b89379a6c68bd417eb5d1c408f0643dcc07757fece522"
+      , -- Tikhon Jelvis (06nM6r1kOYt49YE5e1+j8VKiiYUFjFQ6HrOpPZu+fDE=)
+        "c7de58fc6a224b92b5b513f26fbb8b370f2d97c7cfe0075a951314a55734be93"
       ]
   , hscKeyThreshold = 3
   , hscIgnoreExpiry = True
