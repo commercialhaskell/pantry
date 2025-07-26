@@ -1,6 +1,0 @@
-# Snapshot specification for GHC 9.10.1.
-snapshot: nightly-2025-02-15 # GHC 9.10.1
-
-flags:
-  path:
-    os-string: true
