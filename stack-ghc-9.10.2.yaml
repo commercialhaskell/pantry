@@ -1,0 +1,2 @@
+# Snapshot specification for GHC 9.10.2.
+snapshot: lts-24.1 # GHC 9.10.2

@@ -7,9 +7,8 @@ on:
     - master
   workflow_dispatch:
 
-# As of 27 March 2025, ubuntu-latest and windows-latest come with
-# Stack 3.3.1. However, macos-13 and macos-latest do not come with Haskell
-# tools.
+# As of 2025-07-26, ubuntu-latest and windows-latest come with Stack 3.7.1.
+# However, macos-13 and macos-latest do not come with Haskell tools.
 
 jobs:
   build:
@@ -23,16 +22,16 @@ jobs:
         snapshot:
         - stack-ghc-9.6.7.yaml
         - stack-ghc-9.8.4.yaml
-        - stack-ghc-9.10.1.yaml
+        - stack-ghc-9.10.2.yaml
         - stack-ghc-9.12.2.yaml
         include:
         - os: macos-13
-          snapshot: stack-ghc-9.8.4.yaml
+          snapshot: stack-ghc-9.10.2.yaml
         # macos-latest provides macOS/AArch64 (M1)
         - os: macos-latest
-          snapshot: stack-ghc-9.8.4.yaml
+          snapshot: stack-ghc-9.10.2.yaml
         - os: windows-latest
-          snapshot: stack-ghc-9.8.4.yaml
+          snapshot: stack-ghc-9.10.2.yaml
     steps:
     - name: Clone project
       uses: actions/checkout@v4
@@ -57,11 +56,11 @@ jobs:
 
         if [[ "${{ matrix.os }}" == "macos-13" || "${{ matrix.os }}" == "macos-latest" ]]
         then
-          # macos-13 and macos-latest do not include Haskell tools as at 2024-12-13.
+          # macos-13 and macos-latest do not include Haskell tools as at 2025-07-26.
           curl -sSL https://get.haskellstack.org/ | sh
         fi
 
-        stack --resolver ${{ matrix.snapshot }} test --bench --no-run-benchmarks --haddock --no-haddock-deps
+        stack --snapshot ${{ matrix.snapshot }} test --bench --no-run-benchmarks --haddock --no-haddock-deps
   test-pretty-exceptions:
     name: Test build of test-pretty-exceptions
     runs-on: ${{ matrix.os }}
@@ -72,7 +71,7 @@ jobs:
         - ubuntu-latest
         - windows-latest
         snapshot:
-        - stack-ghc-9.8.4.yaml
+        - stack-ghc-9.10.2.yaml
     steps:
     - name: Clone project
       uses: actions/checkout@v4
@@ -94,4 +93,4 @@ jobs:
       shell: bash
       run: |
         set -ex
-        stack --resolver ${{ matrix.snapshot }} build --flag pantry:test-pretty-exceptions
+        stack --snapshot ${{ matrix.snapshot }} build --flag pantry:test-pretty-exceptions
