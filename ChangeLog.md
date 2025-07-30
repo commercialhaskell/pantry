@@ -1,5 +1,10 @@
 # Changelog for pantry
 
+## v0.11.0
+
+* Update `defaultHackageSecurityConfig` for changes in Hackage's `root.json`
+  file of the keys of the Hackage root key holders.
+
 ## v0.10.1
 
 * Expose new `parseRawPackageLocationImmutables`.
@@ -53,7 +58,8 @@
 * Remove module `Pantry.Internal.StaticBytes` and depend on `static-bytes`
   package.
 * Remove module `Pantry.Internal`, previously exposed only for testing.
-* Update Hackage bootstrap root key set.
+* Update `defaultHackageSecurityConfig` for changes in Hackage's `root.json`
+  file of the keys of the Hackage root key holders.
 
 ## v0.8.3
 
