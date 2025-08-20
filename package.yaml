@@ -29,7 +29,7 @@ dependencies:
 - aeson-warning-parser >= 0.1.1
 - ansi-terminal
 - bytestring
-- Cabal >= 3 && < 3.15
+- Cabal >= 3 && < 3.17
 - casa-client >= 0.0.2
 - casa-types
 - companion
