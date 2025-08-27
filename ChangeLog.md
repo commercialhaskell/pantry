@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.11.1
+
+* Drop support for GHC versions before GHC 7.10.
+
 ## v0.11.0
 
 * Update `defaultHackageSecurityConfig` for changes in Hackage's `root.json`

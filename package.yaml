@@ -1,5 +1,5 @@
 name: pantry
-version: 0.11.0
+version: 0.11.1
 synopsis: Content addressable Haskell package management
 description: Please see the README on GitHub at <https://github.com/commercialhaskell/pantry#readme>
 category: Development
