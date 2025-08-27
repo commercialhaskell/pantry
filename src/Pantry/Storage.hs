@@ -1214,7 +1214,7 @@ loadExposedModulePackages cacheId mName =
   go (Single (P.PackageNameP m)) = m
 
 newtype LoadCachedTreeException = MissingBlob BlobKey
-  deriving (Show, Typeable)
+  deriving Show
 
 instance Exception LoadCachedTreeException
 

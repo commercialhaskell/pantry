@@ -238,7 +238,7 @@ data Package = Package
     --
     -- @since 0.1.0.0
   }
-  deriving (Show, Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 data PHpack = PHpack
   { phOriginal :: !TreeEntry
@@ -248,12 +248,12 @@ data PHpack = PHpack
   , phVersion :: !Version
     -- ^ Version of Hpack used
   }
-  deriving (Show, Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 data PackageCabal
   = PCCabalFile !TreeEntry -- ^ TreeEntry of Cabal file
   | PCHpack !PHpack
-  deriving (Show, Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 cabalFileName :: PackageName -> SafeFilePath
 cabalFileName name =
@@ -268,7 +268,9 @@ cabalFileName name =
 --
 -- @since 0.1.0.0
 newtype Revision = Revision Word
-  deriving (Generic, Show, Eq, NFData, Data, Typeable, Ord, Hashable, Display, PersistField, PersistFieldSql)
+  deriving ( Data, Display, Eq, Generic, Hashable, NFData, Ord, PersistField
+           , PersistFieldSql, Show
+           )
 
 -- | Represents a SQL database connection.
 
@@ -391,7 +393,7 @@ data ResolvedPath t = ResolvedPath
   , resolvedAbsolute :: !(Path Abs t)
     -- ^ Absolute path resolved against base directory loaded from.
   }
-  deriving (Show, Eq, Generic, Ord)
+  deriving (Eq, Generic, Ord, Show)
 
 instance NFData (ResolvedPath t)
 
@@ -404,7 +406,7 @@ instance NFData (ResolvedPath t)
 data RawPackageLocation
   = RPLImmutable !RawPackageLocationImmutable
   | RPLMutable !(ResolvedPath Dir)
-  deriving (Show, Eq, Generic)
+  deriving (Eq, Generic, Show)
 
 instance NFData RawPackageLocation
 
@@ -416,7 +418,7 @@ instance NFData RawPackageLocation
 data PackageLocation
   = PLImmutable !PackageLocationImmutable
   | PLMutable !(ResolvedPath Dir)
-  deriving (Show, Eq, Generic)
+  deriving (Eq, Generic, Show)
 
 instance NFData PackageLocation
 
@@ -439,7 +441,7 @@ data RawPackageLocationImmutable
   = RPLIHackage !PackageIdentifierRevision !(Maybe TreeKey)
   | RPLIArchive !RawArchive !RawPackageMetadata
   | RPLIRepo    !Repo !RawPackageMetadata
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Generic, Ord, Show)
 
 instance NFData RawPackageLocationImmutable
 
@@ -507,7 +509,7 @@ data PackageLocationImmutable
   = PLIHackage !PackageIdentifier !BlobKey !TreeKey
   | PLIArchive !Archive !PackageMetadata
   | PLIRepo    !Repo !PackageMetadata
-  deriving (Generic, Show, Eq, Ord, Typeable)
+  deriving (Eq, Generic, Ord, Show)
 
 instance NFData PackageLocationImmutable
 
@@ -569,7 +571,7 @@ data RawArchive = RawArchive
     --
     -- @since 0.1.0.0
   }
-  deriving (Generic, Show, Eq, Ord, Typeable)
+  deriving (Eq, Generic, Ord, Show)
 
 instance NFData RawArchive
 
@@ -596,7 +598,7 @@ data Archive = Archive
     --
     -- @since 0.1.0.0
   }
-  deriving (Generic, Show, Eq, Ord, Typeable)
+  deriving (Eq, Generic, Ord, Show)
 
 instance NFData Archive
 
@@ -612,7 +614,7 @@ toRawArchive archive =
 --
 -- @since 0.1.0.0
 data RepoType = RepoGit | RepoHg
-  deriving (Generic, Show, Eq, Ord, Typeable)
+  deriving (Eq, Generic, Ord, Show)
 
 instance NFData RepoType
 
@@ -651,7 +653,7 @@ data Repo = Repo
     --
     -- @since 0.1.0.0
   }
-  deriving (Generic, Eq, Ord, Typeable)
+  deriving (Eq, Generic, Ord)
 
 instance NFData Repo
 
@@ -682,7 +684,7 @@ data AggregateRepo = AggregateRepo
   { aRepo :: !SimpleRepo
   , aRepoSubdirs :: [(Text, RawPackageMetadata)]
   }
-  deriving (Show, Generic, Eq, Ord, Typeable)
+  deriving (Eq, Generic, Ord, Show)
 
 -- | Group input repositories by non-subdir values.
 toAggregateRepos :: [(Repo, RawPackageMetadata)] -> [AggregateRepo]
@@ -709,7 +711,7 @@ data SimpleRepo = SimpleRepo
   , sRepoCommit :: !Text
   , sRepoType :: !RepoType
   }
-  deriving (Show, Generic, Eq, Ord, Typeable)
+  deriving (Eq, Generic, Ord, Show)
 
 instance Display SimpleRepo where
   display (SimpleRepo url commit typ) =
@@ -832,8 +834,8 @@ class HasPantryConfig env where
 --
 -- @since 0.1.0.0
 newtype FileSize = FileSize Word
-  deriving ( Show, Eq, Ord, Typeable, Generic, Display, Hashable, NFData
-           , PersistField, PersistFieldSql, ToJSON, FromJSON
+  deriving ( Display, Eq, FromJSON, Generic, Hashable, NFData, Ord, PersistField
+           , PersistFieldSql, Show, ToJSON
            )
 
 -- | A key for looking up a blob, which combines the SHA256 hash of the contents
@@ -845,7 +847,7 @@ newtype FileSize = FileSize Word
 --
 -- @since 0.1.0.0
 data BlobKey = BlobKey !SHA256 !FileSize
-  deriving (Eq, Ord, Typeable, Generic)
+  deriving (Eq, Generic, Ord)
 
 instance NFData BlobKey
 
@@ -972,7 +974,7 @@ data CabalFileInfo
     -- reproducibility.
     --
     -- @since 0.1.0.0
-  deriving (Generic, Show, Eq, Ord, Typeable)
+  deriving (Eq, Generic, Ord, Show)
 
 instance NFData CabalFileInfo
 
@@ -990,7 +992,7 @@ instance Display CabalFileInfo where
 -- @since 0.1.0.0
 data PackageIdentifierRevision
   = PackageIdentifierRevision !PackageName !Version !CabalFileInfo
-  deriving (Generic, Eq, Ord, Typeable)
+  deriving (Eq, Generic, Ord)
 
 instance NFData PackageIdentifierRevision
 
@@ -1146,7 +1148,6 @@ data PantryException
   | ParseSnapNameException !Text
   | HpackLibraryException !(Path Abs File) !String
   | HpackExeException !FilePath !(Path Abs Dir) !SomeException
-  deriving Typeable
 
 instance Exception PantryException where
 
@@ -2178,10 +2179,10 @@ data BuildFile
   = BFCabal !SafeFilePath !TreeEntry
   | BFHpack !TreeEntry
     -- We don't need SafeFilePath for Hpack since it has to be package.yaml file
-  deriving (Show, Eq)
+  deriving (Eq, Show)
 
 data FileType = FTNormal | FTExecutable
-  deriving (Show, Eq, Enum, Bounded, Ord)
+  deriving (Bounded, Enum, Eq, Ord, Show)
 
 instance PersistField FileType where
   toPersistValue FTNormal = PersistInt64 1
@@ -2201,10 +2202,10 @@ data TreeEntry = TreeEntry
   { teBlob :: !BlobKey
   , teType :: !FileType
   }
-  deriving (Show, Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 newtype SafeFilePath = SafeFilePath Text
-  deriving (Show, Eq, Ord, Display)
+  deriving (Display, Eq, Ord, Show)
 
 instance PersistField SafeFilePath where
   toPersistValue = toPersistValue . unSafeFilePath
@@ -2250,7 +2251,7 @@ hpackSafeFilePath =
 --
 -- @since 0.1.0.0
 newtype TreeKey = TreeKey BlobKey
-  deriving (Show, Eq, Ord, Generic, Typeable, ToJSON, FromJSON, NFData, Display)
+  deriving (Display, Eq, FromJSON, Generic, NFData, Ord, Show, ToJSON)
 
 -- | Represents the contents of a tree, which is a mapping from
 -- relative file paths to 'TreeEntry's.
@@ -2261,7 +2262,7 @@ newtype Tree
   -- In the future, consider allowing more lax parsing
   -- See: https://www.fpcomplete.com/blog/2018/07/pantry-part-2-trees-keys
   -- TreeTarball !PackageTarball
-  deriving (Show, Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 renderTree :: Tree -> ByteString
 renderTree = BL.toStrict . toLazyByteString . go
@@ -2460,7 +2461,7 @@ data OptionalSubdirs
   = OSSubdirs !(NonEmpty Text)
   | OSPackageMetadata !Text !RawPackageMetadata
   -- ^ subdirectory and package metadata
-  deriving (Show, Eq, Generic)
+  deriving (Eq, Generic, Show)
 
 instance NFData OptionalSubdirs
 
@@ -2483,7 +2484,7 @@ data RawPackageMetadata = RawPackageMetadata
     --
     -- @since 0.1.0.0
   }
-  deriving (Show, Eq, Ord, Generic, Typeable)
+  deriving (Eq, Generic, Ord, Show)
 
 instance NFData RawPackageMetadata
 
@@ -2507,7 +2508,7 @@ data PackageMetadata = PackageMetadata
     --
     -- @since 0.1.0.0
   }
-  deriving (Show, Eq, Ord, Generic, Typeable)
+  deriving (Eq, Generic, Ord, Show)
 
 -- i PackageMetadata
 instance NFData PackageMetadata
@@ -2541,7 +2542,7 @@ toRawPM pm = RawPackageMetadata (Just name) (Just version) (Just $ pmTreeKey pm)
 --
 -- @since 0.1.0.0
 newtype RelFilePath = RelFilePath Text
-  deriving (Show, ToJSON, FromJSON, Eq, Ord, Generic, Typeable, NFData, Display)
+  deriving (Display, Eq, FromJSON, Generic, NFData, Ord, Show, ToJSON)
 
 -- | Location that an archive is stored at
 --
@@ -2555,7 +2556,7 @@ data ArchiveLocation
     -- ^ Archive stored at a local file path
     --
     -- @since 0.1.0.0
-  deriving (Show, Eq, Ord, Generic, Typeable)
+  deriving (Eq, Generic, Ord, Show)
 
 instance NFData ArchiveLocation
 
@@ -2817,7 +2818,7 @@ rpmEmpty = RawPackageMetadata Nothing Nothing Nothing
 --
 -- @since 0.1.0.0
 newtype CabalString a = CabalString { unCabalString :: a }
-  deriving (Show, Eq, Ord, Typeable)
+  deriving (Eq, Ord, Show)
 
 -- I'd like to use coerce here, but can't due to roles. unsafeCoerce
 -- could work, but let's avoid unsafe code.
@@ -2891,7 +2892,7 @@ data HpackExecutable
     -- ^ Compiled in library
   | HpackCommand !FilePath
     -- ^ Executable at the provided path
-  deriving (Show, Read, Eq, Ord)
+  deriving (Eq, Ord, Read, Show)
 
 
 -- | Which compiler a snapshot wants to use. The build tool may elect to do some
@@ -2905,7 +2906,7 @@ data WantedCompiler
       !Version
       !Version
     -- ^ GHCJS version followed by GHC version
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Generic, Ord, Show)
 
 instance NFData WantedCompiler
 
@@ -3178,7 +3179,7 @@ data RawSnapshotLocation
     -- ^ Snapshot synonym (LTS/Nightly).
     --
     -- @since 0.5.0.0
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Generic, Ord, Show)
 
 instance NFData RawSnapshotLocation
 
@@ -3228,7 +3229,7 @@ data SnapshotLocation
     -- ^ Snapshot at a local file path.
     --
     -- @since 0.1.0.0
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Generic, Ord, Show)
 
 instance NFData SnapshotLocation
 
@@ -3360,7 +3361,7 @@ data RawSnapshotLayer = RawSnapshotLayer
     --
     -- @since 0.1.0.0
   }
-  deriving (Show, Eq, Generic)
+  deriving (Eq, Generic, Show)
 
 instance NFData RawSnapshotLayer
 
@@ -3452,7 +3453,7 @@ data SnapshotLayer = SnapshotLayer
     --
     -- @since 0.1.0.0
   }
-  deriving (Show, Eq, Generic)
+  deriving (Eq, Generic, Show)
 
 instance ToJSON SnapshotLayer where
   toJSON snap = object $ concat
@@ -3494,7 +3495,7 @@ toRawSnapshotLayer sl = RawSnapshotLayer
 --
 -- @since 0.1.0.0
 newtype SnapshotCacheHash = SnapshotCacheHash { unSnapshotCacheHash :: SHA256}
-  deriving (Show)
+  deriving Show
 
 -- | Get the path to the global hints cache file
 getGlobalHintsFile :: HasPantryConfig env => RIO env (Path Abs File)
@@ -3532,7 +3533,7 @@ data GlobalHintsLocation
     -- ^ Download the global hints from the given URL.
   | GHLFilePath !(ResolvedPath File)
     -- ^ Global hints at a local file path.
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Eq, Generic, Ord, Show)
 
 instance NFData GlobalHintsLocation
 
