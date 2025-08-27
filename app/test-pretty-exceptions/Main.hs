@@ -293,7 +293,7 @@ wantedCompilerExamples =
 
 newtype ExceptionExample
   = ExceptionExample Text
-  deriving (Show, Typeable)
+  deriving Show
 
 instance Exception ExceptionExample where
   displayException (ExceptionExample t) = T.unpack t

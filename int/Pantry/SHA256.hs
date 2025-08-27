@@ -59,7 +59,7 @@ import qualified RIO.Text as T
 --
 -- @since 0.1.0.0
 newtype SHA256 = SHA256 Bytes32
-  deriving (Generic, Eq, NFData, Data, Typeable, Ord, Hashable)
+  deriving (Data, Eq, Generic, Hashable, NFData, Ord)
 
 -- | Exceptions which can occur in this module
 --
@@ -67,7 +67,6 @@ newtype SHA256 = SHA256 Bytes32
 data SHA256Exception
   = InvalidByteCount !ByteString !StaticBytesException
   | InvalidHexBytes !ByteString !Text
-  deriving (Typeable)
 
 -- | Generate a 'SHA256' value by hashing the contents of a file.
 --
