@@ -68,6 +68,10 @@ module Pantry
   , RawPackageMetadata (..)
   , PackageMetadata (..)
   , Package (..)
+  , Tree (..)
+  , TreeEntry (..)
+  , FileType (..)
+  , renderTree
 
     -- ** Hackage
   , CabalFileInfo (..)
@@ -260,7 +264,7 @@ import           Pantry.Tree ( rawParseGPD, unpackTree )
 import           Pantry.Types as P
                    ( Archive (..), ArchiveLocation (..), BlobKey (..)
                    , CabalFileInfo (..), CabalString (..), FileSize (..)
-                   , FuzzyResults (..), GlobalHintsLocation (..)
+                   , FileType (..), FuzzyResults (..), GlobalHintsLocation (..)
                    , HackageSecurityConfig (..), HasPantryConfig (..)
                    , HpackExecutable (..), Mismatch (..), ModuleName
                    , Package (..), PackageCabal (..), PackageIdentifier (..)
@@ -288,7 +292,7 @@ import           Pantry.Types as P
                    , parsePackageNameThrowing, parseRawPackageLocationImmutables
                    , parseRawSnapshotLocation, parseSnapName, parseTreeM
                    , parseVersion, parseVersionThrowing, parseWantedCompiler
-                   , pirForHash, resolvePaths, snapshotLocation
+                   , pirForHash, renderTree, resolvePaths, snapshotLocation
                    , toCabalStringMap, toRawPL, toRawPLI, toRawPM, toRawSL
                    , toRawSnapshotLayer, unCabalStringMap, unSafeFilePath
                    , versionString, warnMissingCabalFile

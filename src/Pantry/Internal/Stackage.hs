@@ -1,6 +1,6 @@
 -- | All types and functions exported from this module are for advanced usage
--- only. They are needed for stackage-server integration with pantry and some
--- are needed for stack testing.
+-- only. They are needed for @stackage-server@ integration with @pantry@ and
+-- some are needed for @stack@ testing.
 module Pantry.Internal.Stackage
   ( module X
   ) where
