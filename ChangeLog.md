@@ -1,5 +1,10 @@
 # Changelog for pantry
 
+## v0.11.2
+
+* Expose `Tree`, `TreeEntry`, `FileType` and `renderTree`, as these are used by
+  the `casa-server` package's test suite.
+
 ## v0.11.1
 
 * Drop support for GHC versions before GHC 7.10.
