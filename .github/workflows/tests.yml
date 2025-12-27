@@ -7,7 +7,7 @@ on:
     - master
   workflow_dispatch:
 
-# As of 2025-09-23, ubuntu-latest and windows-latest come with Stack 3.7.1.
+# As of 2025-12-27, ubuntu-latest and windows-latest come with Stack 3.7.1.
 # However, macos-13 and macos-latest do not come with Haskell tools.
 
 jobs:
@@ -20,12 +20,12 @@ jobs:
         os:
         - ubuntu-latest
         snapshot:
-        - stack-ghc-9.6.7.yaml
-        - stack-ghc-9.8.4.yaml
         - stack-ghc-9.10.3.yaml
-        - stack-ghc-9.12.2.yaml
+        - stack-ghc-9.12.3.yaml
+        - stack-ghc-9.14.1.yaml
         include:
-        - os: macos-13
+        # macos-15-intel will be the last that provides macOS/x86_64
+        - os: macos-15-intel
           snapshot: stack-ghc-9.10.3.yaml
         # macos-latest provides macOS/AArch64 (M1)
         - os: macos-latest
@@ -54,9 +54,10 @@ jobs:
       run: |
         set -ex
 
-        if [[ "${{ matrix.os }}" == "macos-13" || "${{ matrix.os }}" == "macos-latest" ]]
+        if [[ "${{ matrix.os }}" == "macos-15-intel" || "${{ matrix.os }}" == "macos-latest" ]]
         then
-          # macos-13 and macos-latest do not include Haskell tools as at 2025-07-26.
+          # macos-15-intel and macos-latest do not include Haskell tools as at
+          # 2025-12-26.
           curl -sSL https://get.haskellstack.org/ | sh
         fi
 
