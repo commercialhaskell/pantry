@@ -7,8 +7,11 @@ on:
     - master
   workflow_dispatch:
 
-# As of 2025-12-27, ubuntu-latest and windows-latest come with Stack 3.7.1.
-# However, macos-13 and macos-latest do not come with Haskell tools.
+# As of 2026-07-01:
+# * ubuntu-latest comes with Stack 3.11.1 and GHC 9.14.1
+# * windows-latest comes with Stack 3.11.1 and GHC 9.14.1
+# * macos-15-intel does not come with Haskell tools
+# * macos-latest does not come with Haskell tools
 
 jobs:
   build:
@@ -21,7 +24,7 @@ jobs:
         - ubuntu-latest
         snapshot:
         - stack-ghc-9.10.3.yaml
-        - stack-ghc-9.12.3.yaml
+        - stack-ghc-9.12.4.yaml
         - stack-ghc-9.14.1.yaml
         include:
         # macos-15-intel will be the last that provides macOS/x86_64
@@ -34,16 +37,16 @@ jobs:
           snapshot: stack-ghc-9.10.3.yaml
     steps:
     - name: Clone project
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Cache dependencies on Unix-like OS
       if: startsWith(runner.os, 'Linux') || startsWith(runner.os, 'macOS')
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/.stack
         key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.snapshot }}
     - name: Cache dependencies on Windows
       if: startsWith(runner.os, 'Windows')
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: |
            ~\AppData\Roaming\stack
@@ -56,8 +59,10 @@ jobs:
 
         if [[ "${{ matrix.os }}" == "macos-15-intel" || "${{ matrix.os }}" == "macos-latest" ]]
         then
-          # macos-15-intel and macos-latest do not include Haskell tools as at
-          # 2025-12-26.
+          # As at 2026-07-01:
+          #
+          # * macos-15-intel does not include Haskell tools; and
+          # * macos-latest does not include Haskell tools.
           curl -sSL https://get.haskellstack.org/ | sh
         fi
 
@@ -75,16 +80,16 @@ jobs:
         - stack-ghc-9.10.3.yaml
     steps:
     - name: Clone project
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Cache dependencies on Unix-like OS
       if: startsWith(runner.os, 'Linux') || startsWith(runner.os, 'macOS')
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/.stack
         key: ${{ runner.os }}-${{ runner.arch }}-${{ matrix.snapshot }}-pretty
     - name: Cache dependencies on Windows
       if: startsWith(runner.os, 'Windows')
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: |
            ~\AppData\Roaming\stack

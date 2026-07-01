@@ -1,5 +1,7 @@
+spec-version: 0.36.0
+
 name: pantry
-version: 0.11.2
+version: 0.11.3
 synopsis: Content addressable Haskell package management
 description: Please see the README on GitHub at <https://github.com/commercialhaskell/pantry#readme>
 category: Development
@@ -46,9 +48,8 @@ dependencies:
 - http-client
 - http-client-tls >= 0.3.6.2
 - http-conduit
-- http-download >= 0.2.1.0
+- http-download >= 0.2.2.0
 - http-types
-- memory
 - mtl
 - network-uri
 - path
@@ -57,11 +58,12 @@ dependencies:
 - persistent-sqlite >= 2.9.3
 - persistent-template
 - primitive
+- ram
 - resourcet
 - rio
 - rio-orphans
 - rio-prettyprint >= 0.1.7.0
-- static-bytes >= 0.1.1
+- static-bytes >= 0.2.0
 - tar-conduit >= 0.4.1
 - text
 - text-metrics
