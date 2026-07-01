@@ -1,6 +1,5 @@
-# Snapshot specification for GHC 9.14.1.
+# Snapshot specification for GHC 9.12.4.
 snapshot: nightly-2026-07-01 # GHC 9.12.4
-compiler: ghc-9.14.1
 
 packages:
 # nightly-2026-07-01 excludes http-download

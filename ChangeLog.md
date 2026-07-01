@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.11.3
+
+* Depend on package `ram` (rather than `memory`).
+
 ## v0.11.2
 
 * Expose `Tree`, `TreeEntry`, `FileType` and `renderTree`, as these are used by

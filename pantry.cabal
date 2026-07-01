@@ -1,11 +1,11 @@
 cabal-version: 2.0
 
--- This file has been generated from package.yaml by hpack version 0.38.2.
+-- This file has been generated from package.yaml by hpack version 0.39.6.
 --
 -- see: https://github.com/sol/hpack
 
 name:           pantry
-version:        0.11.2
+version:        0.11.3
 synopsis:       Content addressable Haskell package management
 description:    Please see the README on GitHub at <https://github.com/commercialhaskell/pantry#readme>
 category:       Development
@@ -76,10 +76,9 @@ library
     , http-client
     , http-client-tls >=0.3.6.2
     , http-conduit
-    , http-download >=0.2.1.0
+    , http-download >=0.2.2.0
     , http-types
     , internal
-    , memory
     , mtl
     , network-uri
     , path
@@ -88,11 +87,12 @@ library
     , persistent-sqlite >=2.9.3
     , persistent-template
     , primitive
+    , ram
     , resourcet
     , rio
     , rio-orphans
     , rio-prettyprint >=0.1.7.0
-    , static-bytes >=0.1.1
+    , static-bytes >=0.2.0
     , tar-conduit >=0.4.1
     , text
     , text-metrics
@@ -125,10 +125,6 @@ library internal
       Pantry.Internal
       Pantry.SHA256
       Pantry.Types
-  other-modules:
-      Paths_pantry
-  autogen-modules:
-      Paths_pantry
   hs-source-dirs:
       int/
   ghc-options: -fwrite-ide-info -hiedir=.hie -Wall
@@ -155,9 +151,8 @@ library internal
     , http-client
     , http-client-tls >=0.3.6.2
     , http-conduit
-    , http-download >=0.2.1.0
+    , http-download >=0.2.2.0
     , http-types
-    , memory
     , mtl
     , network-uri
     , path
@@ -166,11 +161,12 @@ library internal
     , persistent-sqlite >=2.9.3
     , persistent-template
     , primitive
+    , ram
     , resourcet
     , rio
     , rio-orphans
     , rio-prettyprint >=0.1.7.0
-    , static-bytes >=0.1.1
+    , static-bytes >=0.2.0
     , tar-conduit >=0.4.1
     , text
     , text-metrics
@@ -189,10 +185,6 @@ library internal
 
 executable test-pretty-exceptions
   main-is: Main.hs
-  other-modules:
-      Paths_pantry
-  autogen-modules:
-      Paths_pantry
   hs-source-dirs:
       app/test-pretty-exceptions
   ghc-options: -fwrite-ide-info -hiedir=.hie -Wall
@@ -219,9 +211,8 @@ executable test-pretty-exceptions
     , http-client
     , http-client-tls >=0.3.6.2
     , http-conduit
-    , http-download >=0.2.1.0
+    , http-download >=0.2.2.0
     , http-types
-    , memory
     , mtl
     , network-uri
     , optparse-applicative
@@ -232,11 +223,12 @@ executable test-pretty-exceptions
     , persistent-sqlite >=2.9.3
     , persistent-template
     , primitive
+    , ram
     , resourcet
     , rio
     , rio-orphans
     , rio-prettyprint >=0.1.7.0
-    , static-bytes >=0.1.1
+    , static-bytes >=0.2.0
     , tar-conduit >=0.4.1
     , text
     , text-metrics
@@ -284,9 +276,6 @@ test-suite spec
       Pantry.InternalSpec
       Pantry.TreeSpec
       Pantry.TypesSpec
-      Paths_pantry
-  autogen-modules:
-      Paths_pantry
   hs-source-dirs:
       test
   ghc-options: -fwrite-ide-info -hiedir=.hie -Wall
@@ -319,10 +308,9 @@ test-suite spec
     , http-client
     , http-client-tls >=0.3.6.2
     , http-conduit
-    , http-download >=0.2.1.0
+    , http-download >=0.2.2.0
     , http-types
     , internal
-    , memory
     , mtl
     , network-uri
     , pantry
@@ -332,12 +320,13 @@ test-suite spec
     , persistent-sqlite >=2.9.3
     , persistent-template
     , primitive
+    , ram
     , raw-strings-qq
     , resourcet
     , rio
     , rio-orphans
     , rio-prettyprint >=0.1.7.0
-    , static-bytes >=0.1.1
+    , static-bytes >=0.2.0
     , tar-conduit >=0.4.1
     , text
     , text-metrics
