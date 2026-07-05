@@ -56,6 +56,7 @@ module Pantry.Types
   , PHpack (..)
   -- , PackageTarball (..)
   , RawPackageLocation (..)
+  , sameRSL
   , PackageLocation (..)
   , toRawPL
   , RawPackageLocationImmutable (..)
@@ -202,7 +203,8 @@ import           RIO.PrettyPrint
                    , mkNarrativeList, parens, string, style
                    )
 import           RIO.PrettyPrint.Types ( Style (..) )
-import           Text.PrettyPrint.Leijen.Extended ( Pretty (..), StyleDoc )
+import           Text.PrettyPrint.Leijen.Extended
+                   ( Pretty (..), StyleDoc, noAnnotate )
 
 #if MIN_VERSION_aeson(2, 0, 0)
 import qualified Data.Aeson.KeyMap as HM
@@ -1107,6 +1109,7 @@ data PantryException
   | InvalidOverrideCompiler !WantedCompiler !WantedCompiler
   | InvalidFilePathSnapshot !Text
   | InvalidSnapshot !RawSnapshotLocation !SomeException
+  | CyclicSnapshot ![RawSnapshotLocation] !RawSnapshotLocation
   | InvalidGlobalHintsLocation !(Path Abs Dir) !Text
   | InvalidFilePathGlobalHints !Text
   | MismatchedPackageMetadata
@@ -1301,6 +1304,17 @@ instance Display PantryException where
     <> display loc
     <> ":\n"
     <> displayShow err
+  display (CyclicSnapshot knownLocs loc) =
+    "Error: [S-789]\n"
+    <> "Cycle detected while reading snapshot. Snapshot locations "
+    <> "encountered:\n"
+    <> fold
+         ( intersperse
+             "\n"
+             (map (\knownLoc -> "- " <> display knownLoc) allLocs)
+         )
+   where
+    allLocs = reverse $ loc : knownLocs
   display (InvalidGlobalHintsLocation dir t) =
     "Error: [S-926]\n"
     <> "Invalid global hints location "
@@ -1718,6 +1732,21 @@ instance Pretty PantryException where
          ]
     <> blankLine
     <> string (displayException err)
+  pretty (CyclicSnapshot knownLocs loc) =
+    "[S-789]"
+    <> line
+    <> fillSep
+         [ flow "Cycle detected while reading snapshot. Snapshot locations"
+         , "encountered:"
+         ]
+    <> line
+    <> bulletedList (map (\l -> styleLoc l $ pretty l) allLocs)
+   where
+    allLocs = reverse $ loc : knownLocs
+
+    styleLoc knownLoc =
+      if sameRSL knownLoc loc then style Error . noAnnotate else id
+
   pretty (InvalidGlobalHintsLocation dir t) =
     "[S-926]"
     <> line
@@ -3210,6 +3239,16 @@ instance ToJSON RawSnapshotLocation where
   toJSON (RSLFilePath resolved) =
     object ["filepath" .= resolvedRelative resolved]
   toJSON (RSLSynonym syn) = toJSON syn
+
+-- | Same as '==' but ignores any 'BlobKey' for URLs and the local path for
+-- resolved file paths.
+sameRSL :: RawSnapshotLocation -> RawSnapshotLocation -> Bool
+sameRSL (RSLCompiler wc1) (RSLCompiler wc2) = wc1 == wc2
+sameRSL (RSLUrl url1 _) (RSLUrl url2 _) = url1 == url2
+sameRSL (RSLFilePath rfp1) (RSLFilePath rfp2) =
+  resolvedAbsolute rfp1 == resolvedAbsolute rfp2
+sameRSL (RSLSynonym s1) (RSLSynonym s2) = s1 == s2
+sameRSL _ _ = False
 
 -- | Where to load a snapshot from.
 --

@@ -1,5 +1,10 @@
 # Changelog for pantry
 
+## v0.11.4
+
+* If snapshot locations are cyclic, loading a snapshot throws an exception
+  rather than going round in circles.
+
 ## v0.11.3
 
 * Depend on package `ram` (rather than `memory`).

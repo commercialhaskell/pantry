@@ -148,6 +148,10 @@ examples = concat
   , [ InvalidSnapshot rawSnapshotLocation someExceptionExample
     | rawSnapshotLocation <- rawSnapshotLocationExamples
     ]
+  , [ CyclicSnapshot
+        [cyclicRawSnapshotLocationExample]
+        cyclicRawSnapshotLocationExample
+    ]
   , [ InvalidGlobalHintsLocation pathAbsDirExample rawPathExample ]
   , [ InvalidFilePathGlobalHints rawPathExample ]
   , [ MismatchedPackageMetadata rawPackageLocationImmutable rawPackageMetadata treeKey packageIdentifierExample
@@ -337,6 +341,9 @@ rawSnapshotLocationExamples = concat
     | snapNameExample <- snapNameExamples
     ]
   ]
+
+cyclicRawSnapshotLocationExample :: RawSnapshotLocation
+cyclicRawSnapshotLocationExample = RSLFilePath resolvedPathFileExample
 
 rawPackageMetadataExamples :: [RawPackageMetadata]
 rawPackageMetadataExamples =

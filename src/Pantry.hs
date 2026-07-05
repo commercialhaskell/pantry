@@ -292,10 +292,10 @@ import           Pantry.Types as P
                    , parsePackageNameThrowing, parseRawPackageLocationImmutables
                    , parseRawSnapshotLocation, parseSnapName, parseTreeM
                    , parseVersion, parseVersionThrowing, parseWantedCompiler
-                   , pirForHash, renderTree, resolvePaths, snapshotLocation
-                   , toCabalStringMap, toRawPL, toRawPLI, toRawPM, toRawSL
-                   , toRawSnapshotLayer, unCabalStringMap, unSafeFilePath
-                   , versionString, warnMissingCabalFile
+                   , pirForHash, renderTree, resolvePaths, sameRSL
+                   , snapshotLocation, toCabalStringMap, toRawPL, toRawPLI
+                   , toRawPM, toRawSL, toRawSnapshotLayer, unCabalStringMap
+                   , unSafeFilePath, versionString, warnMissingCabalFile
                    )
 import           Path
                    ( Abs, Dir, File, Path, (</>), filename, parent, parseAbsDir
@@ -1286,43 +1286,52 @@ traverseConcurrentlyWith_ count f t0 = do
             f x
             loop
 
--- | Parse a 'RawSnapshot' (all layers) from a 'RawSnapshotLocation'.
---
--- @since 0.1.0.0
+-- | Parse a 'RawSnapshot' (all layers) from a 'RawSnapshotLocation'. Throws an
+-- exception is a cycle is detected.
 loadSnapshotRaw ::
      (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
-  => RawSnapshotLocation
+  => [RawSnapshotLocation]
+     -- ^ Raw snapshot locations already encountered, most recent first.
+  -> RawSnapshotLocation
   -> RIO env RawSnapshot
-loadSnapshotRaw loc = do
-  eres <- loadRawSnapshotLayer loc
-  case eres of
-    Left wc ->
-      pure RawSnapshot
-        { rsCompiler = wc
-        , rsPackages = mempty
-        , rsDrop = mempty
-        }
-    Right (rsl, _) -> do
-      snap0 <- loadSnapshotRaw $ rslParent rsl
-      (packages, unused) <-
-        addPackagesToSnapshot
-          (display loc)
-          (rslLocations rsl)
-          AddPackagesConfig
-            { apcDrop = rslDropPackages rsl
-            , apcFlags = rslFlags rsl
-            , apcHiddens = rslHidden rsl
-            , apcGhcOptions = rslGhcOptions rsl
+loadSnapshotRaw knownLocs loc
+  | elemBy sameRSL loc knownLocs = throwM (CyclicSnapshot knownLocs loc)
+  | otherwise = do
+      eres <- loadRawSnapshotLayer loc
+      case eres of
+        Left wc ->
+          pure RawSnapshot
+            { rsCompiler = wc
+            , rsPackages = mempty
+            , rsDrop = mempty
             }
-          (rsPackages snap0)
-      warnUnusedAddPackagesConfig (display loc) unused
-      pure RawSnapshot
-        { rsCompiler = fromMaybe (rsCompiler snap0) (rslCompiler rsl)
-        , rsPackages = packages
-        , rsDrop = apcDrop unused
-        }
+        Right (rsl, _) -> do
+          snap0 <- loadSnapshotRaw (loc : knownLocs) (rslParent rsl)
+          (packages, unused) <-
+            addPackagesToSnapshot
+              (display loc)
+              (rslLocations rsl)
+              AddPackagesConfig
+                { apcDrop = rslDropPackages rsl
+                , apcFlags = rslFlags rsl
+                , apcHiddens = rslHidden rsl
+                , apcGhcOptions = rslGhcOptions rsl
+                }
+              (rsPackages snap0)
+          warnUnusedAddPackagesConfig (display loc) unused
+          pure RawSnapshot
+            { rsCompiler = fromMaybe (rsCompiler snap0) (rslCompiler rsl)
+            , rsPackages = packages
+            , rsDrop = apcDrop unused
+            }
 
--- | Parse a 'RawSnapshot' (all layers) from a 'SnapshotLocation'.
+-- | Helper function, like 'Data.List.elem' but with a provided equality
+-- function.
+elemBy :: (a -> a -> Bool) -> a -> [a] -> Bool
+elemBy eq x = any (eq x)
+
+-- | Parse a 'RawSnapshot' (all layers) from a 'SnapshotLocation'. Throws an
+-- exception if a cycle is detected.
 --
 -- @since 0.1.0.0
 loadSnapshot ::
@@ -1339,7 +1348,7 @@ loadSnapshot loc = do
         , rsDrop = mempty
         }
     Right rsl -> do
-      snap0 <- loadSnapshotRaw $ rslParent rsl
+      snap0 <- loadSnapshotRaw [toRawSL loc] $ rslParent rsl
       (packages, unused) <-
         addPackagesToSnapshot
           (display loc)
@@ -1404,7 +1413,7 @@ loadAndCompleteSnapshot' debugRSL loc =
 
 -- | Parse a 'Snapshot' (all layers) from a 'RawSnapshotLocation' completing
 -- any incomplete package locations. Debug output will include the raw snapshot
--- layer.
+-- layer. Throws an exception if a cycle is detected.
 --
 -- @since 0.1.0.0
 loadAndCompleteSnapshotRaw ::
@@ -1430,40 +1439,65 @@ loadAndCompleteSnapshotRaw' ::
   -> Map RawPackageLocationImmutable PackageLocationImmutable
      -- ^ Cached locations from lock file
   -> RIO env (Snapshot, [CompletedSL], [CompletedPLI])
-loadAndCompleteSnapshotRaw' debugRSL rawLoc cacheSL cachePL = do
-  eres <- case Map.lookup rawLoc cacheSL of
-    Just loc -> right (, CompletedSL rawLoc loc) <$> loadSnapshotLayer loc
-    Nothing -> loadRawSnapshotLayer rawLoc
-  case eres of
-    Left wc ->
-      let snapshot = Snapshot
-            { snapshotCompiler = wc
-            , snapshotPackages = mempty
-            , snapshotDrop = mempty
-            }
-      in pure (snapshot, [CompletedSL (RSLCompiler wc) (SLCompiler wc)], [])
-    Right (rsl, sloc) -> do
-      (snap0, slocs, completed0) <- loadAndCompleteSnapshotRaw' debugRSL (rslParent rsl) cacheSL cachePL
-      when debugRSL $ logDebug $ fromString $ show rsl
-      (packages, completed, unused) <-
-        addAndCompletePackagesToSnapshot
-          rawLoc
-          cachePL
-          (rslLocations rsl)
-          AddPackagesConfig
-            { apcDrop = rslDropPackages rsl
-            , apcFlags = rslFlags rsl
-            , apcHiddens = rslHidden rsl
-            , apcGhcOptions = rslGhcOptions rsl
-            }
-          (snapshotPackages snap0)
-      warnUnusedAddPackagesConfig (display rawLoc) unused
-      let snapshot = Snapshot
-            { snapshotCompiler = fromMaybe (snapshotCompiler snap0) (rslCompiler rsl)
-            , snapshotPackages = packages
-            , snapshotDrop = apcDrop unused
-            }
-      pure (snapshot, sloc : slocs,completed0 ++ completed)
+loadAndCompleteSnapshotRaw' = loadAndCompleteSnapshotRaw'' []
+
+
+-- | As for 'loadAndCompleteSnapshotRaw' but allows toggling of the debug output
+-- of the raw snapshot layer. Throws an exception if a cycle is detected.
+loadAndCompleteSnapshotRaw'' ::
+     (HasPantryConfig env, HasLogFunc env, HasProcessContext env)
+  => [RawSnapshotLocation]
+     -- ^ Raw snapshot locations already encountered, most recent first.
+  -> Bool -- ^ Debug output includes the raw snapshot layer
+  -> RawSnapshotLocation
+  -> Map RawSnapshotLocation SnapshotLocation
+     -- ^ Cached snapshot locations from lock file
+  -> Map RawPackageLocationImmutable PackageLocationImmutable
+     -- ^ Cached locations from lock file
+  -> RIO env (Snapshot, [CompletedSL], [CompletedPLI])
+loadAndCompleteSnapshotRaw'' knownRawLocs debugRSL rawLoc cacheSL cachePL
+  | elemBy sameRSL rawLoc knownRawLocs =
+      throwM (CyclicSnapshot knownRawLocs rawLoc)
+  | otherwise = do
+      eres <- case Map.lookup rawLoc cacheSL of
+        Just loc -> right (, CompletedSL rawLoc loc) <$> loadSnapshotLayer loc
+        Nothing -> loadRawSnapshotLayer rawLoc
+      case eres of
+        Left wc ->
+          let snapshot = Snapshot
+                { snapshotCompiler = wc
+                , snapshotPackages = mempty
+                , snapshotDrop = mempty
+                }
+          in pure (snapshot, [CompletedSL (RSLCompiler wc) (SLCompiler wc)], [])
+        Right (rsl, sloc) -> do
+          (snap0, slocs, completed0) <-
+            loadAndCompleteSnapshotRaw''
+              (rawLoc : knownRawLocs)
+              debugRSL
+              (rslParent rsl)
+              cacheSL
+              cachePL
+          when debugRSL $ logDebug $ fromString $ show rsl
+          (packages, completed, unused) <-
+            addAndCompletePackagesToSnapshot
+              rawLoc
+              cachePL
+              (rslLocations rsl)
+              AddPackagesConfig
+                { apcDrop = rslDropPackages rsl
+                , apcFlags = rslFlags rsl
+                , apcHiddens = rslHidden rsl
+                , apcGhcOptions = rslGhcOptions rsl
+                }
+              (snapshotPackages snap0)
+          warnUnusedAddPackagesConfig (display rawLoc) unused
+          let snapshot = Snapshot
+                { snapshotCompiler = fromMaybe (snapshotCompiler snap0) (rslCompiler rsl)
+                , snapshotPackages = packages
+                , snapshotDrop = apcDrop unused
+                }
+          pure (snapshot, sloc : slocs,completed0 ++ completed)
 
 data SingleOrNot a
   = Single !a
