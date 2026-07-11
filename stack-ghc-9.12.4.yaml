@@ -1,6 +1,2 @@
 # Snapshot specification for GHC 9.12.4.
-snapshot: nightly-2026-07-01 # GHC 9.12.4
-
-packages:
-# nightly-2026-07-01 excludes http-download
-- http-download-0.2.2.0@sha256:cfe4722fcbad837db43b5758a49b6ea54b9fd475b1825b622e25f96a8406a4d0,1812
+snapshot: nightly-2026-07-11 # GHC 9.12.4
