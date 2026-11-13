@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE ViewPatterns      #-}
 
@@ -10,6 +11,10 @@ import           Distribution.PackageDescription ( GenericPackageDescription )
 import           Distribution.PackageDescription.Parsec
                    ( parseGenericPackageDescription, runParseResult )
 import           Distribution.Parsec ( PWarning (..) )
+#if MIN_VERSION_Cabal(3,18,0)
+import           Distribution.Parsec
+                   ( PErrorWithSource (..), PWarningWithSource (..) )
+#endif
 import           Pantry.Storage ( loadBlob, withStorage )
 import           Pantry.Types
                    ( FileType (..), HasPantryConfig, PantryException (..)
@@ -58,8 +63,22 @@ rawParseGPD ::
   -> m ([PWarning], GenericPackageDescription)
 rawParseGPD loc bs =
   case eres of
-    Left (mversion, errs) ->
+    Left (mversion, errs') -> do
+      let errs = normaliseErrors errs'
       throwM $ InvalidCabalFile loc mversion (toList errs) warnings
     Right gpkg -> pure (warnings, gpkg)
  where
-  (warnings, eres) = runParseResult $ parseGenericPackageDescription bs
+  (warnings', eres) = runParseResult $ parseGenericPackageDescription bs
+  warnings = normaliseWarnings warnings'
+  normaliseWarnings =
+#if MIN_VERSION_Cabal(3,18,0)
+    map pwarning
+#else
+    id
+#endif
+  normaliseErrors =
+#if MIN_VERSION_Cabal(3,18,0)
+    fmap perror
+#else
+    id
+#endif

@@ -1,7 +1,7 @@
 spec-version: 0.36.0
 
 name: pantry
-version: 0.11.4
+version: 0.11.5
 synopsis: Content addressable Haskell package management
 description: Please see the README on GitHub at <https://github.com/commercialhaskell/pantry#readme>
 category: Development
@@ -31,7 +31,7 @@ dependencies:
 - aeson-warning-parser >= 0.1.1
 - ansi-terminal
 - bytestring
-- Cabal >= 3 && < 3.17
+- Cabal >= 3 && < 3.19
 - casa-client >= 0.0.2
 - casa-types
 - companion

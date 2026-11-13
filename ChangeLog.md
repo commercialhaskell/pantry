@@ -1,5 +1,9 @@
 # Changelog for pantry
 
+## v0.11.5
+
+* Support `Cabal-3.18.1.0`.
+
 ## v0.11.4
 
 * If snapshot locations are cyclic, loading a snapshot throws an exception
